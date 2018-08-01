@@ -140,8 +140,14 @@ find_lin_breakpoint <- function(WSEw, nbreaks = NULL)
   }
 
   sb.ind <- b[1] # take the lowest breakpoint
-
-  return(sb.ind)
+  
+  if (is.null(b))
+  {
+    b <- NA
+  }
+  
+  return(b)
+  # return(sb.ind)
 }
 
 

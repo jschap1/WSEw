@@ -49,11 +49,13 @@ n.obs <- dim(rWSEw[[1]])[1]
 w.bf <- unlist(lapply(rWSEw, max))
 for (r in 1:nr)
 {
-  sb.ind[r] <- find_lin_breakpoint(rWSEw[[r]], nbreaks = 1)
+  #sb.ind[r] <- find_lin_breakpoint(rWSEw[[r]], nbreaks = 1)
+  sb.ind[r] <- find_lin_breakpoint(rWSEw[[r]])
   wsb <- rWSEw[[r]][sb.ind[r],2] # width of slope break
   sb.expo[r] <- 1-wsb/w.bf[r] # bankfull width
   # at what fraction of bankfull width do the slope breaks occur?
 }
+hist(sb.expo, main = "SB occurrence", col = "darkblue", xlab = "channel exposure (%)")
 
 # How does this change for individual cross sections (not reach averaged)?
 n.xs <- length(xWSEw)
@@ -63,10 +65,12 @@ n.obs <- dim(xWSEw[[1]])[1]
 w.bf <- unlist(lapply(xWSEw, max))
 for (r in 1:n.xs)
 {
-  sb.ind[r] <- find_lin_breakpoint(xWSEw[[r]], nbreaks = 1)
+  sb.ind[r] <- find_lin_breakpoint(xWSEw[[r]])
   wsb <- xWSEw[[r]][sb.ind[r],2] # width of slope break
   sb.expo[r] <- 1-wsb/w.bf[r] # bankfull width
 }
+hist(sb.expo, main = "SB occurrence", col = "darkblue", xlab = "channel exposure (%)")
+
 
 # Perform slope break method for all cross sections
 n_exp_levels <- length(expo)
