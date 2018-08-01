@@ -1,0 +1,48 @@
+***Extracting transects from 2D bathymetry data
+auto_transects
+resample_polyline
+auto_transects_helper_functions
+get_narivs_centerlines
+
+***Codes_07272018
+sb_functions
+sb_reach_mc
+sb_reach_mc_old
+mc_sb
+sb_07262018
+
+***Codes_SB
+misc_07292018
+sb_reach
+plot_WSEw
+sb_07262018
+mc_sb
+sb_functions
+generalized_sb_07240218
+sb_method_batch
+msb_batch
+generalized_sb_07232018
+linear_method_batch
+sb_single
+
+***Workflow1 (old)
+auto_transects
+fit_cross_sections_w_plotting
+nice_cross_sections
+fit_shape
+test_case
+find_centerlines
+fitting_sections_functions
+auto_transects_helper_functions
+resample_polyline
+
+nice_cross_sections
+generalized_slope_break
+fit_nls2
+cross_sections_post_analysis
+
+
+====main====
+Based on sb_reach_mc, but all-inclusive
+
+Use monte carlo approach and slope break method to estimate z0 many times for reaches at different exposure levels. Report z0 estimates, plot histograms, calculate bias and variance and plot them vs. exposure. 
