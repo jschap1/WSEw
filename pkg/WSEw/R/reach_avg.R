@@ -1,0 +1,44 @@
+#' Reach Average
+#'
+#' Performs reach averaging on the WSE, w data
+#' @param l = reach length, m. Default is 10 km
+#' @param res = cross-section spacing, m
+#' @param xWSEw WSEw pairs for each cross section: xWSEw
+#' @return Reach averaged WSE and w pairs: rWSEw
+#' @export
+#' @examples rWSEw <- reach_avg(xWSEw, l = 10000, res = 50)
+
+reach_avg <- function(xWSEw, l = 10000, res = 5)
+{
+
+  pix <- l/res # the number of sections in a reach
+  nseg <- length(xWSEw) # number of cross sections
+  nn <- dim(xWSEw[[1]])[1]
+  
+  # Create matrices with WSE, w values
+  WSEmat <- array(dim = c(nn, nseg))
+  wmat <- array(dim = c(nn, nseg))
+  for (seg in 1:nseg)
+  {
+    WSEmat[,seg] <- xWSEw[[seg]]$WSE
+    wmat[,seg] <- xWSEw[[seg]]$w
+  }
+  
+  # Do reach averaging
+  nr <- nseg - (pix - 1) # number of reaches
+  rWSEw <- vector(length = nr, "list")
+  for (r in 1:nr)
+  {
+    rWSEw[[r]] <- data.frame(WSE = rowSums(WSEmat[,r:(r+(pix-1))], na.rm = TRUE)/pix, 
+                             w = rowSums(wmat[,r:(r+(pix-1))], na.rm = TRUE)/pix)
+  }
+  
+  # Developing the averaging rule
+  # rWSEw[[r]] <- data.frame(WSE = rowSums(WSEmat[,1:4])/pix # may want to handle NAs here
+  #                         , w = rowSums(wmat[,1:4])/pix)
+  
+  # Note: the wbf values as used for defining channel exposure have changed. 
+  # Now, it would make sense to use max(reach average w) as the wbf value.
+  
+  return(rWSEw)
+}
