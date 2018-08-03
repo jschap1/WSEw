@@ -1,5 +1,6 @@
 #' Get Depth from Lookup Table
 #' 
+#' Not used as of 8/3/2018 update. Replaced by as_numeric_raster.
 #' Extracts depth from a lookup table stored with the bathymetry raster. 
 #' The UMESC bathymetry data are stored using a special format. 
 #' This function decodes that special format and puts the data in units of meters.
@@ -17,11 +18,32 @@ get_depth_from_lutable <- function(transect, depth)
   {
     transect.depth[k] <- as.numeric.factor(lutable$DEPTH_M[match(transect[k],lutable$ID)])
     if (k%%50000 == 0)
-    {
-      print(k)
+    { 
+      print(k) # display progress
     }
   }
   return(transect.depth)
 }
 
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+
+levels(depth)
+begin_time <- Sys.time()
+r <- deratify(depth, att = "DEPTH_M", filename = "depth_1.tif", overwrite = TRUE)
+duration <- Sys.time() - begin_time
+print(paste("Total time:", duration, "seconds"))
+
+factorValues(r.fact.vals, c(1,2,3))
+
+tr <-extract(r, e)
+tr <-extract(r, e, df = TRUE)
+
+test <- merge(levels(depth), data.frame, by = 'category')
+
+levels(r)
+
+
+
+
+
+
