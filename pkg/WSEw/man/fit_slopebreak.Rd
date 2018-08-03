@@ -4,7 +4,7 @@
 \alias{fit_slopebreak}
 \title{Slope Break Fit for WSE-w Relationship}
 \usage{
-fit_slopebreak(WSEw, mersel = FALSE, thres = NULL,
+fit_slopebreak(WSEw, mersel = FALSE, thres = 0.015, window = 4,
   multiple_breaks = FALSE, continuity = TRUE)
 }
 \arguments{
@@ -17,7 +17,14 @@ fit_slopebreak(WSEw, mersel = FALSE, thres = NULL,
 \item{multiple_breaks}{one slope break or multiple slope breaks}
 
 \item{continuity}{require continuity between piecewise fits?}
+
+\item{thres}{moving average window for Mersel method, must be provided if using Mersel method. Default value is 4.}
 }
 \description{
-Optionally uses Mersel's original method, which screens out "non-optimal" cross sections
+Can do the following types of fits
+1. Linear with one breakpoint, continuous
+2. Linear with one breakpoint, noncontinuous
+3. Linear with several breakpoints, continous 
+4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
+5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections (returns just the lowest fit)
 }

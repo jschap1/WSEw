@@ -23,6 +23,10 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   WSEw_corr <- WSEw_obs
   WSEw_corr$WSE <- WSEw_obs$WSE + e_WSE
   WSEw_corr$w <- WSEw_obs$w + e_w
+  
+  # Constrain observations to be positive:
+  neg.ind <- which(WSEw_corr<0, arr.ind = TRUE) 
+  WSEw_corr[neg.ind] <- 0
 
   return(WSEw_corr)
 }
