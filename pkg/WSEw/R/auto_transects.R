@@ -3,25 +3,27 @@
 #' Builds cross sections from bathymetry data
 #' @param section_length spatial discretization for dividing the river into cross sections (m)
 #' @param riv polyline file for the main river channel
-#' @param bathy location of bathymetry data
+#' @param depth raster of depth values (m)
 #' @param refWSE Reference WSE for the measured bathymetry data (m)
 #' @param savename where to save the outputs
 #' @param halfwidth guess for how wide the channel is. Default is 1000 m.
 #' @param k smoothing width
 #' @param makeplot whether or not to make a plot. Default is FALSE.
 #' @keywords transects, hydraulics, cross sections
+#' @import sp
+#' @importFrom raster extract
 #' @export
 #' @examples 
 #' auto_transects(section_length, savename = "p21.rda")
 
-auto_transects <- function(section_length, riv, bathy, refWSE, 
+auto_transects <- function(section_length, riv, depth, refWSE, 
                            savename, halfwidth = 1000, k = 5, 
                            makeplot = FALSE)
 {
   
   # Draw transects and extract depths
-  depth <- raster(bathy)
-  depth[depth==9999] <- NA # 9999 is a code that means something, but remove it for our purposes
+  # depth <- raster(bathy)
+  # depth[depth==9999] <- NA # 9999 is a code that means something, but remove it for our purposes
   projcrs <- crs(depth)
   
   # Creates a single "polyline" file for input to resample_polyline
@@ -70,7 +72,8 @@ auto_transects <- function(section_length, riv, bathy, refWSE,
   channel.pix <- unlist(lapply(main_channel, length)) # number of values in each transects list value
   # not the same as channel width because of the angle
   
-  d <- lapply(main_channel, get_depth_from_lutable, depth)
+  # d <- lapply(main_channel, get_depth_from_lutable, depth)
+  d <- main_channel
   
   # Assume the first and last point are zero depth (banks)
   for (seg in 1:nseg)
@@ -80,7 +83,7 @@ auto_transects <- function(section_length, riv, bathy, refWSE,
   }
   
   # cross section bankfull width (not entirely correct)
-  wbf <- estimate_widths(rpolyline, resolution = 5, channel.pix, nseg) 
+  wbf <- estimate_widths(rpolyline, resolution = res(depth), channel.pix, nseg) 
   
   x <- vector("list", length = nseg) # x coordinate, using river banks as beginning and end
   for (seg in 1:nseg)

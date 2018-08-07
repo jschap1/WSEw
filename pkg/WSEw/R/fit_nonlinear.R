@@ -1,6 +1,7 @@
 #' Nonlinear Fit for WSE-w Relationship
 #' 
 #' @param WSEw WSEw data (at a given level of exposure)
+#' @importFrom minpack.lm nlsLM
 #' @export
 
 fit_nonlinear <- function(WSEw)

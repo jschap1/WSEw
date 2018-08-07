@@ -4,6 +4,8 @@
 #' There is one breakpoint, it is estimated using strucchange::breakpoints 
 #' @param WSEw WSEw data (at a given level of exposure)
 #' @param h minimum distance from either of the WSE-w curve where the breakpoint is constrained to be
+#' @importFrom strucchange breakpoints
+#' @importFrom minpack.lm nlsLM
 #' @export
 
 fit_nlsb <- function(WSEw, h = 5)

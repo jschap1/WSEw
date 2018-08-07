@@ -27,23 +27,6 @@ get_depth_from_lutable <- function(transect, depth)
 
 as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 
-levels(depth)
-begin_time <- Sys.time()
-r <- deratify(depth, att = "DEPTH_M", filename = "depth_1.tif", overwrite = TRUE)
-duration <- Sys.time() - begin_time
-print(paste("Total time:", duration, "seconds"))
-
-factorValues(r.fact.vals, c(1,2,3))
-
-tr <-extract(r, e)
-tr <-extract(r, e, df = TRUE)
-
-test <- merge(levels(depth), data.frame, by = 'category')
-
-levels(r)
-
-
-
 
 
 

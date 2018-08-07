@@ -28,6 +28,10 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   neg.ind <- which(WSEw_corr<0, arr.ind = TRUE) 
   WSEw_corr[neg.ind] <- 0
 
+  # Remove observations where width is less than 100 m
+  narrow.ind <- which(WSEw_corr<=100, arr.ind = TRUE)[1]
+  WSEw_corr <- WSEw_corr[-narrow.ind,]
+  
   return(WSEw_corr)
 }
 

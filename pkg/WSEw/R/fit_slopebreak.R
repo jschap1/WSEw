@@ -12,6 +12,8 @@
 #' @param thres moving average window for Mersel method, must be provided if using Mersel method. Default value is 4.
 #' @param multiple_breaks one slope break or multiple slope breaks
 #' @param continuity require continuity between piecewise fits?
+#' @importFrom segmented seg.control segmented
+#' @importFrom strucchange breakpoints breakfactor
 #' @export
 
 fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015, 
@@ -19,6 +21,12 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
 {
   
   nn <- length(WSEw$w) # number of data points
+  
+  if (nn<=1)
+  {
+    # print("No observations")
+    return(NULL)
+  }
   
   if (mersel)
   {
@@ -49,31 +57,29 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
 
       if (!continuity)
       {
-        lf1 <- lm(WSE~w, data = WSEw[1:sb.ind,])
-        fits <- list(lf1)
-        print("Linear model with multiple breakpoints. Continuity not required. Returning just the lowest fit.")
+        # strucchange package does not force continuity at breakpoints
+        b <- breakpoints(WSE~w, data = WSEw, h=5)
+        lf <- lm(WSE ~ w*breakfactor(b), data = WSEw) 
+        fits <- list(lf)
+        # lf1 <- lm(WSE~w, data = WSEw[1:sb.ind,])
+      
       } else
       {
 
-        print("Continuous linear fit with multiple breakpoints not yet implemented")
-        return(NULL)
-        
-        #print("Using segmented package to perform the piecewise continuous fit with multiple, known breakpoints")
-        #sctrl <- seg.control(toll = 1e-04, it.max = 1, display = FALSE,
-        #                     stop.if.error = TRUE, K = 10, quant = FALSE, last = TRUE, maxit.glm = 25, h = 1, 
-        #                     n.boot=20, size.boot=NULL, gap=FALSE, jt=FALSE, nonParam=TRUE,
-        #                     random=TRUE, powers=c(1,1), seed=NULL)
-        #lf <- lm(WSE~w, data = WSEw)
-        #fit <- segmented(lf, seg.Z= ~w, control=sctrl, psi=b)
-        #fits <- list(fit)
-        #sb.ind <- b
+        # Using segmented package to perform the fit, with breakpoints from strucchange
+        sctrl <- seg.control(toll = 1e-04, it.max = 1, display = FALSE,
+                             stop.if.error = TRUE, K = 10, quant = FALSE, last = TRUE, maxit.glm = 25, h = 1, 
+                             n.boot=20, size.boot=NULL, gap=FALSE, jt=FALSE, nonParam=TRUE,
+                             random=TRUE, powers=c(1,1), seed=NULL)
+        lf<-lm(WSE~w, data = WSEw)
+        lfsb<-segmented(lf, seg.Z= ~w, control=sctrl, psi=WSEw$w[b])
+        fits <- list(lfsb)
         
       }
       
       # Multiple breakpoints
       # Do segmented regression with multiple (known) breakpoints
       # Require continuity (or not)
-      
     } else
     {
       # Use one slope break

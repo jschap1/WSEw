@@ -6,6 +6,7 @@
 #' @param w width (m)
 #' @param resolution resolution of bathymetry data (m)
 #' @keywords transects, hydraulics, cross sections
+#' @import sp
 #' @export
 #' @examples 
 #' bisect_line_segments(rpolyline, projcrs, w, resolution)

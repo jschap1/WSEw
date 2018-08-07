@@ -8,6 +8,7 @@
 #' @param nseg 
 #' @param resolution resolution of bathymetry data (m)
 #' @keywords bankfull width
+#' @import sp
 #' @export
 #' @examples 
 #' wbf <- estimate_widths(rpolyline, resolution = 5, channel.pix, nseg)

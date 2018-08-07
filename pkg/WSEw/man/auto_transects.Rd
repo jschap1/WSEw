@@ -4,7 +4,7 @@
 \alias{auto_transects}
 \title{Auto Transects}
 \usage{
-auto_transects(section_length, riv, bathy, refWSE, savename,
+auto_transects(section_length, riv, depth, refWSE, savename,
   halfwidth = 1000, k = 5, makeplot = FALSE)
 }
 \arguments{
@@ -12,7 +12,7 @@ auto_transects(section_length, riv, bathy, refWSE, savename,
 
 \item{riv}{polyline file for the main river channel}
 
-\item{bathy}{location of bathymetry data}
+\item{depth}{raster of depth values (m)}
 
 \item{refWSE}{Reference WSE for the measured bathymetry data (m)}
 

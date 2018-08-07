@@ -25,7 +25,7 @@ fit_linear <- function(WSEw,  mersel = FALSE, thres = NULL)
   {
     
     tl <- test_linear(WSEw$WSE, WSEw$w, thres = thres)
-    if (!is.null(tl))
+    if (tl)
     {
       lf <- lm(WSE~w, data = WSEw)
       return(lf)
@@ -51,12 +51,12 @@ test_linear <- function(WSE, w, thres = 0.015)
   if (maxdiff < thres)
   {
     #print("Use the linear method")
-    # return(s1)
     return(TRUE)
   } else
   {
     #print("Do not use the linear method")
-    return(NULL)
+    return(FALSE)
   }
   
 }
+

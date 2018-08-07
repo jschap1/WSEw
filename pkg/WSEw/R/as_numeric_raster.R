@@ -6,6 +6,7 @@
 #' @param r a raster with an attribute table
 #' @param att column of the attribute to extract
 #' @keywords deratify factor raster
+#' @importFrom raster deratify
 #' @export
 as_numeric_raster <- function(r, att)
 {
@@ -24,7 +25,7 @@ as_numeric_raster <- function(r, att)
     numeric.vals[k] <- as.numeric.factor(lutable$DEPTH_M[match(factor.vals[k],lutable$ID)]) 
     if (k%%50000 == 0)
     { 
-      print(paste("progress:", 100*k/N, "%")) # display progress
+      print(paste0("progress: ", round(100*k/N, 2), "%")) # display progress
     }
   }
   ##################################################
