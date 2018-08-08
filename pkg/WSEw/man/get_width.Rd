@@ -4,16 +4,16 @@
 \alias{get_width}
 \title{Get Width}
 \usage{
-get_width(WSE, f1, x.max, delx = 1)
+get_width(WSE, x, b, delx = 1)
 }
 \arguments{
 \item{WSE}{WSE values with which to enter into the WSE-w function}
 
+\item{delx}{Default is 1.}
+
 \item{f1}{function approximating the WSE-w relationship (like a spline)}
 
 \item{x.max}{}
-
-\item{delx}{Default is 1.}
 }
 \description{
 Numerically estimates the top width
