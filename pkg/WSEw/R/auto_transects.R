@@ -120,7 +120,15 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   save(x, b, b.smooth, d, d.smooth, channel.pix, file = savename)
   print(paste("Saved transect data to", savename))
   
-  cross.sections <- list(x = x, b = b, d = d)
+  cross.sections <- list(x = x, b = b, d = d) # old format
+  
+  # this may be a more useful format
+  #cross.sections <- vector(length = nseg, "list")
+  #for (seg in 1:nseg)
+  #{
+  #  cross.sections[[seg]] <- data.frame(x = x[[seg]], b = b[[seg]], d = d[[seg]])
+  #}
+  
   return(cross.sections)
   
 }

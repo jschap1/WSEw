@@ -7,22 +7,27 @@
 #' @param delx Default is 1.
 #' @export
 #' @examples w <- get_width(WSE, f1, x.max = max(cross.section$x), delx = dx)
+#' @details 
 
-get_width <- function(WSE, f1, x.max, delx = 1)
+get_width <- function(WSE, x, b, delx = 1)
 {
   
+  x.max = max(x)
   n <- length(WSE)
   flow_width <- vector(length = n)
   
-  b.trap <- f1(seq(0, x.max, by = delx))
+  # Fit a linear spline to the observed channel geometry
+  f1 <- approxfun(x = x, y = b, method="linear", 
+                  yleft = 1, yright = 1, rule = 1, f = 0, ties = mean)
+  b.est <- f1(seq(0, x.max, by = delx)) # compute interpolated b values
   
   for (k in 1:n)
   {
-    flow_width[k] <- delx*sum(WSE[k]>b.trap)
+    flow_width[k] <- delx*sum(WSE[k]>b.est)
     
     # Once the WSE is higher than any other part of the bed elevation,
     # the width stops changing, as rectangular walls as assumed
-    if (sum(WSE[k] > max(b.trap)))
+    if (sum(WSE[k] > max(b.est)))
     {
       flow_width[k] <- flow_width[k-1]
     }
