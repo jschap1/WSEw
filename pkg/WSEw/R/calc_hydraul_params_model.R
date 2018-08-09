@@ -8,16 +8,15 @@
 #' @return A cross-sectional area of flow
 #' @examples 
 #' True area is 2807
-#' Linear: 1623
-#' SB: 2313
-#' SBm: 2562
-#' NL: 2432
+#' Linear: 2139
+#' SB: 2574
+#' SBm: 2766
+#' NL: 2113
 #' NLSB: 1425
 #' A.l <- calc_modelA(lf[[1]], type = "linear")
 #' A.sb <- calc_modelA(sbm[[1]], type = "sbm")
 #' @details 
-#' Need to update to use the fitted values for WSE, rather than the data values. 
-#' We are calculating parameters for the modeled cross sections, after all.
+#' Add plotting functionality to double check that results are reasonable.
 
 calc_modelA <- function(model, type, WSEw = NULL)
 {
@@ -26,8 +25,8 @@ calc_modelA <- function(model, type, WSEw = NULL)
   {
     
     wbf <- max(model$model$w)
-    WSEbf <- max(model$model$WSE)
-    z0 <- min(model$model$WSE)
+    WSEbf <- predict(model, newdata = data.frame(w=wbf))
+    z0 <- predict(model, newdata = data.frame(w=0))
     A <- 0.5*wbf*(WSEbf - z0)
     
   }else if (type == "sb") # it would be more straightforward to use segmented for everything, including the single SB model
@@ -37,9 +36,11 @@ calc_modelA <- function(model, type, WSEw = NULL)
     wsb <- max(m1$model$w)
     wb <- max(m1$model$w) # get width at the slope break
     wbf <- max(m2$model$`I(w - wb)`) + wb # accounting for the offset
-    WSEsb <- max(m1$model$WSE)
-    WSEbf <- max(m2$model$WSE)
-    z0 <- min(m1$model$WSE)
+    #WSEsb <- max(m1$model$WSE)
+    WSEsb <- predict(m1, newdata = data.frame(w=wsb))
+    #WSEbf <- max(m2$model$WSE)
+    WSEbf <- max(fitted(m2))
+    z0 <- predict(m1, newdata = data.frame(w=0))
     A <- sb_area(wsb, WSEsb, z0, WSEbf, wbf)   
     
   }else if (type == "sbm")
@@ -48,14 +49,16 @@ calc_modelA <- function(model, type, WSEw = NULL)
     model <- model[[1]]
     
     wbf <- max(model$model$w)
-    WSEbf <- max(model$model$WSE)
+    # WSEbf <- max(model$model$WSE)
+    WSEbf <- max(fitted(model))
     
     w.brk <- as.numeric(summary(model)$psi[,2]) # width breakpoints, in increasing order
     WSE.brk <- predict(model, newdata = data.frame(w = w.brk))
     
     w <- c(w.brk, wbf)
     WSE <- c(WSE.brk, WSEbf)
-    z0 <- min(model$model$WSE)
+    # z0 <- min(model$model$WSE)
+    z0 <- predict(model, newdata = data.frame(w = 0))
     
     A <- sbm_area(w, WSE, z0) 
     
@@ -63,7 +66,7 @@ calc_modelA <- function(model, type, WSEw = NULL)
   {
     
     wbf <- max(WSEw$w)
-    WSEbf <- predict(model, newdata = data.frame(w=wbf))
+    WSEbf <- max(fitted(model))
     z0 <- predict(model, newdata = data.frame(w=0))
     a <- as.numeric(coef(model)[2])
     s <- as.numeric(coef(model)[3])
@@ -76,7 +79,7 @@ calc_modelA <- function(model, type, WSEw = NULL)
     m2 <- model[[2]] # upper model 
     
     wbf <- max(WSEw$w)
-    WSEbf <- as.numeric(predict(m2, newdata = data.frame(w=wbf)))
+    WSEbf <- max(fitted(m2))
     z0 <- predict(m1, newdata = data.frame(w=0))
     
     sb.ind <- as.numeric(attributes(model)) # index of slope break

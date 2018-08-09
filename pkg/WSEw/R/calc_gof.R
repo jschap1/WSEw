@@ -4,7 +4,7 @@
 #' for WSE-w fits.
 #' @param model a model fit like the result of lm
 #' @param type type of fit (if sb or nlsb, then the implementation has to change)
-#' @return SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error), z0.error
+#' @return SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error)
 #' @export
 
 calc_gof <- function(model, type)
