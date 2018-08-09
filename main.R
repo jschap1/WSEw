@@ -63,9 +63,8 @@ xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data poi
 rWSEw <- reach_avg(xWSEw, l = 10000, res = 5)
 
 saveloc <- "/Users/jschap/Desktop/Cross_Sections/Data/Processed_Data"
+load(file.path(saveloc, "processed_data_p21_sl_5m_hires.rda"))
 save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, "processed_data_p21_sl_5m_hires.rda"))
-load(file.path(saveloc, "processed_data_p21_sl_500m_lowres.rda"))
-
 
 # Make observations
 WSEw_obs <- observe(xWSEw[[1]], exposure = 1, sd_wse = 0, sd_w = 0)
@@ -83,6 +82,9 @@ plot(WSE~w, data = xWSEw[[1]], xlab = "width (m)", ylab = "WSE (m)",
 points(WSE~w, data = WSEw_obs, col = "cyan")
 lines(WSEw_obs$w, predict(lf), col = "blue", lwd = 1)
 points(0, predict(lf, newdata = data.frame(w=0)), col = "blue", pch = 19, cex = 1)
+
+# Calculate goodness of fit metrics
+calc_gof(lf) # lapply it to all the linear fits
 
 # --------------------------------------------------------------------------------------------------
 # Fit slope break model
@@ -200,8 +202,6 @@ variance <- apply(z0, c(1,2), var, na.rm = TRUE)
 # Completed around 1:07 p.m. About 25 minutes for 10 replicates.
 # 100 replicates will take around 4 hours?
 save(z0, z0.true, z0.bar, bias, variance, file = file.path(fits_save_loc, sbsavename))
-
-
 
 # -------------------------------------------------------------------------------------------------
 # Commands for updating the WSEw R package
