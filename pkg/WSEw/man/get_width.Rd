@@ -9,7 +9,7 @@ get_width(WSE, x, b, delx = 1)
 \arguments{
 \item{WSE}{WSE values with which to enter into the WSE-w function}
 
-\item{delx}{Default is 1.}
+\item{delx}{Default is 1. Accuracy improves with smaller delx}
 
 \item{f1}{function approximating the WSE-w relationship (like a spline)}
 

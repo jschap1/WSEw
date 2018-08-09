@@ -12,7 +12,12 @@
 #' The numerical method only counts area where the WSE is higher than the bed elevation
 #' Needs more work to figure out how to implement arbitrary spatial discretization
 #' Need to do code testing, too. Confirmed that riemann and trap methods give similar results, but are they correct?
-#' @example calc_A(x = cross_sections$x[[1]], b = cross_sections$b[[1]], WSE = 138)
+#' Combine with calc_WP function/put in the same R file
+#' @examples calc_A(x = cross_sections$x[[1]], b = cross_sections$b[[1]], WSE = 138)
+#' x <- c(1,1,1,2,3,4,4,4)
+#' b <- c(3,2,1,1,1,1,2,3)
+#' A <- calc_A(x, b, WSE = 3)
+#' A <- calc_A(x, b, WSE = 2)
 
 calc_A <- function(x, b, WSE, N = length(x), method = "trap")
 {

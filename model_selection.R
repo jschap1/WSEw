@@ -5,7 +5,7 @@ opar <- par()
 
 library(WSEw)
 
-setwd("/Users/jschap/Desktop/Cross_Sections")
+setwd("/Users/jschap/Desktop/Cross_Sections") # best coding practice is to not use setwd...
 
 saveloc <- "/Users/jschap/Desktop/Cross_Sections/Data/Processed_Data"
 load(file.path(saveloc, "processed_data_p21_sl_5m_hires.rda"))
@@ -14,7 +14,12 @@ load(file.path(saveloc, "processed_data_p21_sl_5m_hires.rda"))
 load(file.path(saveloc, "model_selection_results.rda"))
 
 # --------------------------------------------------------------------------------------------------
+# Compute standard goodness-of-fit measures for each class of model:
 # Linear model
+# Slope break model (one slope break, continuous)
+# Slope break model (multiple slope breaks, continuous)
+# Nonlinear model
+# NLSB (one "slope" break, continuous)
 
 nr <- length(rWSEw)
 lf <- vector(length = nr, "list")
@@ -48,15 +53,13 @@ save(lf, sb, sbm, nl, nlsb, gof.lf, gof.sb, gof.sbm, gof.nl, gof.nlsb,
      file = file.path(saveloc, "model_selection_results.rda"))
 
 # --------------------------------------------------------------------------------------------------
-# Slope break model (one slope break, continuous)
-# Slope break model (multiple slope breaks, continuous)
-# Nonlinear model
-# NLSB (one "slope" break, continuous)
+
 
 # --------------------------------------------------------------------------------------------------
 # Make plots
 
-gof <- gof.nlsb
+gof <- gof.sb
+summary(gof)
 par(mfrow = c(2,3))
 hist(gof$SSE, main = "SSE", col = "darkblue")
 hist(gof$AIC, main = "AIC", col = "darkblue")

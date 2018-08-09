@@ -26,7 +26,7 @@ calc_gof <- function(model, type)
     BIC <- BIC(model)
     
     if (type == "nl"){
-      r2 <- NA
+      r2 <- NA # no r2 for a nonlinear model
     } else
     {
       r2 <- summary(model)$r.squared
@@ -42,10 +42,16 @@ calc_gof <- function(model, type)
     MAE <- mean(abs.residuals)
     mAE <- max(abs.residuals)
     
-    # should check formula for AIC, BIC, r2 of piecewise model. May not be additive/linear
+    # I am 90% sure AIC and BIC are linear operators
     AIC <- AIC(model[[1]]) + AIC(model[[2]])
     BIC <- BIC(model[[1]]) + BIC(model[[2]])
-    r2 <- 0.5*summary(model[[1]])$r.squared + 0.5*summary(model[[2]])$r.squared
+    
+    # Calculate r2 for piecewise linear model
+    SST1 <- SST(y = model[[1]]$model$WSE, y.bar = mean(model[[1]]$model$WSE))
+    SST2 <- SST(y = model[[2]]$model$WSE, y.bar = mean(model[[2]]$model$WSE))
+    r2_1 <- summary(model[[1]])$r.squared
+    r2_2 <- summary(model[[2]])$r.squared
+    r2 <- 1-(((1-r2_1)/(1+SST2/SST1))+((1-r2_2)/(1+SST1/SST2)))
     
   } else if (type == "nlsb")
   {
@@ -57,7 +63,6 @@ calc_gof <- function(model, type)
     MAE <- mean(abs.residuals)
     mAE <- max(abs.residuals)
     
-    # should check formula for AIC, BIC, r2 of piecewise model. May not be additive/linear
     AIC <- AIC(model[[1]]) + AIC(model[[2]])
     BIC <- BIC(model[[1]]) + BIC(model[[2]])
     r2 <- NA # no r2 for a nonlinear model
@@ -97,4 +102,24 @@ gof_batch <- function(model, type)
   }
   return(gof)
 }
+
+# ------------------------------------------------------------------------------------------
+
+#' Calculate total sum of squares
+#' 
+#' @param model model
+#' @return SST
+SST <- function(y, y.bar)
+{
+  SST <- 0
+  n <- length(y)
+  for (i in 1:n)
+  {
+    SST <- SST + (y[i]-y.bar)^2
+  }
+  return(SST)
+}
+
+
+
 

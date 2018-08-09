@@ -4,7 +4,7 @@
 #' @param WSE WSE values with which to enter into the WSE-w function
 #' @param f1 function approximating the WSE-w relationship (like a spline)
 #' @param x.max 
-#' @param delx Default is 1.
+#' @param delx Default is 1. Accuracy improves with smaller delx
 #' @export
 #' @examples w <- get_width(WSE, f1, x.max = max(cross.section$x), delx = dx)
 #' @details 
@@ -27,7 +27,7 @@ get_width <- function(WSE, x, b, delx = 1)
     
     # Once the WSE is higher than any other part of the bed elevation,
     # the width stops changing, as rectangular walls as assumed
-    if (sum(WSE[k] > max(b.est)))
+    if (sum(WSE[k] > max(b.est)) & n>1)
     {
       flow_width[k] <- flow_width[k-1]
     }
