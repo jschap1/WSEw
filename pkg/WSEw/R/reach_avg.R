@@ -42,3 +42,33 @@ reach_avg <- function(xWSEw, l = 10000, res = 5)
   
   return(rWSEw)
 }
+
+# --------------------------------------------------------------------------------------------------
+
+#' Reach average general
+#' 
+#' Reach average any quantity
+#' @param x quantity, a list
+#' @param n number of segments making up the reach
+#' @export
+#' @return r.out reach averaged quantity
+#' @examples
+#' x <- c(1,2,3,4,4,6)
+#' n <- 3
+#' r <- ra(x,n)
+
+ra <- function(x,n)
+{
+  
+  nseg <- length(x) # number of cross sections
+  nr <- nseg - (n - 1) # number of reaches
+  r.out <- vector(length = nr)
+  for (r in 1:nr)
+  {
+    r.out[r] <- mean(x[r:(r+(n-1))])
+  }
+  
+  return(r.out)
+}
+
+

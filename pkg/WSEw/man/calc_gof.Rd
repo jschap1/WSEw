@@ -15,6 +15,6 @@ calc_gof(model, type)
 SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error), z0.error
 }
 \description{
-Calculates SSE, AIC, BIC, r2, mean absolute error, and z0 bias
+Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error
 for WSE-w fits.
 }

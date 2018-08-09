@@ -26,3 +26,26 @@ save(A, WP, file = file.path(saveloc, "xs_hydraul_params.rda"))
 par(mfrow = c(2,1))
 plot(A, main = "Flow area (m^2)", type = "l")
 plot(WP, main = "Wetted Perimeter (m)", type = "l")
+
+# Calculate reach-average hydraulic parameters
+n <- 2000 # number of segments in a reach = 10 km/5 m = 2000
+A.r <- ra(A, n)
+WP.r <- ra(WP, n)
+
+# --------------------------------------------------------------------------------------------------
+
+# Perform tests with idealized cross sections
+load(file = "test_cross_sections.rda")
+
+WSEw[[1]] # index 1 for rectangle, 2 for triangle, 3 for parabola
+
+lf.test <- fit_linear(WSEw[[1]])
+lf.test <- fit_linear(WSEw[[2]])
+lf.test <- fit_linear(WSEw[[3]])
+
+lf.test <- fit_nonlinear(WSEw[[1]])
+lf.test
+
+calc_modelA
+
+

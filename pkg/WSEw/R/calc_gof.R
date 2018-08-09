@@ -1,6 +1,6 @@
 #' Calculate goodness of fit metrics
 #' 
-#' Calculates SSE, AIC, BIC, r2, mean absolute error, and z0 bias
+#' Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error
 #' for WSE-w fits.
 #' @param model a model fit like the result of lm
 #' @param type type of fit (if sb or nlsb, then the implementation has to change)
