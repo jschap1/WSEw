@@ -12,7 +12,7 @@ calc_gof(model, type)
 \item{type}{type of fit (if sb or nlsb, then the implementation has to change)}
 }
 \value{
-SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error), z0.error
+SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error)
 }
 \description{
 Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error

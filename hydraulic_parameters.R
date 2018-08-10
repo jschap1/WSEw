@@ -44,8 +44,8 @@ lf.test <- fit_linear(WSEw[[2]])
 lf.test <- fit_linear(WSEw[[3]])
 
 lf.test <- fit_nonlinear(WSEw[[1]])
-lf.test
 
-calc_modelA
+calc_modelA()
+calc_model_WP()
 
 
