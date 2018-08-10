@@ -32,6 +32,8 @@ n <- 2000 # number of segments in a reach = 10 km/5 m = 2000
 A.r <- ra(A, n)
 WP.r <- ra(WP, n)
 
+save(A, WP, A.r, WP.r, file = file.path(saveloc, "r_hydraul_params_true.rda"))
+
 # --------------------------------------------------------------------------------------------------
 
 # Perform tests with idealized cross sections

@@ -18,6 +18,7 @@
 #' b <- c(3,2,1,1,1,1,2,3)
 #' A <- calc_A(x, b, WSE = 3)
 #' A <- calc_A(x, b, WSE = 2)
+#' @export
 
 calc_A <- function(x, b, WSE, N = length(x), method = "trap")
 {
@@ -70,6 +71,7 @@ calc_A <- function(x, b, WSE, N = length(x), method = "trap")
 #' b <- c(3,2,1,1,1,1,2,3)
 #' WP <- calc_WP(x, b, WSE = 3)
 #' WP <- calc_WP(x, b, WSE = 2)
+#' @export
 
 calc_WP <- function(x, b, WSE, method = "wide")
 {

@@ -5,7 +5,7 @@
 \title{Slope Break Fit for WSE-w Relationship}
 \usage{
 fit_slopebreak(WSEw, mersel = FALSE, thres = 0.015, window = 4,
-  multiple_breaks = FALSE, continuity = TRUE)
+  multiple_breaks = FALSE, continuity = TRUE, minlen = 5)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
@@ -17,6 +17,8 @@ fit_slopebreak(WSEw, mersel = FALSE, thres = 0.015, window = 4,
 \item{multiple_breaks}{one slope break or multiple slope breaks}
 
 \item{continuity}{require continuity between piecewise fits?}
+
+\item{minlen}{minimum segment length for breakpoints(). Default is 5.}
 
 \item{thres}{moving average window for Mersel method, must be provided if using Mersel method. Default value is 4.}
 }

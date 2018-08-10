@@ -12,19 +12,30 @@
 #' @param thres moving average window for Mersel method, must be provided if using Mersel method. Default value is 4.
 #' @param multiple_breaks one slope break or multiple slope breaks
 #' @param continuity require continuity between piecewise fits?
+#' @param minlen minimum segment length for breakpoints(). Default is 5.
 #' @importFrom segmented seg.control segmented
 #' @importFrom strucchange breakpoints breakfactor
 #' @export
 
 fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015, 
-                           window = 4, multiple_breaks = FALSE, continuity = TRUE)
+                           window = 4, multiple_breaks = FALSE, continuity = TRUE, minlen = 5)
 {
   
   nn <- length(WSEw$w) # number of data points
-  
+  if(minlen >= 0.5*nn)
+  {
+    print("Few observations. Using smaller than usual minlen")
+    minlen <- floor(0.5*nn) - 1
+    if (minlen <= 2)
+    {
+      print("minimum segment size must be greater than the number of regressors")
+      return(NULL)
+    }
+  }
+
   if (nn<=1)
   {
-    # print("No observations")
+    print("No observations")
     return(NULL)
   }
   
@@ -47,7 +58,7 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
     if (multiple_breaks)
     {
       # Use multiple slope breaks
-      b <- breakpoints(WSE~w, data = WSEw, h=5)$breakpoints # h is the minimum number of points required for a section
+      b <- breakpoints(WSE~w, data = WSEw, h=minlen)$breakpoints # h is the minimum number of points required for a section
       if (is.null(b)) 
       {
         b<-NA
@@ -58,7 +69,7 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
       if (!continuity)
       {
         # strucchange package does not force continuity at breakpoints
-        b <- breakpoints(WSE~w, data = WSEw, h=5)
+        b <- breakpoints(WSE~w, data = WSEw, h=minlen)
         lf <- lm(WSE ~ w*breakfactor(b), data = WSEw) 
         fits <- list(lf)
         # lf1 <- lm(WSE~w, data = WSEw[1:sb.ind,])
@@ -72,8 +83,23 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
                              n.boot=20, size.boot=NULL, gap=FALSE, jt=FALSE, nonParam=TRUE,
                              random=TRUE, powers=c(1,1), seed=NULL)
         lf<-lm(WSE~w, data = WSEw)
-        lfsb<-segmented(lf, seg.Z= ~w, control=sctrl, psi=WSEw$w[b])
-        fits <- list(lfsb)
+        
+        # error catch
+        if (abs(max(WSEw$w[b]) - max(WSEw$w)) < 0.01*max(WSEw$w))
+        {
+          warning("Breakpoints very near the (upper) boundary. Returning NA.")
+          fits <- list(NA,NA)
+        }
+        else if (abs(min(WSEw$w[b])) < 0.01*max(WSEw$w))
+        {
+          warning("Breakpoints very near the (lower) boundary. Returning NA.")
+          fits <- list(NA,NA)
+        }        
+        else
+        {
+          lfsb<-segmented(lf, seg.Z= ~w, control=sctrl, psi=WSEw$w[b])
+          fits <- list(lfsb)
+        }
         
       }
       
@@ -83,7 +109,7 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
     } else
     {
       # Use one slope break
-      b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=5)$breakpoints
+      b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints
       if (is.null(b)) 
       {
         b<-NA
