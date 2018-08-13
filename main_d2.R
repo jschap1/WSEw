@@ -164,6 +164,8 @@ for (r in 1:nr)
   nlsb[[r]] <- vector(length = n_exp_levels, "list")
 }
 
+# To do: use the advice here: https://stackoverflow.com/questions/12135400/errors-in-segmented-package-breakpoints-confusion
+# This will likely allow sbm fits to work more often, by restarting multiple times
 begin.time <- Sys.time() # It does about 17 cross sections per minute.
 for (r in 1:nr) # loop over reaches
 {
@@ -172,7 +174,7 @@ for (r in 1:nr) # loop over reaches
     WSEw_obs <- observe(WSEw = rWSEw[[r]], exposure = expo[k], sd_wse = 0, sd_w = 0)
     lf[[r]][[k]] <- fit_linear(WSEw_obs)
     sb[[r]][[k]] <- fit_slopebreak(WSEw_obs, multiple_breaks = FALSE, continuity = TRUE)
-    sbm[[r]][[k]] <- fit_slopebreak(WSEw_obs, multiple_breaks = TRUE, continuity = TRUE)
+    try(sbm[[r]][[k]] <- fit_slopebreak(WSEw_obs, multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
     nl[[r]][[k]] <- fit_nonlinear(WSEw_obs)
     nlsb[[r]][[k]] <- fit_nlsb(WSEw_obs)
     if (r%%5 == 0)
@@ -184,11 +186,14 @@ for (r in 1:nr) # loop over reaches
     }
   }
 }
+save(lf, sb, sbm, nl, nlsb, file = file.path(saveloc, "nr3774_fitted_models_no_err.rda"))
 
-# Crashed at r=2724, k=14
-# Error: at least one coef is NA: breakpoints at the boundary?
-
-save(lf, sb, sbm, nl, nlsb, file = file.path(saveloc, "nr10_fitted_models_no_err.rda"))
+# It is a large amount of data. Saving takes a long time (actually, it crashes...)
+saveRDS(lf, "lf.rds")
+saveRDS(sb, "sb.rds") # takes about 3 minutes to save 2.3 GB
+saveRDS(sbm, "sbm.rds")
+saveRDS(nl, "nl.rds")
+saveRDS(nlsb, "nlsb.rds")
 
 ###############################################################
 ###############################################################
@@ -224,7 +229,7 @@ WP.nl <- array(dim = c(nr, n_exp_levels))
 WP.nlsb <- array(dim = c(nr, n_exp_levels))
 
 # Compute z0, A, and WP predictions
-for (r in 1:nr)
+for (r in 1:nr) # takes about 40 minutes to run the full loop
 {
   for (k in 1:n_exp_levels)
   { 
@@ -232,49 +237,84 @@ for (r in 1:nr)
     # if statements handle cases where the model is NULL/no model was fit
     if (class(lf[[r]][[k]]) == "lm")
     {
-      z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
-      A.l <- calc_model_A(lf[[r]][[k]], type = "linear")
-      WP.l <- calc_model_WP(lf[[r]][[k]], type = "linear")
+      #z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
+      A.l[r,k] <- calc_model_A(lf[[r]][[k]], type = "linear")
+      WP.l[r,k] <- calc_model_WP(lf[[r]][[k]], type = "linear")
     }
     if (class(sb[[r]][[k]][[1]]) == "lm")
     {
-      z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sb <- calc_model_A(sb[[r]][[k]], type = "sb")
-      WP.sb <- calc_model_WP(sb[[r]][[k]], type = "sb")
+      #z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.sb[r,k] <- calc_model_A(sb[[r]][[k]], type = "sb")
+      WP.sb[r,k] <- calc_model_WP(sb[[r]][[k]], type = "sb")
     }
     if (any(class(sbm[[r]][[k]][[1]])=="lm"))
     {
-      z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sbm <- calc_model_A(sbm[[r]][[k]], type = "sbm")
-      WP.sbm <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
+     # z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.sbm[r,k] <- calc_model_A(sbm[[r]][[k]], type = "sbm")
+      WP.sbm[r,k] <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
     }
     if (class(nl[[r]][[k]]) == "nls")
     {
-      z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
-      A.nl <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
-      WP.nl <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
+      #z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
+      A.nl[r,k] <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
+      WP.nl[r,k] <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
     }
     if (class(nlsb[[r]][[k]][[1]]) == "nls")
     {
-      z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.nlsb <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
-      WP.nlsb <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
+      #z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
+      WP.nlsb[r,k] <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
     }
     
   }
+  if (r%%10==0) {print(paste("progress:", r, "of", nr))}
 }
 
-# Make plots
-k <-5
-plot(z0.true[1:10], main = paste("Minimum bed elevation (m) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(127,149))
+# ------------------------------------------------------------------------------------------------
+# Make plots of z0, A, WP along the river
+
+k <- 19
+plot(z0.true, main = paste("Minimum bed elevation (m) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(120,138))
 lines(z0.l[,k], col = "red")
 lines(z0.sb[,k], col = "orange")
 lines(z0.sbm[,k], col = "purple")
 lines(z0.nl[,k], col = "green")
 lines(z0.nlsb[,k], col = "blue")
-legend("topright", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1))
+legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+plot(A.r, main = paste("Flow area (m^2) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(2000,6000))
+lines(A.l[,k], col = "red")
+lines(A.sb[,k], col = "orange")
+lines(A.sbm[,k], col = "purple")
+lines(A.nl[,k], col = "green")
+lines(A.nlsb[,k], col = "blue")
+legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+plot(WP.r, main = paste("Wetted perimeter (m) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(120,138))
+lines(WP.l[,k], col = "red")
+lines(WP.sb[,k], col = "orange")
+lines(WP.sbm[,k], col = "purple")
+lines(WP.nl[,k], col = "green")
+lines(WP.nlsb[,k], col = "blue")
+legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# ------------------------------------------------------------------------------------------------
+# Make plots of average z0, A, WP error at each exposure level
+
+pred_vals <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
+plot_bias(expo, pred_vals, z0.true, na.rm = TRUE, 
+          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)")
+
+
+
+
+
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -323,3 +363,5 @@ save(z0, z0.true, z0.bar, bias, variance, file = file.path(fits_save_loc, sbsave
 
 
 
+# Crashed at r=2724, k=14
+# Error: at least one coef is NA: breakpoints at the boundary?
