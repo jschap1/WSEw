@@ -59,7 +59,6 @@ reach_avg <- function(xWSEw, l = 10000, res = 5)
 
 ra <- function(x,n)
 {
-  
   nseg <- length(x) # number of cross sections
   nr <- nseg - (n - 1) # number of reaches
   r.out <- vector(length = nr)
@@ -70,5 +69,7 @@ ra <- function(x,n)
   
   return(r.out)
 }
+
+# --------------------------------------------------------------------------------------------------
 
 

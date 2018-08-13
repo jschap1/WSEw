@@ -36,14 +36,14 @@ plot_bias <- function(expo, pred_vals, true_vals, na.rm = TRUE, ...)
   names(bias) <- c("l","sb","sbm","nl","nlsb")
   
   # Plot bias vs. exposure level
-  plot(100*expo, bias$l, col = "red", type = "l", ylim = c(-25,1), xlab = "Channel exposure (%)", ...)
+  plot(100*expo, bias$l, col = "red", type = "l", xlab = "Channel exposure (%)", ...)
   lines(100*expo, bias$sb, col = "orange")
   lines(100*expo, bias$sbm, col = "purple")
   lines(100*expo, bias$nl, col = "green")
   lines(100*expo, bias$nlsb, col = "blue")
   abline(0,0)
-  legend("bottomright", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-         col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+  # legend("bottomright", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+  #        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
   
   return(bias)
    

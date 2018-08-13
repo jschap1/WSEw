@@ -192,6 +192,18 @@ save(lf, sb, sbm, nl, nlsb, file = file.path(saveloc, "nr3774_fitted_models_no_e
 saveRDS(lf, "lf.rds")
 saveRDS(sb, "sb.rds") # takes about 3 minutes to save 2.3 GB
 saveRDS(sbm, "sbm.rds")
+
+# This save takes a long time, so try breaking it down
+ind1 <- 0
+for (j in seq(500, 3500, by = 500))
+{
+  ind1 <- j-500+1
+  #print(ind1)
+  nl1 <- nl[ind1:j]
+  saveRDS(nl1, paste0("nl", ind1, "to", j, ".rds"))
+  print(j)
+}
+
 saveRDS(nl, "nl.rds")
 saveRDS(nlsb, "nlsb.rds")
 
@@ -237,32 +249,32 @@ for (r in 1:nr) # takes about 40 minutes to run the full loop
     # if statements handle cases where the model is NULL/no model was fit
     if (class(lf[[r]][[k]]) == "lm")
     {
-      #z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
+      z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
       A.l[r,k] <- calc_model_A(lf[[r]][[k]], type = "linear")
       WP.l[r,k] <- calc_model_WP(lf[[r]][[k]], type = "linear")
     }
     if (class(sb[[r]][[k]][[1]]) == "lm")
     {
-      #z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
       A.sb[r,k] <- calc_model_A(sb[[r]][[k]], type = "sb")
       WP.sb[r,k] <- calc_model_WP(sb[[r]][[k]], type = "sb")
     }
     if (any(class(sbm[[r]][[k]][[1]])=="lm"))
     {
-     # z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
       A.sbm[r,k] <- calc_model_A(sbm[[r]][[k]], type = "sbm")
       WP.sbm[r,k] <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
     }
     if (class(nl[[r]][[k]]) == "nls")
     {
-      #z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
+      z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
       A.nl[r,k] <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
       WP.nl[r,k] <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
     }
     if (class(nlsb[[r]][[k]][[1]]) == "nls")
     {
-      #z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
+      z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
       WP.nlsb[r,k] <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
     }
     
@@ -270,12 +282,29 @@ for (r in 1:nr) # takes about 40 minutes to run the full loop
   if (r%%10==0) {print(paste("progress:", r, "of", nr))}
 }
 
+for (r in 1:nr) # just calculate area for nlsb method
+{
+  for (k in 1:n_exp_levels)
+  {
+    if (class(nlsb[[r]][[k]][[1]]) == "nls")
+    {
+      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
+    }
+  }
+  print(r)
+}
+ 
+save(z0.true, z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = "z0.rda")
+save(A.r, A.l, A.sb, A.sbm, A.nl, A.nlsb, file = "A.rda")
+save(WP.r, WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = "WP.rda")
+
+
 # ------------------------------------------------------------------------------------------------
 # Make plots of z0, A, WP along the river
 
-k <- 19
+k <- 8
 plot(z0.true, main = paste("Minimum bed elevation (m) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(120,138))
+     type = "l", ylim = c(128,138))
 lines(z0.l[,k], col = "red")
 lines(z0.sb[,k], col = "orange")
 lines(z0.sbm[,k], col = "purple")
@@ -285,38 +314,58 @@ legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 plot(A.r, main = paste("Flow area (m^2) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(2000,6000))
+     type = "l", ylim = c(0,6000))
 lines(A.l[,k], col = "red")
 lines(A.sb[,k], col = "orange")
 lines(A.sbm[,k], col = "purple")
 lines(A.nl[,k], col = "green")
 lines(A.nlsb[,k], col = "blue")
-legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 plot(WP.r, main = paste("Wetted perimeter (m) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(120,138))
+     type = "l", ylim = c(450,850))
 lines(WP.l[,k], col = "red")
 lines(WP.sb[,k], col = "orange")
 lines(WP.sbm[,k], col = "purple")
 lines(WP.nl[,k], col = "green")
 lines(WP.nlsb[,k], col = "blue")
-legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of average z0, A, WP error at each exposure level
 
-pred_vals <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
-plot_bias(expo, pred_vals, z0.true, na.rm = TRUE, 
-          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)")
+pred_z0 <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
+pred_A <- list(A.l, A.sb, A.sbm, A.nl, A.nlsb)
+pred_WP <- list(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb)
+plot_bias(expo, pred_z0, z0.true, na.rm = TRUE, 
+          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-2,2))
+plot_bias(expo, pred_A, A.r, na.rm = TRUE, 
+          main = "A bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-5000,6000))
+plot_bias(expo, pred_WP, WP.r, na.rm = TRUE, 
+          main = "WP bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-1,5))
+legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
-
-
-
-
+# Repeat for RMSE
 
 # ------------------------------------------------------------------------------------------------
+# Drawing an idealized cross sections superimposed over the true cross section 
+
+r <- 1
+k <- 19
+draw_section(r, cross_sections, sb[[r]][[k]], type = "sb")
+
+x <- 1
+plot(cross_sections$x[[x]], cross_sections$b[[x]], type = "l", 
+     xlab = "x (m)", ylab = "b (m)")
+
+reach_avg_xs <- list()
+reach_avg_xs$x <- ra(cross_sections$x, 2000)
+
+# This is not really a priority, and it is a challenge because it's not clear how to define "reach avg cross sections."
+
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------

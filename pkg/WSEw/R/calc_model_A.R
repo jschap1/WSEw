@@ -89,7 +89,7 @@ calc_model_A <- function(model, type, WSEw = NULL)
     a <- c(a1,a2)
     s <- c(s1,s2)
 
-    A <- nlsb_area(wbf, WSEbf, z0, a, s, wsb)
+    A <- nlsb_area3(wbf, WSEbf, z0, a, s, wsb)
   }
   
   return(A)
@@ -142,13 +142,39 @@ nl_area <- function(wbf, WSEbf, z0, a, s)
 #' @param s shape parameters for nonlinear fits (the exponents)
 #' @param a multiplicative parameters for the nonlinear fits
 
-nlsb_area <- function(wbf, WSEbf, z0, a, s, wsb)
+# nlsb_area <- function(wbf, WSEbf, z0, a, s, wsb)
+# {
+#   # Separating by term to keep the code looking clean
+#   t1 <- (WSEbf - z0)*wbf # term 1
+#   t2 <- a[1]*s[1]*wsb^(s[1]+1)/(s[1]+1) # term 2
+#   t3 <- -a[1]*wbf*wsb^(s[1])
+#   t4 <- (-a[2]/(s[2]+1))*(wbf^(s[2]+1) - wsb^(s[2]+1))
+#   A <- sum(t1, t2, t3, t4)
+#   return(A)
+# }
+# 
+# nlsb_area2 <- function(wbf, WSEbf, z0, a, s, wsb)
+# {
+#   t1 <- WSEbf*wbf
+#   t2 <- z0*wsb + (a[1]/(s[1]+1))*wsb^(s[1]+1)
+#   t3 <- (z0+a[1]*wsb^s[1])*(wbf-wsb)
+#   t4 <- (a[2]/(s[2]+1))*(wbf^(s[2]+1))
+#   A <- t1 - t2 -(t3+t4)
+#   return(A)
+# }
+
+nlsb_area3 <- function(wbf, WSEbf, z0, a, s, wsb) # pretty sure this is the right formula. Should run a test case or two.
 {
-  # Separating by term to keep the code looking clean
-  t1 <- (WSEbf - z0)*wbf # term 1
-  t2 <- a[1]*s[1]*wsb^(s[1]+1)/(s[1]+1) # term 2
-  t3 <- -a[1]*wbf*wsb^(s[1])
-  t4 <- (-a[2]/(s[2]+1))*(wbf^(s[2]+1) - wsb^(s[2]+1))
-  A <- sum(t1, t2, t3, t4)
+  t1 <- WSEbf*wbf
+  t2 <- z0*wsb + (a[1]/(s[1]+1))*wsb^(s[1]+1)
+  
+  t3_1 <- (z0+a[1]*wsb^s[1])*(wbf-wsb)
+  t3_2 <- (a[2]/(s[2]+1))*(s[2]*wsb^(s[2]+1) + wbf*(wbf^s[2] - (s[2]+1)*wsb^s[2]))
+  
+  A <- t1 - t2 - (t3_1 + t3_2)
   return(A)
 }
+
+# Move toward estimating A0 in particular, since the A fluctuations are observed by SWOT.
+
+
