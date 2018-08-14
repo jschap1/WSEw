@@ -204,8 +204,17 @@ for (j in seq(500, 3500, by = 500))
   print(j)
 }
 
-saveRDS(nl, "nl.rds")
-saveRDS(nlsb, "nlsb.rds")
+ind1 <- 0
+for (j in seq(500, 3500, by = 500))
+{
+  ind1 <- j-500+1
+  nlsb1 <- nlsb[ind1:j]
+  saveRDS(nlsb1, paste0("nlsb", ind1, "to", j, ".rds"))
+  print(j)
+}
+nlsb1 <- nlsb[3501:3774]
+saveRDS(nlsb1, paste0("nlsb", 3501, "to", 3774, ".rds"))
+
 
 ###############################################################
 ###############################################################
@@ -355,6 +364,8 @@ legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
 
 r <- 1
 k <- 19
+plot_model(sb[[r]][[k]], type = "sb")
+
 draw_section(r, cross_sections, sb[[r]][[k]], type = "sb")
 
 x <- 1

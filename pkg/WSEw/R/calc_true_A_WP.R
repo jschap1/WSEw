@@ -50,6 +50,22 @@ calc_A <- function(x, b, WSE, N = length(x), method = "trap")
   return(A)
 }
 
+# --------------------------------------------------------------------------------------------------
+
+#' Calculate true area from WSE-w
+#' 
+#' Calculates A from WSE-w relationship only.
+#' Uses trapezoidal rule
+#' This works, much simpler than computing A from cross section data if you already have the WSEw relationship
+#' @export
+
+calc_A_from_WSEw <- function(WSEw)
+{
+  WSEbf <- max(WSEw$WSE)
+  wbf <- max(WSEw$w)
+  A <- WSEbf*wbf - trapz(WSEw$w, WSEw$WSE)
+  return(A)
+}
 
 # --------------------------------------------------------------------------------------------------
 

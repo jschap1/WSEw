@@ -30,6 +30,55 @@ load(file.path(saveloc, "processed_data_p21_sl_5m_hires.rda"))
 save(cross.sections, file = file.path(saveloc, "cross_sections_format2.rda"))
 
 # -------------------------------------------------------------------------------------------------
+# Simple cross section
+
+x <- seq(0,600,100)
+b <- c(144,136,135,136,135,136,144)
+
+cross.section <- list(x = x, b = b, d = b) 
+
+# WSEw <- calc_WSEw(cross.section, interval = 0.05, dx = 1)
+# Calculate it using calc_WSEw and get_width. Must be run manually.
+
+xn <- 1000
+r <- 1
+cross.section <- list(x = cross_sections$x[[xn]], b = cross_sections$b[[xn]], d = cross_sections$d[[xn]])
+WSEw <- xWSEw[[xn]]
+
+par(mfrow = c(1,2))
+plot(b~x, cross.section, type = "l")
+plot(WSE~w, WSEw)
+
+lf1 <- fit_linear(WSEw)
+sb1 <- fit_slopebreak(WSEw, multiple_breaks = FALSE, continuity = TRUE)
+sbm1 <- fit_slopebreak(WSEw, multiple_breaks = TRUE, continuity = TRUE)
+nl1 <- fit_nonlinear(WSEw)
+nlsb1 <- fit_nlsb(WSEw)
+
+A.true <- calc_A(cross.section$x, cross.section$b, WSE = max(WSEw$WSE))
+A.true <- calc_A_from_WSEw(WSEw)
+A.l <- calc_model_A(lf1, type = "linear")
+A.sb <- calc_model_A(sb1, type = "sb")
+A.sbm <- calc_model_A(sbm1, type = "sbm")
+A.nl <- calc_model_A(nl1, type = "nl", WSEw)
+A.nlsb <- calc_model_A(nlsb1, type = "nlsb", WSEw)
+
+z0.l <- predict(lf1, newdata = data.frame(w=0))
+z0.sb <- predict(sb1[[1]], newdata = data.frame(w=0))
+z0.sbm <- predict(sbm1[[1]], newdata = data.frame(w=0))
+z0.nl <- predict(nl1, newdata = data.frame(w=0))
+z0.nlsb <- predict(nlsb1[[1]], newdata = data.frame(w=0))
+
+# Plot modeled cross sections over true cross section
+par(mfrow = c(1,1))
+plot(b~x, cross.section, type = "l", ylim = c(130, 145), main = "Simple cross section test", lwd = 2)
+plot_model(lf1, type = "linear", col = "red")
+plot_model(sb1, type = "sb", col = "purple")
+plot_model(nl1, type = "nl", WSEw, col = "blue")
+plot_model(nlsb1, type = "nlsb", WSEw, col = "green")
+legend("top", ncol = 2, legend = c("true","linear","sb","nl", "nlsb"), fill = c("black","red","purple","blue", "green"))
+
+# -------------------------------------------------------------------------------------------------
 # calc_WSEw / get_width
 
 #cross.section <- list(x = cross_sections$x[[1]], b = cross_sections$b[[1]], d = cross_sections$d[[1]]) 
