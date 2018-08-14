@@ -1,15 +1,17 @@
 #' Bisect Line Segments
 #' 
 #' Bisects each line segment in a polyline
+#' @export
 #' @param rpolyline depth values along a transect
 #' @param projcrs
 #' @param w width (m)
 #' @param resolution resolution of bathymetry data (m)
-#' @keywords transects, hydraulics, cross sections
-#' @import sp
-#' @export
+#' @details Calculates the angle of the river centerline and draws a perpedicular bisector passing through it.
+#' @return cross_section a SpatialLines object containing all the bisectors
 #' @examples 
 #' bisect_line_segments(rpolyline, projcrs, w, resolution)
+#' @keywords transects, hydraulics, cross sections
+#' @import sp
 
 bisect_line_segments <- function(rpolyline, projcrs, w, resolution)
 {

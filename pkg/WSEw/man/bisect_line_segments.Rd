@@ -13,8 +13,14 @@ bisect_line_segments(rpolyline, projcrs, w, resolution)
 
 \item{resolution}{resolution of bathymetry data (m)}
 }
+\value{
+cross_section a SpatialLines object containing all the bisectors
+}
 \description{
 Bisects each line segment in a polyline
+}
+\details{
+Calculates the angle of the river centerline and draws a perpedicular bisector passing through it.
 }
 \examples{
 bisect_line_segments(rpolyline, projcrs, w, resolution)

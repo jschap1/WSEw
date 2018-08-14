@@ -17,9 +17,14 @@ if set FALSE, the resulting line will be shorter}
 
 \item{add_final_point:}{whether or not the final point of the polyline should be added to the resulting line}
 }
+\value{
+df
+}
 \description{
 Functions from agoldev for splitting polylines
-Source: https://stackoverflow.com/questions/38700246/how-do-i-split-divide-polyline-shapefiles-into-equally-length-smaller-segments
+}
+\details{
+#' Source: https://stackoverflow.com/questions/38700246/how-do-i-split-divide-polyline-shapefiles-into-equally-length-smaller-segments
 The function splits a polyline into segments of a given length.
 }
 \examples{

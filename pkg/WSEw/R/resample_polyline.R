@@ -1,17 +1,18 @@
 #' Resample Polyline
 #'
 #' Functions from agoldev for splitting polylines
-#' Source: https://stackoverflow.com/questions/38700246/how-do-i-split-divide-polyline-shapefiles-into-equally-length-smaller-segments
-#' The function splits a polyline into segments of a given length.
+#' @export
 #' @param polyline: a spatial polyline data frame
 #' @param interval_length: the length of the segments to split the lines into, in units of the polyline coordinates
 #' @param add_original_points: whether or not the original points of the polyline should be added to the resulting line
-#'                      if set FALSE, the resulting line will be shorter
+#' if set FALSE, the resulting line will be shorter
 #' @param add_final_point: whether or not the final point of the polyline should be added to the resulting line
-#' @keywords resample, split, polyline
-#' @export
+#' @details #' Source: https://stackoverflow.com/questions/38700246/how-do-i-split-divide-polyline-shapefiles-into-equally-length-smaller-segments
+#' The function splits a polyline into segments of a given length.
+#' @return df
 #' @examples
 #' resample_polyline(polyline, interval_length = section_length)
+#' @keywords resample, split, polyline
 
 resample_polyline  = function(polyline, interval_length = 20, 
                               add_original_points = TRUE, add_final_point = FALSE) 

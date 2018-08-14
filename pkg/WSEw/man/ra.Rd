@@ -2,12 +2,12 @@
 % Please edit documentation in R/reach_avg.R
 \name{ra}
 \alias{ra}
-\title{Reach average general}
+\title{Reach Average General}
 \usage{
 ra(x, n)
 }
 \arguments{
-\item{x}{quantity, a list}
+\item{x}{quantity, a vector or a list of numbers}
 
 \item{n}{number of segments making up the reach}
 }
@@ -16,6 +16,9 @@ r.out reach averaged quantity
 }
 \description{
 Reach average any quantity
+}
+\details{
+If the reach-average length is 10 km and each individual segment is 5 m, then n = 2000
 }
 \examples{
 x <- c(1,2,3,4,4,6)

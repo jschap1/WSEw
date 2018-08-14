@@ -1,15 +1,19 @@
 #' Plots bias vs. exposure level
-#' Also calculates bias
 #' 
+#' Also calculates bias
+#' @export
 #' @param expo vector of exposure levels
 #' @param pred_vals predicted values of bottom elevation, flow area, wetted perimeter, etc. A list with 5 elements.
 #' @param true_vals true values
 #' @param na.rm
 #' @param ... other arguments supported by plot
-#' @export
 #' @details 
 #' Must be five pred_vals inputs, corresponding to the linear, slope break, multiple slope break, nonlinear, and nlsb methods
 #' @return bias a data frame showing bias at each exposure level, averaged across all river reaches
+#' @examples
+#' pred_z0 <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
+#' plot_bias(expo, pred_z0, z0.true, na.rm = TRUE, 
+#'          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-2,2))
 
 plot_bias <- function(expo, pred_vals, true_vals, na.rm = TRUE, ...)
 {

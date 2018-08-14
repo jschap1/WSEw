@@ -15,6 +15,9 @@ calc_WP(x, b, WSE, method = "wide")
 
 \item{method}{"neal" for Jeff Neal's approximation in Neal et al. (2015), "wide" for wide-channel approximation}
 }
+\value{
+WP wetted perimeter
+}
 \description{
 Calculates wetted perimeter for a particular water surface elevation, ranging from empty channel to bankfull conditions
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/calc_model_A.R
 \name{calc_model_A}
 \alias{calc_model_A}
-\title{Calculate modeled flow area}
+\title{Calculate modeled bankfull flow area}
 \usage{
 calc_model_A(model, type, WSEw = NULL)
 }
@@ -19,16 +19,7 @@ A cross-sectional area of flow
 \description{
 Assumes some model, such as linear, nonlinear, or slope break for the channel cross section
 }
-\details{
-Add plotting functionality to double check that results are reasonable.
-}
 \examples{
-True area is 2807
-Linear: 2139
-SB: 2574
-SBm: 2766
-NL: 2113
-NLSB: 1425
 A.l <- calc_modelA(lf[[1]], type = "linear")
 A.sb <- calc_modelA(sbm[[1]], type = "sbm")
 }

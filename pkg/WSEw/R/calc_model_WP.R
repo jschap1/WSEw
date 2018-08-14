@@ -1,9 +1,13 @@
 #' Calculate modeled wetted perimeter
 #' 
 #' Calculates wetted perimeter for a modeled cross section using one of several types of geometric channel models
+#' @export
 #' @param model model object
 #' @param w flow width vector, needed for nonlinear models
-#' @export
+#' @details Uses correct formulas to calculate WP for the modeled cross sections. 
+#' For all the UMRB cross sections, width is much larger than depth, so WP = w, though.
+#' @return WP wetted perimeter
+#' @example WP <- calc_model_WP(lf1, type = "linear")
 
 calc_model_WP <- function(model, type, w = NULL)
 {

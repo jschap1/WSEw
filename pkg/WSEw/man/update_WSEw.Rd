@@ -9,3 +9,6 @@ update_WSEw()
 \description{
 Run from the /Users/.../Cross_Sections directory with devtools and roxygen2 packages loaded
 }
+\details{
+Sometimes you need to restart the R session in RStudio for the documentation to load properly
+}

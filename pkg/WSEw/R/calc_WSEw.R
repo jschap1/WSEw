@@ -1,11 +1,16 @@
 #' Calculate WSE-w
 #' 
 #' Calculates WSE-w pairs for each cross section
-#' @param cross_sections list of x coordinates, bed elevations, and depths for each transect
-#' @param interval number of points to sample in each cross-section
-#' @param dx used for computing width with trapezoidal rule
 #' @export
-#' @examples calc_WSEw(x, b, interval = 0.05, dx = 1)
+#' @param cross_sections list of x coordinates, bed elevations, and depths for each transect
+#' @param interval number of points to sample in each cross-section. Unlike calc_WSE, interval does not determine the number of data points, which are instead constrained by the SWOT resolution (50m) and the river width
+#' @param dx used for computing width with trapezoidal rule
+#' @details Makes a vector of WSE values from the minimum bed elevation to the bankfull WSE
+#' Computes flow width for each WSE-w value.
+#' Puts the estimated flow widths into the WSEw data frame
+#' @return WSEw data frame containing WSE and flow width values
+#' @examples 
+#' xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1)
 
 # OUTPUTS
 # WSE-w pairs for each cross section: xWSEw, cross section geometry

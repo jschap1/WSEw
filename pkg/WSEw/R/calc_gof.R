@@ -2,10 +2,14 @@
 #' 
 #' Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error
 #' for WSE-w fits.
+#' @export
 #' @param model a model fit like the result of lm
 #' @param type type of fit (if sb or nlsb, then the implementation has to change)
-#' @return SSE, AIC, BIC, r2, MAE (mean absolute error), mAE (maximum absolute error)
-#' @export
+#' @details Calculates goodness-of-fit metrics for a model with respect to the fitted values. 
+#' R2 is not defined for nonlinear models, but it can be computed for a piecewise linear model/
+#' Piecewise AIC and BIC are computed by summing the AIC, BIC values of the original models. I am like 90% sure this is OK. 
+#' @return gof data frame containing SSE, AIC, BIC, r2, MAE (mean absolute error), and mAE (maximum absolute error)
+#' @example gof <- calc_gof(lf1, type = "l)
 
 calc_gof <- function(model, type)
 {

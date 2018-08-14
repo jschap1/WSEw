@@ -411,6 +411,7 @@ for (r in 1:nr)
   }
   print(r)
 }
+save(A0.true, A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = "A0.rda")
 
 # ------------------------------------------------------------------------------------------------
 # Calculate true A0
@@ -476,7 +477,7 @@ lines(100*expo, bias$nlsb, col = "blue")
 abline(0,0)
 legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
-
+saveRDS(bias, file = "A0_bias_no_err.rda")
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------

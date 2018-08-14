@@ -1,17 +1,20 @@
 #' Estimate Widths
 #' 
 #' Estimates bankfull widths of transects based on the angle of the transect and the number of pixels in the transect.
-#' A simplification. Hopefully, it is accurate over large enough transects. 
-#' Should probably revisit and make sure this code is reasonably accurate.
+#' @export
 #' @param rpolyline a polyline crossing the river channel
 #' @param tlength 
 #' @param nseg 
 #' @param resolution resolution of bathymetry data (m)
-#' @keywords bankfull width
-#' @import sp
-#' @export
+#' @details #' A simplification. Hopefully, it is accurate over large enough transects. 
+#' Should probably revisit and make sure this code is reasonably accurate.
+#' @return cross_section_width approximate bankfull width of the cross section
 #' @examples 
 #' wbf <- estimate_widths(rpolyline, resolution = 5, channel.pix, nseg)
+#' @keywords bankfull width
+#' @import sp
+
+
 
 estimate_widths <- function(rpolyline, tlength, nseg, resolution = 5)
 {

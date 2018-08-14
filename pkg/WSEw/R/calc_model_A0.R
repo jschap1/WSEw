@@ -1,12 +1,13 @@
 #' Calculate modeled flow area beneath the lowest observed WSE value
 #' 
 #' Assumes some model, such as linear, nonlinear, or slope break for the channel cross section
+#' @export
 #' @param model fitted model to the WSE-w data
 #' @param type type of model. Default is linear. Options are linear, sb, sbm, nl, and nlsb
 #' @param w0 minimum observed width value for the fit. Only required if fit is nonlinear
-#' @export
-#' @return A0 cross-sectional area of flow beneath lowest observation
 #' @details 
+#' @return A0 cross-sectional area of flow beneath lowest observation
+#' @example A0 <- calc_model_A0(lf1, type = "linear")
 
 calc_model_A0 <- function(model, type, w0 = NULL)
 {

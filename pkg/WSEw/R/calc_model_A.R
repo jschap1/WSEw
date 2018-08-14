@@ -1,15 +1,15 @@
 #' Calculate modeled bankfull flow area
 #' 
 #' Assumes some model, such as linear, nonlinear, or slope break for the channel cross section
+#' @export
 #' @param model fitted model to the WSE-w data
 #' @param type type of model. Default is linear. Options are linear, sb, sbm, nl, and nlsb
 #' @param WSEw WSE-w data for the fit. Only required if fit is nonlinear
-#' @export
+#' @details 
 #' @return A cross-sectional area of flow
 #' @examples 
 #' A.l <- calc_modelA(lf[[1]], type = "linear")
 #' A.sb <- calc_modelA(sbm[[1]], type = "sbm")
-#' @details 
 
 calc_model_A <- function(model, type, WSEw = NULL)
 {

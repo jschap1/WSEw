@@ -14,10 +14,13 @@ reach_avg(xWSEw, l = 10000, res = 5)
 \item{res}{= cross-section spacing, m}
 }
 \value{
-Reach averaged WSE and w pairs: rWSEw
+rWSEw Reach averaged WSE and w pairs
 }
 \description{
 Performs reach averaging on the WSE, w data
+}
+\details{
+Tailor made for WSEw data returned by the calc_WSEw function.
 }
 \examples{
 rWSEw <- reach_avg(xWSEw, l = 10000, res = 50)

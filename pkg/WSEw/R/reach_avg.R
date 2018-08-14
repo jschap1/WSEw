@@ -1,11 +1,12 @@
 #' Reach Average
 #'
 #' Performs reach averaging on the WSE, w data
+#' @export
 #' @param l = reach length, m. Default is 10 km
 #' @param res = cross-section spacing, m
 #' @param xWSEw WSEw pairs for each cross section: xWSEw
-#' @return Reach averaged WSE and w pairs: rWSEw
-#' @export
+#' @details Tailor made for WSEw data returned by the calc_WSEw function.
+#' @return rWSEw Reach averaged WSE and w pairs
 #' @examples rWSEw <- reach_avg(xWSEw, l = 10000, res = 50)
 
 reach_avg <- function(xWSEw, l = 10000, res = 5)
@@ -45,12 +46,13 @@ reach_avg <- function(xWSEw, l = 10000, res = 5)
 
 # --------------------------------------------------------------------------------------------------
 
-#' Reach average general
+#' Reach Average General
 #' 
 #' Reach average any quantity
-#' @param x quantity, a list
-#' @param n number of segments making up the reach
 #' @export
+#' @param x quantity, a vector or a list of numbers
+#' @param n number of segments making up the reach
+#' @details If the reach-average length is 10 km and each individual segment is 5 m, then n = 2000
 #' @return r.out reach averaged quantity
 #' @examples
 #' x <- c(1,2,3,4,4,6)

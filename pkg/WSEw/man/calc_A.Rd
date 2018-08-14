@@ -17,10 +17,15 @@ calc_A(x, b, WSE, N = length(x), method = "trap")
 
 \item{method}{"trap" "riemann" or "simpson" Default is trapezoidal.}
 }
+\value{
+A true cross sectional flow area
+}
 \description{
-Calculates cross sectional area of flow for a particular water surface elevation, ranging from empty channel to bankfull conditions
+Calculates cross sectional area of flow for a particular water surface elevation, ranging from empty channel to bankfull conditions.
 }
 \details{
+Takes cross section info as input. 
+calc_A_from_WSEw() is more efficient if WSE-w info is available
 Uses a numerical method to approximate the integral of the difference between WSE and bed elevation
 The numerical method only counts area where the WSE is higher than the bed elevation
 Needs more work to figure out how to implement arbitrary spatial discretization

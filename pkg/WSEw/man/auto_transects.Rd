@@ -24,11 +24,28 @@ auto_transects(section_length, riv, depth, refWSE, savename,
 
 \item{makeplot}{whether or not to make a plot. Default is FALSE.}
 }
+\value{
+cross_sections geometry data for cross sections along the river
+}
 \description{
 Builds cross sections from bathymetry data
 }
+\details{
+It is a pretty long function. Here is a synopsis:
+1. Breaks up a polyline of the river centerline into roughly evenly-spaced segments of a specified length
+2. Draws a perpendicular bisector to each segment. Choose a good value of halfwidth to ensure the bisector completely crosses the river.
+3. Optionally plots the river centerline, gridded bathymetry data, and the bisectors (henceforth called "cross-sections")
+4. Extracts depth values along the cross-sections using extract(). This is the most time-consuming step.
+5. Removes empty cross-sections, those for which there are no available bathymetry data
+6. Gets the main river channel in the case when there are multiple channels by selecting the widest channel
+7. Estimates bankfull widths at each cross section. The estimates may be inaccurate for narrow river segments.
+8. Uses reference WSE to calculate bed elevation along each cross section.
+9. Smooths bed elevations and depths using a k-point moving average, with k=5.
+10. Saves cross-section information as savename.
+11. Puts x, b, d (distance from horizontal datum, bed elevation, depth) in a list called cross_sections
+}
 \examples{
-auto_transects(section_length, savename = "p21.rda")
+cross_sections <- auto_transects(section_length = 5, depth = depth, refWSE = refWSE, savename = transects_name, makeplot = FALSE, riv = riv)
 }
 \keyword{cross}
 \keyword{hydraulics,}

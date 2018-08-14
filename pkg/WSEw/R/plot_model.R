@@ -1,9 +1,16 @@
 #' Plot modeled cross section
 #' 
-#' @param model
-#' @param type
-#' @param WSEw required for nonlinear models
+#' Computes modeled bed elevation and plots the cross section
 #' @export
+#' @param model
+#' @param type Either "linear", "sb", "sbm", "nl", or "nlsb"
+#' @param WSEw required for nonlinear models
+#' @param add TRUE to add plot to current figure, FALSE to create a new figure. Default is FALSE
+#' @param ... additional parameters for plot or lines
+#' @details Eventually, it might make sense for this to return the x and b values in list similar to cross_sections from auto_transects
+#' @examples 
+#' plot(cross_sections$x[[2]], cross_sections$b[[2]], type = "l")
+#' plot_model(lf1, type = "linear", col = "red", add = TRUE)
 
 plot_model <- function(model, type, WSEw = NULL, add = FALSE, ...)
 {
@@ -81,8 +88,21 @@ plot_model <- function(model, type, WSEw = NULL, add = FALSE, ...)
   
 }
 
+#' Calculate slope break model cross section
+#' 
 #' Calculate b(x) for the slope break model
 #' @export
+#' @param x vector of x coordinates
+#' @param z0 minimum bed elevation
+#' @param s1 slope parameter of the first linear model
+#' @param s2 slope parameter of the second linear model
+#' @param wsb width at the breakpoint
+#' @param x0 minimum x value, default is 0
+#' @param xf maximum x value
+#' @details Runs in a loop, could be vectorized for speed
+#' @return b modeled bed elevation
+#' @example b <- sb_model_xs(x, z0, s1, s2, wsb, x0, xf)
+
 sb_model_xs <- function(x, z0, s1, s2, wsb, x0, xf)
 {
   # x coordinates of the beginning and end of the lower part of the cross section
@@ -111,8 +131,23 @@ sb_model_xs <- function(x, z0, s1, s2, wsb, x0, xf)
 }
 
 
+#' Calculate NLSB model cross section
+#'
 #' Calculate b(x) for the nonlinear slope break model
 #' @export
+#' @param x vector of x coordinates
+#' @param z0 minimum bed elevation
+#' @param a1 multiplicative parameter of the first nonlinear model
+#' @param a2 multiplicative parameter of the second nonlinear model
+#' @param s1 exponent of the first nonlinear model
+#' @param s2 exponent of the second nonlinear model
+#' @param wsb width at the breakpoint
+#' @param x0 minimum x value, default is 0
+#' @param xf maximum x value
+#' @details Runs in a loop, could be vectorized for speed
+#' @return b modeled bed elevation
+#' @example b <- nlsb_model_xs(x, z0, a1, a2, s1, s2, wsb, x0, xf)
+
 nlsb_model_xs <- function(x, z0, a1, a2, s1, s2, wsb, x0, xf)
 {
   # x coordinates of the beginning and end of the lower part of the cross section

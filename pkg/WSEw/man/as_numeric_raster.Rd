@@ -11,10 +11,21 @@ as_numeric_raster(r, att)
 
 \item{att}{column of the attribute to extract}
 }
+\value{
+r2 raster of numeric values coded from the input raster
+}
 \description{
 Converts a raster of factor values to the a raster of the corresponding numeric values.
 Somewhat more efficient than get_depth_from_lutable, but can still take a long time for big rasters.
-See raster::factor documentation
+See raster::factor documentation.
+}
+\details{
+Given a raster with data values coded in an attribute table, creates a raster directly composed of those values. 
+Loops over every entry in the raster; it is not very efficient.
+}
+\examples{
+umesc <- raster("bath_pool_21/bath_1999_p21")
+depth <- as_numeric_raster(umesc, att = "DEPTH_M")
 }
 \keyword{deratify}
 \keyword{factor}

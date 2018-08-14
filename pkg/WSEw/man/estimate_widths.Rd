@@ -15,9 +15,14 @@ estimate_widths(rpolyline, tlength, nseg, resolution = 5)
 
 \item{resolution}{resolution of bathymetry data (m)}
 }
+\value{
+cross_section_width approximate bankfull width of the cross section
+}
 \description{
 Estimates bankfull widths of transects based on the angle of the transect and the number of pixels in the transect.
-A simplification. Hopefully, it is accurate over large enough transects. 
+}
+\details{
+#' A simplification. Hopefully, it is accurate over large enough transects. 
 Should probably revisit and make sure this code is reasonably accurate.
 }
 \examples{
