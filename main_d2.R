@@ -363,10 +363,8 @@ legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
 # Drawing an idealized cross sections superimposed over the true cross section 
 
 r <- 1
-k <- 19
-plot_model(sb[[r]][[k]], type = "sb")
-
-draw_section(r, cross_sections, sb[[r]][[k]], type = "sb")
+k <- 4
+plot_model(sb[[r]][[k]], type = "sb", add = TRUE)
 
 x <- 1
 plot(cross_sections$x[[x]], cross_sections$b[[x]], type = "l", 
@@ -377,6 +375,111 @@ reach_avg_xs$x <- ra(cross_sections$x, 2000)
 
 # This is not really a priority, and it is a challenge because it's not clear how to define "reach avg cross sections."
 
+# ------------------------------------------------------------------------------------------------
+# Calculate A0 for each type of model
+
+A0.l <- array(dim = c(nr, n_exp_levels))
+A0.sb <- array(dim = c(nr, n_exp_levels))
+A0.sbm <- array(dim = c(nr, n_exp_levels))
+A0.nl <- array(dim = c(nr, n_exp_levels))
+A0.nlsb <- array(dim = c(nr, n_exp_levels))
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    # if statements handle cases where the model is NULL/no model was fit
+    if (class(lf[[r]][[k]]) == "lm")
+    {
+      A0.l[r,k] <- calc_model_A0(lf[[r]][[k]], type = "linear")
+    }
+    if (class(sb[[r]][[k]][[1]]) == "lm")
+    {
+      A0.sb[r,k] <- calc_model_A0(sb[[r]][[k]], type = "sb")
+    }
+    if (any(class(sbm[[r]][[k]][[1]])=="lm"))
+    {
+      A0.sbm[r,k] <- calc_model_A0(sbm[[r]][[k]], type = "sbm")
+    }
+    if (class(nl[[r]][[k]]) == "nls")
+    {
+      A0.nl[r,k] <- calc_model_A0(nl[[r]][[k]], type = "nl", w0 = w0[r,k])
+    }
+    if (class(nlsb[[r]][[k]][[1]]) == "nls")
+    {
+      A0.nlsb[r,k] <- calc_model_A0(nlsb[[r]][[k]], type = "nlsb", w0 = w0[r,k])
+    }
+  }
+  print(r)
+}
+
+# ------------------------------------------------------------------------------------------------
+# Calculate true A0
+A0.true <- array(dim = c(nr, n_exp_levels))
+w0 <- array(dim = c(nr, n_exp_levels)) # lowest observed width value, for use above
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+    p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
+    w0[r,k] <- min(WSEw_obs$w)
+    A0.true[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
+  }
+  print(r)
+}
+saveRDS(w0, file = "w0_no_err.rds")
+saveRDS(A0.true, file = "A0_true.rds")
+
+# ------------------------------------------------------------------------------------------------
+# Plot A0 vs. predicted A0 at different exposure levels
+
+k <- 19
+plot(A0.true[,k], main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(0,500))
+lines(A0.l[,k], col = "red")
+lines(A0.sb[,k], col = "orange")
+lines(A0.sbm[,k], col = "purple")
+lines(A0.nl[,k], col = "green")
+lines(A0.nlsb[,k], col = "blue")
+legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# ------------------------------------------------------------------------------------------------
+# Make plots of average z0, A, WP error at each exposure level
+
+pred_A0 <- list(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb)
+plot_bias(expo, pred_A0, A0.true, na.rm = TRUE,  # plot_bias will not work here bc A0.true depends on exposure level. Need a new function.
+          main = "A0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-1000,6500))
+legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+bias <- array(dim = c(n_exp_levels, 5))
+na.rm = TRUE
+for (k in 1:n_exp_levels)
+{
+  bias[k,1] <- mean(A0.l[,k] - A0.true[,k], na.rm = na.rm)
+  bias[k,2] <- mean(A0.sb[,k] - A0.true[,k], na.rm = na.rm)
+  bias[k,3] <- mean(A0.sbm[,k] - A0.true[,k], na.rm = na.rm)
+  bias[k,4] <- mean(A0.nl[,k] - A0.true[,k], na.rm = na.rm)
+  bias[k,5] <- mean(A0.nlsb[,k] - A0.true[,k], na.rm = na.rm)
+}
+bias <- as.data.frame(bias)
+names(bias) <- c("l","sb","sbm","nl","nlsb")
+
+# Plot bias vs. exposure level
+plot(100*expo, bias$l, col = "red", type = "l", xlab = "Channel exposure (%)", 
+     main = "A0 bias (m2), no meas. error", ylab = "bias (m)", xlim = c(40,100), ylim = c(0,1000))
+lines(100*expo, bias$sb, col = "orange")
+lines(100*expo, bias$sbm, col = "purple")
+lines(100*expo, bias$nl, col = "green")
+lines(100*expo, bias$nlsb, col = "blue")
+abline(0,0)
+legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
+      col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------

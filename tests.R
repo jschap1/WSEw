@@ -79,6 +79,59 @@ plot_model(nlsb1, type = "nlsb", WSEw, col = "green")
 legend("top", ncol = 2, legend = c("true","linear","sb","nl", "nlsb"), fill = c("black","red","purple","blue", "green"))
 
 # -------------------------------------------------------------------------------------------------
+# Triangle, rectangle, parabola test cases for A0 prediction
+
+load("/Users/jschap/Desktop/Cross_Sections/Codes/test_cross_sections.rda")
+plot(cross_sections$x[[1]], cross_sections$b[[1]]) # rectangle
+plot(cross_sections$x[[2]], cross_sections$b[[2]]) # triangle
+plot(cross_sections$x[[3]], cross_sections$b[[3]]) # parabola
+
+plot(WSE~w, WSEw[[1]])
+plot(WSE~w, WSEw[[2]])
+plot(WSE~w, WSEw[[3]])
+
+# Each of these test cases should be modeled perfectly by at least one model
+lf1 <- vector(length = n_exp_levels, "list")
+for (k in 1:n_exp_levels)
+{
+  WSEw_obs <- observe(WSEw[[2]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+  lf1[[k]] <- fit_linear(WSEw_obs)
+}
+
+A.l <- calc_model_A(lf1, type = "linear")
+A.true <- calc_A_from_WSEw(WSEw[[2]])
+
+# Plot modeled cross sections over true cross section
+plot(cross_sections$x[[2]], cross_sections$b[[2]], type = "l")
+plot_model(lf1[[19]], type = "linear", col = "red", add = TRUE)
+plot_model(lf1[[10]], type = "linear", col = "red", add = TRUE)
+
+# Calculate A0
+A0.true.1 <- vector(length = n_exp_levels)
+w0.1 <- vector(length = n_exp_levels)
+for (k in 1:n_exp_levels)
+{
+  WSEw_obs <- observe(WSEw[[2]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+  p <- max(which(WSEw[[2]]$WSE<min(WSEw_obs$WSE)))
+  w0.1[k] <- min(WSEw_obs$w)
+  A0.true.1[k] <- calc_A_from_WSEw(WSEw[[2]][1:p,])
+}
+
+# Calculate estimated A0 below observed WSE
+A0.l.1 <- vector(length = n_exp_levels)
+for (k in 1:n_exp_levels)
+{
+  if (class(lf1[[k]]) == "lm")
+  {
+    A0.l.1[k] <- calc_model_A0(lf1[[k]], type = "linear")
+  }
+}
+
+plot(A0.true.1 - A0.l.1, ylim = c(-200,1300))
+abline(0,0)
+points(1, A.l, col = "red")
+
+# -------------------------------------------------------------------------------------------------
 # calc_WSEw / get_width
 
 #cross.section <- list(x = cross_sections$x[[1]], b = cross_sections$b[[1]], d = cross_sections$d[[1]]) 
