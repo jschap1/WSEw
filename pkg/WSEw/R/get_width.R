@@ -20,10 +20,12 @@ get_width <- function(WSE, x, b, delx = 1)
   f1 <- approxfun(x = x, y = b, method="linear", 
                   yleft = 1, yright = 1, rule = 1, f = 0, ties = mean)
   b.est <- f1(seq(0, x.max, by = delx)) # compute interpolated b values
+  # print(paste("b=", b.est))
   
   for (k in 1:n)
   {
     flow_width[k] <- delx*sum(WSE[k]>b.est)
+    #print(paste("WSE=", WSE[k]))
     
     # Once the WSE is higher than any other part of the bed elevation,
     # the width stops changing, as rectangular walls as assumed

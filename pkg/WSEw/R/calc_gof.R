@@ -7,8 +7,10 @@
 #' @param type type of fit (if sb or nlsb, then the implementation has to change)
 #' @details Calculates goodness-of-fit metrics for a model with respect to the fitted values. 
 #' R2 is not defined for nonlinear models, but it can be computed for a piecewise linear model/
-#' Piecewise AIC and BIC are computed by summing the AIC, BIC values of the original models. I am like 90% sure this is OK. 
-#' @return gof data frame containing SSE, AIC, BIC, r2, MAE (mean absolute error), and mAE (maximum absolute error)
+#' Piecewise AIC and BIC are computed by summing the AIC, BIC values of the original models. I am like 90% sure this is OK.
+#' Spectral radius of the covariance matrix is a measurement of parameter estimation uncertainty. 
+#' However, I am not sure how to calculate it for the piecewise fits, so it just returns NA for now. 
+#' @return gof data frame containing SSE, spectral radius, AIC, BIC, r2, MAE (mean absolute error), and mAE (maximum absolute error)
 #' @example gof <- calc_gof(lf1, type = "l)
 
 calc_gof <- function(model, type)
@@ -28,6 +30,9 @@ calc_gof <- function(model, type)
     
     AIC <- AIC(model)
     BIC <- BIC(model)
+    
+    cov_pars <- vcov(model)
+    spectral_radius <- max(eigen(cov_pars)$values)
     
     if (type == "nl"){
       r2 <- NA # no r2 for a nonlinear model
@@ -57,6 +62,8 @@ calc_gof <- function(model, type)
     r2_2 <- summary(model[[2]])$r.squared
     r2 <- 1-(((1-r2_1)/(1+SST2/SST1))+((1-r2_2)/(1+SST1/SST2)))
     
+    spectral_radius <- NA
+    
   } else if (type == "nlsb")
   {
     
@@ -71,11 +78,17 @@ calc_gof <- function(model, type)
     BIC <- BIC(model[[1]]) + BIC(model[[2]])
     r2 <- NA # no r2 for a nonlinear model
     
+    spectral_radius <- NA
+    
   } 
 
-  gof <- data.frame(SSE = SSE, AIC = AIC, BIC = BIC, r2 = r2, 
-                    MAE = MAE, mAE = mAE)
-  return(gof)
+  gof <- data.frame(SSE = SSE, 
+                    AIC = AIC, 
+                    BIC = BIC, 
+                    r2 = r2, 
+                    MAE = MAE, 
+                    mAE = mAE, 
+                    spectral_radius = spectral_radius)
 }
 
 # ------------------------------------------------------------------------------------------

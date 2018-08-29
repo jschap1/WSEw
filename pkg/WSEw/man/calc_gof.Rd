@@ -12,7 +12,7 @@ calc_gof(model, type)
 \item{type}{type of fit (if sb or nlsb, then the implementation has to change)}
 }
 \value{
-gof data frame containing SSE, AIC, BIC, r2, MAE (mean absolute error), and mAE (maximum absolute error)
+gof data frame containing SSE, spectral radius, AIC, BIC, r2, MAE (mean absolute error), and mAE (maximum absolute error)
 }
 \description{
 Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error
@@ -22,4 +22,6 @@ for WSE-w fits.
 Calculates goodness-of-fit metrics for a model with respect to the fitted values. 
 R2 is not defined for nonlinear models, but it can be computed for a piecewise linear model/
 Piecewise AIC and BIC are computed by summing the AIC, BIC values of the original models. I am like 90% sure this is OK.
+Spectral radius of the covariance matrix is a measurement of parameter estimation uncertainty. 
+However, I am not sure how to calculate it for the piecewise fits, so it just returns NA for now.
 }
