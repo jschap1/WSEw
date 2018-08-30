@@ -53,7 +53,38 @@ save(lf, sb, sbm, nl, nlsb, gof.lf, gof.sb, gof.sbm, gof.nl, gof.nlsb,
      file = file.path(saveloc, "model_selection_results.rda"))
 
 # --------------------------------------------------------------------------------------------------
+# Figure for paper
+# Shape parameter for the reach averaged cross sections
 
+opar <- par()
+par(mfrow = c(2,1), mar = c(5,5,2,5))
+
+nl.xs <- vector(length = n.xs, "list")
+for (k in 1:n.xs)
+{
+  WSEw_obs <- observe(xWSEw[[k]], exposure = 1, sd_wse = 0, sd_w = 0)
+  nl.xs[[k]] <- fit_nonlinear(WSEw_obs)
+  if (k %% 10 == 0){print(k)}
+}
+
+s.xs <- vector(length = n.xs)
+for (k in 1:n.xs)
+{
+  s.xs[k] <- as.numeric(coef(nl.xs[[k]])[3])  
+}
+summary(s.xs)
+
+# Shape parameter for the cross sections
+
+s <- vector(length = nr)
+for (k in 1:nr)
+{
+  s[k] <- as.numeric(coef(nl[[k]])[3])  
+}
+summary(s)
+
+hist(s.xs, main = "Cross sections", col = "blue", breaks = "stu")
+hist(s, main = "Reach-averaged cross sections", col = "blue", breaks = "stu", xlim = c(0, 3.5))
 
 # --------------------------------------------------------------------------------------------------
 # Make plots

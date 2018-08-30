@@ -42,9 +42,38 @@ plot_model <- function(model, type, WSEw = NULL, add = FALSE, ...)
     
   } else if (type == "sbm")
   {
-    warning("sbm not yet implemented")
+    warning("sbm only implemented for the case of exactly 3 slope breaks")
     
+    m <- model[[1]]
+    wbf <- max(m$model$w)
+    x0 <- 0
+    xf <- wbf
     
+    cc <- as.numeric(coef(m))
+    cc <- cc[which(cc!=0)]
+    alpha1 <- cc[1] # intercept term; see derivation for notation here
+    u <- cc[-1]
+    beta <- 2*cumsum(u)
+    wsb <- as.numeric(m$psi[,1])
+    xsb <- wsb/2
+    
+    x01 <- seq(x0, xsb[1], length.out = 30)
+    x12 <- seq(xsb[1], xsb[2], length.out = 30)
+    x23 <- seq(xsb[2], xsb[3], length.out = 30)
+    x34 <- seq(xsb[3], xf/2, length.out = 30)
+    
+    b01 <- alpha1 + beta[1]*x01
+    b12 <- alpha1 + beta[1]*xsb[1] + beta[2]*(x12-xsb[1])
+    b23 <- alpha1 + beta[1]*xsb[1] + beta[2]*(xsb[2]-xsb[1]) + beta[3]*(x23-xsb[2])
+    b34 <- alpha1 + beta[1]*xsb[1] + beta[2]*(xsb[2]-xsb[1]) + beta[3]*(xsb[3] - xsb[2]) + beta[4]*(x34-xsb[3])
+    
+    xr <- c(x01, x12, x23, x34) # right
+    b <- c(b01, b12, b23, b34)
+
+    xl <- -xr # left
+    xr <- xr + (xf-x0)/2
+    xl <- xl + (xf-x0)/2
+  
   } else if (type == "nl")
   {
     
@@ -78,15 +107,34 @@ plot_model <- function(model, type, WSEw = NULL, add = FALSE, ...)
     b <- nlsb_model_xs(x, z0, a1, a2, s1, s2, wsb, x0, xf)
   }
   
-  if (add)
+  if (type == "sbm")
   {
-    lines(x,b, ...)
-  } else
-  {
-    plot(x,b, type = "l", ...)
+    if (add)
+    {
+      lines(xl, b, type = "l", ...)
+      lines(xr, b)
+    } else
+    {
+      plot(xl, b, type = "l", ...)
+      lines(xr, b)
+    }
+    
   }
-  
+  else
+  {
+    if (add)
+    {
+      lines(x,b, ...)
+    } else
+    {
+      plot(x,b, type = "l", ...)
+    }
+  }
+
 }
+
+# --------------------------------------------------------------------------------------------------------------------
+
 
 #' Calculate slope break model cross section
 #' 
@@ -130,6 +178,9 @@ sb_model_xs <- function(x, z0, s1, s2, wsb, x0, xf)
   return(b)
 }
 
+
+
+# --------------------------------------------------------------------------------------------------------------------
 
 #' Calculate NLSB model cross section
 #'

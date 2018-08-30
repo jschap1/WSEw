@@ -40,11 +40,13 @@ cross.section <- list(x = x, b = b, d = b)
 # WSEw <- calc_WSEw(cross.section, interval = 0.05, dx = 1)
 # Calculate it using calc_WSEw and get_width. Must be run manually.
 
-xn <- 1000
-r <- 1
+xn <- 3000
+# r <- 1
 cross.section <- list(x = cross_sections$x[[xn]], b = cross_sections$b[[xn]], d = cross_sections$d[[xn]])
 WSEw <- xWSEw[[xn]]
 
+# Figure for paper
+# Sample cross section and SWOT sampling (use xn=3000)
 par(mfrow = c(1,2))
 plot(b~x, cross.section, type = "l")
 plot(WSE~w, WSEw)
@@ -71,12 +73,17 @@ z0.nlsb <- predict(nlsb1[[1]], newdata = data.frame(w=0))
 
 # Plot modeled cross sections over true cross section
 par(mfrow = c(1,1))
-plot(b~x, cross.section, type = "l", ylim = c(130, 145), main = "Simple cross section test", lwd = 2)
-plot_model(lf1, type = "linear", col = "red")
-plot_model(sb1, type = "sb", col = "purple")
-plot_model(nl1, type = "nl", WSEw, col = "blue")
-plot_model(nlsb1, type = "nlsb", WSEw, col = "green")
-legend("top", ncol = 2, legend = c("true","linear","sb","nl", "nlsb"), fill = c("black","red","purple","blue", "green"))
+plot(b~x, cross.section, type = "l", ylim = c(133, 144), main = "Example cross section", lwd = 2, xlab = "x (m)", ylab = "bed elevation (m)")
+plot_model(lf1, type = "linear", col = "red", lty = 2, lwd = 2, add = TRUE)
+plot_model(sb1, type = "sb", col = "purple", lty = 3, lwd = 2, add = TRUE)
+plot_model(sbm1, type = "sbm", col = "green", lwd = 2, add = TRUE)
+plot_model(nl1, type = "nl", WSEw, col = "blue", add = TRUE)
+plot_model(nlsb1, type = "nlsb", WSEw, col = "darkgreen", add = TRUE)
+legend("top", ncol = 2, 
+       legend = c("true","linear","sb", "sbm", "nl", "nlsb"), 
+       col = c("black","red","purple","green", "blue", "darkgreen"), 
+       lty = c(1,2,3,1,1,1),
+       lwd = c(2,2,2,2,1,1))
 
 # -------------------------------------------------------------------------------------------------
 # Triangle, rectangle, parabola test cases for A0 prediction

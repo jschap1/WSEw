@@ -43,9 +43,21 @@ riv.dir <- "/Users/jschap/Desktop/Cross_Sections/Data/Centerlines"
 load(file.path(riv.dir, "centerline21.rda"))
 riv <- centerline_p21
 
+# Stream gauges
+gauges <- read.table("/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/gauges_UMB_QC.txt")
+names(gauges) <- c("id","lat","lon","V4")
+coordinates(gauges) <- ~lon + lat # make SpatialPoints object
+crs(gauges) <- "+init=epsg:4326"
+gauges.utm <- spTransform(gauges, crs(riv))
+
 # Processed cross section and WSE-w data
 saveloc <- "/Users/jschap/Desktop/Cross_Sections/Data/Processed_Data"
 load(file.path(saveloc, processed_name))
+
+# Plot the study area
+plot(depth_5, main = "UMRB Pool 21")
+lines(riv)
+points(gauges.utm)
 
 # ------------------------------------------------------------------------------------------------
 
@@ -59,10 +71,19 @@ cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = r
 xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data points depends on discretization
 # Method 2: find corresponding WSE for flow width ranging from 100 m to bankfull width, in 50 m increments
 # xWSEw <- calc_WSEw2(cross_sections, interval = 0.05, dx = 1) # anywhere from 7-21 data points, depending on river width
+# Method 3: find corresponding WSE for flow width ranging from 100 m to bankfull width, in 50 m increments
+xWSEw1 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # one year of obs
+xWSEw3 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # 3 yrs of obs
 
-rWSEw <- reach_avg(xWSEw, l = 10000, res = 5)
+rWSEw <- reach_avg(xWSEw1, l = 10000, res = 5)
 
 save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, processed_name))
+
+# Plot the observations
+plot(WSE~w, rWSEw[[3000]], main = "WSE-w sampling, one year")
+points(WSE~w, xWSEw1[[1000]], col="red", pch=19)
+legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black", "red"))
+
 
 # ------------------------------------------------------------------------------------------------
 
@@ -307,11 +328,14 @@ save(z0.true, z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = "z0.rda")
 save(A.r, A.l, A.sb, A.sbm, A.nl, A.nlsb, file = "A.rda")
 save(WP.r, WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = "WP.rda")
 
+load("Outputs/nr3774_fitted_models_no_err/z0.rda")
+load("Outputs/nr3774_fitted_models_no_err/A.rda")
+load("WP.rda")
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of z0, A, WP along the river
 
-k <- 8
+k <- 12
 plot(z0.true, main = paste("Minimum bed elevation (m) at", expo[k]*100,"% exposure"), 
      type = "l", ylim = c(128,138))
 lines(z0.l[,k], col = "red")
@@ -329,7 +353,7 @@ lines(A.sb[,k], col = "orange")
 lines(A.sbm[,k], col = "purple")
 lines(A.nl[,k], col = "green")
 lines(A.nlsb[,k], col = "blue")
-legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
+legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 plot(WP.r, main = paste("Wetted perimeter (m) at", expo[k]*100,"% exposure"), 
@@ -446,6 +470,32 @@ legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 # ------------------------------------------------------------------------------------------------
+# Plot A0 vs. predicted A0 at different exposure levels, and plot prediction error for linear models
+
+A0.var <- array(dim = c(nr, n_exp_levels))
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    if (class(lf[[r]][[k]]) == "lm")
+    {
+      A0.var[r,k] <- calc_A0_variance(lf[[r]][[k]])
+    }
+  }
+}
+A0.sd <- sqrt(A0.var)
+summary(A0.sd)
+
+k <- 17
+plot(A0.true[,k], 
+     main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(0,500))
+lines(A0.l[,k], col = "red")
+lines(A0.l[,k] + 2*A0.sd[,k], col = "red", lty = 2)
+lines(A0.l[,k] - 2*A0.sd[,k], col = "red", lty = 2)
+legend("topleft", legend = "plus/minus 2 sd", col = "red", lty = 2)
+
+# ------------------------------------------------------------------------------------------------
 # Make plots of average z0, A, WP error at each exposure level
 
 pred_A0 <- list(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb)
@@ -480,6 +530,54 @@ legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
 saveRDS(bias, file = "A0_bias_no_err.rda")
 
 # ------------------------------------------------------------------------------------------------
+# Model selection: Do split sample validation with each model
+
+n_exp_levels <- 19
+expo <- seq(0.05,0.95, by = 0.05)
+sse <- array(dim = c(n_exp_levels, 5), data = 0)
+for (k in 1:n_exp_levels)
+{
+  sum1 <- 0
+  sum2 <- 0
+  sum3 <- 0
+  sum4 <- 0
+  sum5 <- 0
+  for (r in 1:nr)
+  {
+    sum1 <- sum1 + (A0.l[r,k] - A0.true[r,k])^2
+    sum2 <- sum2 + (A0.sb[r,k] - A0.true[r,k])^2
+    sum3 <- sum3 + (A0.sbm[r,k] - A0.true[r,k])^2
+    sum4 <- sum4 + (A0.nl[r,k] - A0.true[r,k])^2
+    sum5 <- sum5 + (A0.nlsb[r,k] - A0.true[r,k])^2
+  }
+  sse[k,1] <- sum1
+  sse[k,2] <- sum2
+  sse[k,3] <- sum3
+  sse[k,4] <- sum4
+  sse[k,5] <- sum5
+}
+sse <- as.data.frame(sse)
+names(sse) <- c("l","sb","sbm","nl","nlsb")
+
+plot(expo*100, sse[,1], 
+     xlab = "channel exposure (%)", 
+     ylab = "prediction error sse (m^4)", 
+     type = "l", 
+     col = "red",
+     main = "prediction SSE for A0"
+     )
+lines(expo*100, sse[,2], col = "orange")
+lines(expo*100, sse[,3], col = "purple")
+lines(expo*100, sse[,4], col = "green")
+lines(expo*100, sse[,5], col = "blue")
+legend("topright", legend = c("Linear","SB","SBM","NL","NLSB"), 
+       col = c("red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
+saveRDS(sse, file = "A0_prediction_sse.rda")
+
+# It's pretty clear that the NLSB method performs the best. However, there has been no accounting for model complexity.
+# AIC and BIC can account for model complexity. However, calc_gof computes them wrt the fitted WSE-w values.
+# I am interested in the goodness of fit for A0. Could AIC be calculated for this?
+
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -521,11 +619,28 @@ variance <- apply(z0, c(1,2), var, na.rm = TRUE)
 save(z0, z0.true, z0.bar, bias, variance, file = file.path(fits_save_loc, sbsavename))
 
 
+# Load models ------------------------------------------------------------------------------------
 
+lf <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/lf.rds")
+sb <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/sb.rds")
+sbm <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/sbm.rds")
+nl1 <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/nl_1_to_3500.rds")
+nl2 <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/nl3501to3774.rds")
 
+vcov(nl2[[1]][[19]]) # variance of the estimated parameters
 
+# Calculate prediction error
 
+model <- lf[[1]][[19]]
 
+# Using built-in R function
+z0.1 <- predict(model, newdata = data.frame(w=0), se.fit = TRUE)
+z0.1$se.fit # standard error of predicted mean
+
+# Or manually-ish, assuming no measurement error:
+cov.pars <- vcov(model)
+sd_wse <- 0.1 # m
+pred.var <- sd_wse^2 + cov.pars[1,1]
 
 # Crashed at r=2724, k=14
 # Error: at least one coef is NA: breakpoints at the boundary?
