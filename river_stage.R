@@ -131,7 +131,6 @@ gauge$Height <- as.numeric(gauge$Height)
 h <- h[-which(h>h_bf)]
 100*sum(h>h_bf)/length(h) # six percent of the stage values are flood flow
 
-
 # Rescale and normalize before fitting, (also detrend)
 h <- as.numeric(na.omit(gauge$Height))
 z <- h/(max(h))
@@ -203,8 +202,6 @@ hist(z_e, "fd", prob=T)
 
 stage_name <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/Stage/miss_at_quincy_1947-2018.txt"
 
-
-
 which(h==min(h))
 
 gauge <- read.table(stage_name, header = FALSE, stringsAsFactors = FALSE)
@@ -239,5 +236,10 @@ while (start_day < ndays)
 hist(dbf_frac, "fd")
 k <- 3
 hist(swot_sample[[k]], "fd")
+
+
+
+
+
 
 
