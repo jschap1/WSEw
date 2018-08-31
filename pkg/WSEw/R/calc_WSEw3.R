@@ -62,6 +62,8 @@ calc_WSEw3 <- function(cross_sections, dist = "exponential", pars = c(0.9428, 74
     if (dbf[seg] < 0){next} # error check
     
     WSE_bf <- b.min[seg] + dbf[seg] # bankfull WSE
+    # print(WSE_bf)
+    
     WSE <- x1*WSE_bf
     #print(WSE)
     

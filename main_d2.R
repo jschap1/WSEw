@@ -72,6 +72,8 @@ cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = r
 xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data points depends on discretization
 # Method 2: find corresponding WSE for flow width ranging from 100 m to bankfull width, in 50 m increments
 # xWSEw <- calc_WSEw2(cross_sections, interval = 0.05, dx = 1) # anywhere from 7-21 data points, depending on river width
+xWSEw1 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # one year of obs
+xWSEw3 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # 3 yrs of obs
 
 rWSEw <- reach_avg(xWSEw, l = 10000, res = 5)
 

@@ -137,12 +137,20 @@ gauge$Height <- as.numeric(gauge$Height)
 
 # Rescale and normalize before fitting, also detrend
 h <- as.numeric(na.omit(gauge$Height))
-z <- h/(max(h))
+h <- na.omit(gauge$Height)
+hbf <- max(h)
+hbf <- 478.5
+z <- h/hbf
+
+z_rs <- (z - min(z))/(max(z)-min(z))
+hist(z_rs, "fd")
 
 data <- data.frame(t=1:length(z), z = z)
 m1 <- lm(z~t, data)
 z_dt <- residuals(m1) # detrended z
 
+zmin <- min(z)
+zmax <- max(z)
 z_rs <- (z_dt - min(z_dt))/(max(z_dt)-min(z_dt))
 # z_rs <- (z - min(z))/(max(z)-min(z))
 
@@ -150,7 +158,7 @@ z_rs[z_rs==0] <- 1e-3 # to avoid numerical errors
 
 hist(z_rs, "fd")
 
-fit1 <- fitdist(z_rs, distr = "burr", start = c(scale = 0.3, shape1 = 30, shape2 = 0.3))
+fit1 <- fitdist(as.numeric(z_rs), distr = "burr", start = c(scale = 0.3, shape1 = 30, shape2 = 0.3))
 fit1
 dens1 <- dburr(seq(from = 0,to = 1,length.out = 500), 
       shape1 = as.numeric(fit1$estimate[2]),
@@ -159,7 +167,10 @@ dens1 <- dburr(seq(from = 0,to = 1,length.out = 500),
       )
 hist(z_rs, prob = TRUE, breaks = "fd", main = "Burr Fit", ylim = c(0,25))
 hist(z_rs, prob = TRUE, breaks = 100, main = "Burr Fit", ylim = c(0,30))
+
+plot(density(z_rs), main = "Burr fit")
 lines(seq(from = 0,to = 1,length.out = 500), dens1, col="blue")
+legend("topright", legend = c("Observed","Fitted"), lty = c(1,1), col = c("black","blue"))
 
 #' Simulate SWOT WSE
 #'
@@ -180,16 +191,86 @@ sim_z <- function(scale, shape1, shape2, m, zmin, zmax, n)
 {
   z_rs1 <- rburr(n, shape1 = shape1, shape2 = shape2, scale = scale)
   z_e <- zmin + z_rs1*(zmax - zmin) # scale, called z_e because it is the residual from the regression of z on time
-  a <- as.numeric(coef(m)[1]) # add trend back
-  b <- as.numeric(coef(m)[2])
-  z1 <- rep(a,n) + b*(1:n) + z_e
+#  a <- as.numeric(coef(m)[1]) # add trend back
+ # b <- as.numeric(coef(m)[2])
+  #z1 <- rep(a,n) + b*(1:n) + z_e
 }
 
-z.sim <- sim_z(scale, shape1, shape2, m1, min(z), max(z), n=100)
+z.sim <- sim_z(scale, shape1, shape2, 1, zmin, zmax, n=20000)
 z.sim
 summary(z.sim)
+summary(z)
 
-hist(z_rs1, "fd", prob=T)
-hist(z_e, "fd", prob=T)
+par(mfrow = c(2,1))
+hist(z.sim, "fd", prob=T, xlim =c(0.97, 1.02))
+hist(z, "fd", prob=T, xlim =c(0.97, 1.02))
+
+# ------ Figure for the Paper
+# Simulate some SWOT measurements using the fitted Burr distribution
+
+z.sim <- sim_z(scale, shape1, shape2, 1, zmin, zmax, n=100)
+hbf.xs <- max(xWSEw[[3000]]$WSE)
+sim.obs <- z.sim*hbf.xs # simulated SWOT observations
+xWSEw3 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # 3 yrs of obs
+
+plot(WSE~w, xWSEw[[3000]], type = "l", main = "Example h-w relationship", 
+     xlab = "width (m)", ylab = "h (m)")
+
+points(w.obs, sim.obs)
+points(WSE~w, xWSEw3[[3000]], col = "red", pch=19)
+legend("topleft", 
+       legend = c("h-w relationship","sampled h-w values"), 
+       col = c("black", "red"), 
+       lty = c(1, NA), pch = c(NA, 19)
+       )
+
+# ------------------------------------------------------------------------------------------------------------------------------
+# Get the 2-year flood stage
+
+# Load stage data
+stage_name <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/Stage/miss_at_quincy_1947-2018.txt"
+gauge <- read.table(stage_name, header = FALSE, stringsAsFactors = FALSE)
+names(gauge) <- c("Month","Day","Year","Height")
+gauge$Height <- as.numeric(na.omit(gauge$Height))
+hist(gauge$Height)
+head(gauge)
+tail(gauge)
+timevector <- seq(as.Date("1947-01-01"), as.Date("2018-08-29"), by = "1 day")
+
+# remove the empty times
+
+# check length is the same
+length(timevector)
+dim(gauge)[1]
+
+save(timevector, gauge, file = "Data/quincy_gauge_data.rda")
+
+# Add water year column to df
+
+wtr_yr <- function(dates, start_month = 10)
+{ # credit to Nick Rong at https://blogs.ubc.ca/nickrong/2015/09/22/simple-function-in-r-to-calculate-water-year
+  # Year offset
+  offset = ifelse(as.integer(format(dates, "%m")) < start_month, 0, 1)
+  # Water year
+  adj.year = as.integer(format(dates, "%Y")) + offset
+  # Return the water year
+  return(adj.year)
+}
+
+gauge$wtr_yr <- wtr_yr(timevector)
+
+# Get peak annual flows
+wy <- unique(gauge$wtr_yr)
+n.wy <- length(wy)
+h.peak <- vector(length = n.wy)
+for (k in 1:n.wy)
+{
+  h.peak[k] <- max(gauge$Height[gauge$wtr_yr == wy[k]], na.rm = TRUE)
+}
+
+Fn <- ecdf(h.peak)
+Fn(478.5) # this is approximately the 2-year peak flood stage
+
+plot(ecdf(h.peak))
 
 
