@@ -2,6 +2,7 @@
 # 
 # Created 8/2/2018 JRS
 # Revised 8/10/2018 JRS
+# Revised 9/5/2018 JRS
 
 # ------------------------------------------------------------------------------------------------
 
@@ -12,56 +13,100 @@ library(segmented)
 library(minpack.lm)
 library(WSEw)
 
-# Save names
-fits_save_loc <- "/Users/jschap/Desktop/Cross_Sections/Outputs/Fitting_Results/"
-sbsavename <- "r_nr3774_expo20_5m_0.05_sb.rda" # slope break
-sbmsavename <- "r_nr3774_expo20_5m_0.05_sbm.rda" # multiple slope break
-lsavename <- "r_nr3774_expo20_5m_0.05_l.rda" # linear
-nlsavename <- "r_nr3774_expo20_5m_0.05_nl.rda" # nonlinear
-nlsbsavename <- "r_nr3774_expo20_5m_0.05_nlsb.rda" # shape break
+# Experiment description
+n_exp_levels <- 19
+nr <- 3774
+reach_avg <- TRUE
+spacing <- 5 # m
+swot_sampling <- "even"
+pool <- 21
 
-transects_name <- "/Users/jschap/Desktop/Cross_Sections/Data/Transects/p21_sl_5m_highres.rda"
-processed_name <- "processed_data_p21_sl_5m_hires.rda" # savename for cross_sections, WSEw data
+# Make a directory to store results
+exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling)
+fits_dir <- "/Users/jschap/Desktop/Cross_Sections/Outputs/" # directory for modeling outputs
+exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
+
+if (!exists(exp_dir))
+{
+  dir.create(exp_dir)
+}
+
+# Savenames
+#transects_name <- "/Users/jschap/Desktop/Cross_Sections/Data/Transects/p21_sl_5m_highres.rda"
+#processed_name <- "processed_data_p21_sl_5m_hires.rda" # savename for cross_sections, WSEw data
 
 # ------------------------------------------------------------------------------------------------
+# Load raw data
 
-# Load data
-
-# Bathymetry
-bathy.dir <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC"
-bathy.name <- "bath_pool_21/bath_1999_p21"
-bathyfile <- file.path(bathy.dir, bathy.name)
-umesc <- raster(bathyfile)
-levels(umesc)
-depth_5 <- as_numeric_raster(umesc, att = "DEPTH_M") # native resolution depths (5 m)
-writeRaster(depth_5, file = "Data/p21_depth.tif")
-depth_5 <- raster("Data/p21_depth.tif")
-depth_50 <- aggregate(depth_5, fact = 10) # resample depth to 50 m resolution
 refWSE <- 470 # refWSE for pool 21 (ft)
 refWSE <- refWSE/(39.37/12) #  convert to m
+
+# Bathymetry
+if (!exists("Data/p21_depth.tif"))
+{
+  bathy.dir <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC"
+  bathy.name <- "bath_pool_21/bath_1999_p21"
+  bathyfile <- file.path(bathy.dir, bathy.name)
+  #levels(umesc)
+  umesc <- raster(bathyfile)
+  depth_5 <- as_numeric_raster(umesc, att = "DEPTH_M") # native resolution depths (5 m)
+  writeRaster(depth_5, file = "Data/p21_depth.tif")
+} else 
+{
+  depth_5 <- raster("Data/p21_depth.tif")
+  # depth_50 <- aggregate(depth_5, fact = 10) # resample depth to 50 m resolution
+}
+
+# River centerline
 riv.dir <- "/Users/jschap/Desktop/Cross_Sections/Data/Centerlines"
 load(file.path(riv.dir, "centerline21.rda"))
 riv <- centerline_p21
 
-# Stream gauges
+# Load USGS stream gauges in UMRB
 gauges <- read.table("/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/gauges_UMB_QC.txt")
 names(gauges) <- c("id","lat","lon","V4")
 coordinates(gauges) <- ~lon + lat # make SpatialPoints object
 crs(gauges) <- "+init=epsg:4326"
 gauges.utm <- spTransform(gauges, crs(riv))
 
-# Processed cross section and WSE-w data
-saveloc <- "/Users/jschap/Desktop/Cross_Sections/Data/Processed_Data"
-load(file.path(saveloc, processed_name))
-
 # Plot the study area
-plot(depth_5, main = "UMRB Pool 21")
+plot(depth_5, main = "UMRB Pool 21", xlab = "longitude", ylab = "latitude")
 lines(riv)
-points(gauges.utm)
+points(gauges.utm, pch = 19, col = "black")
 
 # ------------------------------------------------------------------------------------------------
+# Load processed cross section and WSE-w data
 
-# Process data prior to fitting
+load("/Data/Processed_Data/processed_xs_data.rda")
+
+# ------------------------------------------------------------------------------------------------
+# Load fitted models
+
+lf <- readRDS(file.path(exp_dir, "lf.rds"))
+sb <- readRDS(file.path(exp_dir, "sb.rds")) 
+sbm <- readRDS(file.path(exp_dir, "sbm.rds"))
+
+nl1 <- readRDS(file.path(exp_dir, "nl_1_to_3500.rds")) # ~ 2 min, 8.8 Gb
+nl2 <- readRDS(file.path(exp_dir, "nl3501to3774.rds")) # 16 seconds, 0.6 Gb
+nl <- c(nl1, nl2)
+
+begin.time <- Sys.time() # 6.5 min, ~30 Gb
+nlsb1 <- readRDS(file.path(exp_dir, "nlsb1to500.rds"))
+nlsb2 <- readRDS(file.path(exp_dir, "nlsb501to1000.rds"))
+nlsb3 <- readRDS(file.path(exp_dir, "nlsb1001to1500.rds"))
+nlsb4 <- readRDS(file.path(exp_dir, "nlsb1501to2000.rds"))
+nlsb5 <- readRDS(file.path(exp_dir, "nlsb2001to2500.rds"))
+nlsb6 <- readRDS(file.path(exp_dir, "nlsb2501to3000.rds"))
+nlsb7 <- readRDS(file.path(exp_dir, "nlsb3001to3500.rds"))
+nlsb8 <- readRDS(file.path(exp_dir, "nlsb3501to3774.rds"))
+duration <- Sys.time() - begin.time
+print(duration)
+
+nlsb <- c(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8) # this is 19.1 Gb
+rm(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8)
+
+# ------------------------------------------------------------------------------------------------
+# Compute cross section data from raw bathymetry
 
 cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE, 
                                  savename = transects_name, makeplot = FALSE, riv = riv)
@@ -69,104 +114,26 @@ cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = r
 
 # Method 1: find corresponding flow width for WSE ranging from empty to bankfull conditions
 xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data points depends on discretization
-# Method 2: find corresponding WSE for flow width ranging from 100 m to bankfull width, in 50 m increments
-# xWSEw <- calc_WSEw2(cross_sections, interval = 0.05, dx = 1) # anywhere from 7-21 data points, depending on river width
-# Method 3: find corresponding WSE for flow width ranging from 100 m to bankfull width, in 50 m increments
+
+# Method 3: use a probability distribution based on stage data to simulate SWOT observations
 xWSEw1 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # one year of obs
 xWSEw3 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # 3 yrs of obs
 
 rWSEw <- reach_avg(xWSEw1, l = 10000, res = 5)
 
-save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, processed_name))
+save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, "/Data/Processed_Data/processed_xs_data.rda"))
 
 # Plot the observations
 plot(WSE~w, rWSEw[[3000]], main = "WSE-w sampling, one year")
 points(WSE~w, xWSEw1[[1000]], col="red", pch=19)
 legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black", "red"))
 
-
 # ------------------------------------------------------------------------------------------------
-
-# Fit linear model
-lf <- fit_linear(WSEw_obs) # fit linear model
-
-# Fit linear model, using Mersel method
-lf.mersel <- fit_linear(WSEw_obs, mersel = TRUE, thres = 0.015) 
-
-# Plot linear fit
-plot(WSE~w, data = xWSEw[[1]], xlab = "width (m)", ylab = "WSE (m)",
-     lty = 1, type = "l", lwd = 1, ylim = c(130,143))
-points(WSE~w, data = WSEw_obs, col = "cyan")
-lines(WSEw_obs$w, predict(lf), col = "blue", lwd = 1)
-points(0, predict(lf, newdata = data.frame(w=0)), col = "blue", pch = 19, cex = 1)
-
-# Calculate goodness of fit metrics
-calc_gof(lf) # lapply it to all the linear fits
-
-# --------------------------------------------------------------------------------------------------
-# Fit slope break model
-
-# 1. Linear with one breakpoint, continuous
-sbf <- fit_slopebreak(WSEw_obs, continuity = TRUE)
-
-# 2. Linear with one breakpoint, noncontinuous
-sbf <- fit_slopebreak(WSEw_obs, continuity = FALSE)
-
-# 3. Linear with several breakpoints, continous
-sbf <- fit_slopebreak(WSEw_obs, continuity = TRUE, multiple_breaks = TRUE)
-
-# 4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
-sbf <- fit_slopebreak(WSEw_obs, multiple_breaks = TRUE, continuity = FALSE)
-
-# 5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections
-sbf <- fit_slopebreak(WSEw_obs, mersel = TRUE, thres = 0.015, window = 4)
-
-sb.ind <- attributes(sbf)$sb.ind # get index of slope break
-
-# Plot slope break fit
-nn <- length(WSEw_obs$WSE)
-plot(WSE~w, data = xWSEw[[1]])
-points(WSEw_obs$w[sb.ind], WSEw_obs$WSE[sb.ind], pch = 19, col = "red")
-lines(WSEw_obs$w[1:sb.ind], predict(sbf[[1]]))
-lines(WSEw_obs$w[(sb.ind):nn], predict(sbf[[2]]))
-points(0, predict(sbf[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19, cex = 1)
-
-# -------------------------------------------------------------------------------------------------
-# Fit nonlinear model
-fit <- fit_nonlinear(WSEw_obs)
-
-# Plot nonlinear fit
-plot(WSE~w, data = xWSEw[[1]], xlab = "width (m)", ylab = "WSE (m)",
-     lty = 1, type = "l", lwd = 1, ylim = c(130,143))
-points(WSE~w, data = WSEw_obs, col = "cyan")
-lines(WSEw_obs$w, predict(fit), col = "blue", lwd = 1)
-points(0, predict(fit, newdata = data.frame(w=0)), col = "blue", pch = 19, cex = 1)
-
-# -------------------------------------------------------------------------------------------------
-# Fit nonlinear slope break model
-
-fits <- fit_nlsb(WSEw_obs)
-sb.ind <- attributes(fits)$sb.ind # get index of slope break
-
-# Plot nonlinear slope break fits
-nn <- length(WSEw_obs$WSE)
-plot(WSE~w, data = rWSEw[[1]])
-points(WSEw_obs$w[sb.ind], WSEw_obs$WSE[sb.ind], pch = 19, col = "red")
-lines(WSEw_obs$w[1:sb.ind], predict(fits[[1]]))
-lines(WSEw_obs$w[(sb.ind):nn], predict(fits[[2]]))
-points(0, predict(fits[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19, cex = 1)
-
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-
 # Main experiments - model fitting at different exposure levels, known measurements
 # Should use errors in variables method, but this can be refined later.
 # Will do this with uncertain measurements later, preferably without MC simulation
 
-expo <- seq(0.05, 0.95, by = 0.05) # exposure levels
+expo <- seq(0.05, 0.95, length.out = n_exp_levels) # exposure levels
 n_exp_levels <- length(expo)
 nr <- length(rWSEw)
 
@@ -207,14 +174,16 @@ for (r in 1:nr) # loop over reaches
     }
   }
 }
-save(lf, sb, sbm, nl, nlsb, file = file.path(saveloc, "nr3774_fitted_models_no_err.rda"))
 
-# It is a large amount of data. Saving takes a long time (actually, it crashes...)
-saveRDS(lf, "lf.rds")
-saveRDS(sb, "sb.rds") # takes about 3 minutes to save 2.3 GB
-saveRDS(sbm, "sbm.rds")
+# ------------------------------------------------------------------------------------------------
+# Save fitted models
 
-# This save takes a long time, so try breaking it down
+# It is a large amount of data. Saving may crash R.
+saveRDS(lf, "Outputs/lf.rds")
+saveRDS(sb, "Outputs/sb.rds") # takes about 3 minutes to save 2.3 GB
+saveRDS(sbm, "Outputs/sbm.rds")
+
+# Breaking down this save because it takes a long time
 ind1 <- 0
 for (j in seq(500, 3500, by = 500))
 {
@@ -225,6 +194,7 @@ for (j in seq(500, 3500, by = 500))
   print(j)
 }
 
+# Breaking down this save because it takes a long time
 ind1 <- 0
 for (j in seq(500, 3500, by = 500))
 {
@@ -237,19 +207,33 @@ nlsb1 <- nlsb[3501:3774]
 saveRDS(nlsb1, paste0("nlsb", 3501, "to", 3774, ".rds"))
 
 
-###############################################################
-###############################################################
-###############################################################
-###############################################################
-###############################################################
-
 # ------------------------------------------------------------------------------------------------
-
-# Evaluate performance of fits in terms of hydraulic parameters
+# Calculate true hydraulic parameters
 
 load(file.path(saveloc, "r_hydraul_params_true.rda")) # load true hydraulic parameters
+
 z0.true.xs <- unlist(lapply(cross_sections$b, min)) # get true bed elevations, though focus should be on hydraulic parameters, especially A0, WP0
 z0.true <- ra(z0.true.xs, n = 2000)
+save(z0.true, z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = "z0.rda")
+
+# Calculate true A0
+A0.true <- array(dim = c(nr, n_exp_levels))
+w0 <- array(dim = c(nr, n_exp_levels)) # lowest observed width value, for use above
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+    p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
+    w0[r,k] <- min(WSEw_obs$w)
+    A0.true[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
+  }
+  print(r)
+}
+saveRDS(w0, file = "w0_no_err.rds")
+saveRDS(A0.true, file = "A0_true.rds")
+
+
 
 # Initialize
 z0.l <- array(dim = c(nr, n_exp_levels))
@@ -323,8 +307,8 @@ for (r in 1:nr) # just calculate area for nlsb method
   }
   print(r)
 }
- 
-save(z0.true, z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = "z0.rda")
+
+
 save(A.r, A.l, A.sb, A.sbm, A.nl, A.nlsb, file = "A.rda")
 save(WP.r, WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = "WP.rda")
 
@@ -422,22 +406,7 @@ for (r in 1:nr)
 save(A0.true, A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = "A0.rda")
 
 # ------------------------------------------------------------------------------------------------
-# Calculate true A0
-A0.true <- array(dim = c(nr, n_exp_levels))
-w0 <- array(dim = c(nr, n_exp_levels)) # lowest observed width value, for use above
-for (r in 1:nr)
-{
-  for (k in 1:n_exp_levels)
-  {
-    WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
-    p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
-    w0[r,k] <- min(WSEw_obs$w)
-    A0.true[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
-  }
-  print(r)
-}
-saveRDS(w0, file = "w0_no_err.rds")
-saveRDS(A0.true, file = "A0_true.rds")
+
 
 # ------------------------------------------------------------------------------------------------
 # Plot A0 vs. predicted A0 at different exposure levels
@@ -510,7 +479,7 @@ lines(100*expo, bias$nl, col = "green")
 lines(100*expo, bias$nlsb, col = "blue")
 abline(0,0)
 legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
-      col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 saveRDS(bias, file = "A0_bias_no_err.rda")
 
 # ------------------------------------------------------------------------------------------------
@@ -549,7 +518,7 @@ plot(expo*100, sse[,1],
      type = "l", 
      col = "red",
      main = "prediction SSE for A0"
-     )
+)
 lines(expo*100, sse[,2], col = "orange")
 lines(expo*100, sse[,3], col = "purple")
 lines(expo*100, sse[,4], col = "green")
