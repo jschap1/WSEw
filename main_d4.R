@@ -4,6 +4,8 @@
 # Revised 8/10/2018 JRS
 # Revised 9/5/2018 JRS 
 #   Reorganized for ease of use
+#   Removed scrap code from end of document
+#   Changed looping structure to avoid having to load all models into memory at once
 
 # ------------------------------------------------------------------------------------------------
 
@@ -80,7 +82,7 @@ points(gauges.utm, pch = 19, col = "black", cex = 0.5)
 load("Data/Processed/processed_xs_data.rda")
 
 # ------------------------------------------------------------------------------------------------
-# Load fitted models
+# Load fitted models (don't try to load them all at once)
 
 lf <- readRDS(file.path(exp_dir, "lf.rds"))
 sb <- readRDS(file.path(exp_dir, "sb.rds")) 
@@ -154,6 +156,7 @@ n_exp_levels <- length(expo)
 nr <- length(rWSEw)
 
 # Initialize outputs
+WSEw_obs <- vector(length = nr, "list")
 lf <- vector(length = nr, "list")
 sb <- vector(length = nr, "list")
 sbm <- vector(length = nr, "list")
@@ -161,6 +164,7 @@ nl <- vector(length = nr, "list")
 nlsb <- vector(length = nr, "list")
 for (r in 1:nr)
 {
+  WSEw_obs[[r]] <- vector(length = n_exp_levels, "list")
   lf[[r]] <- vector(length = n_exp_levels, "list")
   sb[[r]] <- vector(length = n_exp_levels, "list")
   sbm[[r]] <- vector(length = n_exp_levels, "list")
@@ -170,24 +174,66 @@ for (r in 1:nr)
 
 # To do: use the advice here: https://stackoverflow.com/questions/12135400/errors-in-segmented-package-breakpoints-confusion
 # This will likely allow sbm fits to work more often, by restarting multiple times
-begin.time <- Sys.time() # It does about 17 cross sections per minute.
+
+# Make observations
 for (r in 1:nr) # loop over reaches
 {
   for (k in 1:n_exp_levels) # loop over exposure levels
   {
-    WSEw_obs <- observe(WSEw = rWSEw[[r]], exposure = expo[k], sd_wse = 0, sd_w = 0)
-    lf[[r]][[k]] <- fit_linear(WSEw_obs)
-    sb[[r]][[k]] <- fit_slopebreak(WSEw_obs, multiple_breaks = FALSE, continuity = TRUE)
-    try(sbm[[r]][[k]] <- fit_slopebreak(WSEw_obs, multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
-    nl[[r]][[k]] <- fit_nonlinear(WSEw_obs)
-    nlsb[[r]][[k]] <- fit_nlsb(WSEw_obs)
-    if (r%%5 == 0)
-    {
-      current.time <- Sys.time()
-      te <- current.time - begin.time
-      print(paste("Processed", r, "of", nr, "cross sections")) # display progress
-      print(paste("Time elapsed:", te, "units"))
-    }
+    WSEw_obs[[r]][[k]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k], sd_wse = 0, sd_w = 0)
+  }
+}
+
+# Fit linear model
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    lf[[r]][[k]] <- fit_linear(WSEw_obs[[r]][[k]])
+  }
+}
+
+# Fit SB model
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    sb[[r]][[k]] <- fit_slopebreak(WSEw_obs[[r]][[k]], multiple_breaks = FALSE, continuity = TRUE)
+  }
+}
+
+# Fit SBM model
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    try(sbm[[r]][[k]] <- fit_slopebreak(WSEw_obs[[r]][[k]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+  }
+}
+
+# Fit nonlinear model
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    nl[[r]][[k]] <- fit_nonlinear(WSEw_obs[[r]][[k]])
+  }
+}
+
+# Fit NLSB model
+begin.time <- Sys.time() # It does about 17 cross sections per minute.
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    nlsb[[r]][[k]] <- fit_nlsb(WSEw_obs[[r]][[k]])
+  }
+  if (r%%5 == 0)
+  {
+    current.time <- Sys.time()
+    te <- current.time - begin.time
+    print(paste("Processed", r, "of", nr, "cross sections")) # display progress
+    print(paste("Time elapsed:", te, "units"))
   }
 }
 
@@ -486,7 +532,7 @@ legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"),
 # z0
 pred_z0 <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
 z0.bias <- plot_bias(expo, pred_z0, z0.true, na.rm = TRUE,
-          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-25,3))
+                     main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-25,3))
 legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
@@ -496,21 +542,21 @@ pred_s0 <- list(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb)
 s0.true.cmkm <- lapply(s0.true, prod, 1e5)
 pred.s0.cmkm <- lapply(pred_s0, prod, 1e5)
 s0.bias <- plot_bias(expo, pred.s0.cmkm, s0.true.cmkm, na.rm = TRUE,
-          main = "s0 bias vs. exposure level, no meas. error", ylab = "Bias (cm/km)")
+                     main = "s0 bias vs. exposure level, no meas. error", ylab = "Bias (cm/km)")
 legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 # A
 pred_A <- list(A.l, A.sb, A.sbm, A.nl, A.nlsb)
 A.bias <- plot_bias(expo, pred_A, A.true, na.rm = TRUE,
-          main = "A bias vs. exposure level, no meas. error", ylab = "Bias (m^2)")
+                    main = "A bias vs. exposure level, no meas. error", ylab = "Bias (m^2)")
 legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
 # WP
 pred_WP <- list(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb)
 WP.bias <- plot_bias(expo, pred_WP, WP.true, na.rm = TRUE,
-          main = "WP bias vs. exposure level, no meas. error", ylab = "Bias (m)")
+                     main = "WP bias vs. exposure level, no meas. error", ylab = "Bias (m)")
 legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
@@ -540,144 +586,3 @@ legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 saveRDS(bias, file = "A0_bias.rda")
 
-# ------------------------------------------------------------------------------------------------
-
-
-
-
-
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# --------------------------------------------- Scrap---------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------
-
-# Perform slope break method for all cross sections
-
-M = 10
-bias <- array(dim = c(nr, n_exp_levels))
-z0.true <- vector(length = nr)
-z0 <- array(dim = c(nr, n_exp_levels, M)) # reach, exposure, MC simulation iter
-for (r in 1:nr)
-{
-  z0.true[r] <- rWSEw[[r]]$WSE[1] # rWSEw argument
-  for (m in 1:n_exp_levels)
-  {
-    for (mm in 1:M)
-    {
-      WSEw_obs <- observe(rWSEw[[r]], exposure = expo[m])
-      sbf <- fit_slopebreak(WSEw_obs, continuity = FALSE)
-      if (!is.null(sbf))
-      {
-        z0[r,m,mm] <- coef(sbf[[1]])[1]
-      }
-    }
-    bias[r,m] <- z0.bar[r,m] - z0.true[r]
-  }
-  print(paste0("Progress: ", 100*round(r/nr, 2), "%"))
-}
-z0.bar <- apply(z0, c(1,2), mean, na.rm = TRUE)
-variance <- apply(z0, c(1,2), var, na.rm = TRUE)
-# Started at 12:43 p.m. with 10 replicates for 3774 reach average cross sections
-# Completed around 1:07 p.m. About 25 minutes for 10 replicates.
-# 100 replicates will take around 4 hours?
-save(z0, z0.true, z0.bar, bias, variance, file = file.path(fits_save_loc, sbsavename))
-
-
-# Load models ------------------------------------------------------------------------------------
-
-lf <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/lf.rds")
-sb <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/sb.rds")
-sbm <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/sbm.rds")
-nl1 <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/nl_1_to_3500.rds")
-nl2 <- readRDS("/Users/jschap/Desktop/Cross_Sections/Outputs/nr3774_fitted_models_no_err/nl3501to3774.rds")
-
-vcov(nl2[[1]][[19]]) # variance of the estimated parameters
-
-# Calculate prediction error
-
-model <- lf[[1]][[19]]
-
-# Using built-in R function
-z0.1 <- predict(model, newdata = data.frame(w=0), se.fit = TRUE)
-z0.1$se.fit # standard error of predicted mean
-
-# Or manually-ish, assuming no measurement error:
-cov.pars <- vcov(model)
-sd_wse <- 0.1 # m
-pred.var <- sd_wse^2 + cov.pars[1,1]
-
-# Crashed at r=2724, k=14
-# Error: at least one coef is NA: breakpoints at the boundary?
-
-
-# ------------------------------------------------------------------------------------------------
-# Model selection: Do split sample validation with each model
-
-n_exp_levels <- 19
-expo <- seq(0.05,0.95, by = 0.05)
-sse <- array(dim = c(n_exp_levels, 5), data = 0)
-for (k in 1:n_exp_levels)
-{
-  sum1 <- 0
-  sum2 <- 0
-  sum3 <- 0
-  sum4 <- 0
-  sum5 <- 0
-  for (r in 1:nr)
-  {
-    sum1 <- sum1 + (A0.l[r,k] - A0.true[r,k])^2
-    sum2 <- sum2 + (A0.sb[r,k] - A0.true[r,k])^2
-    sum3 <- sum3 + (A0.sbm[r,k] - A0.true[r,k])^2
-    sum4 <- sum4 + (A0.nl[r,k] - A0.true[r,k])^2
-    sum5 <- sum5 + (A0.nlsb[r,k] - A0.true[r,k])^2
-  }
-  sse[k,1] <- sum1
-  sse[k,2] <- sum2
-  sse[k,3] <- sum3
-  sse[k,4] <- sum4
-  sse[k,5] <- sum5
-}
-sse <- as.data.frame(sse)
-names(sse) <- c("l","sb","sbm","nl","nlsb")
-
-plot(expo*100, sse[,1], 
-     xlab = "channel exposure (%)", 
-     ylab = "prediction error sse (m^4)", 
-     type = "l", 
-     col = "red",
-     main = "prediction SSE for A0"
-)
-lines(expo*100, sse[,2], col = "orange")
-lines(expo*100, sse[,3], col = "purple")
-lines(expo*100, sse[,4], col = "green")
-lines(expo*100, sse[,5], col = "blue")
-legend("topright", legend = c("Linear","SB","SBM","NL","NLSB"), 
-       col = c("red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
-saveRDS(sse, file = "A0_prediction_sse.rda")
-
-# It's pretty clear that the NLSB method performs the best. However, there has been no accounting for model complexity.
-# AIC and BIC can account for model complexity. However, calc_gof computes them wrt the fitted WSE-w values.
-# I am interested in the goodness of fit for A0. Could AIC be calculated for this?
-
-# ------------------------------------------------------------------------------------------------
-# Plot A0 vs. predicted A0 at different exposure levels, and plot prediction error for linear models
-# (This plot will look better if I do it in Matlab)
-
-k <- 17
-plot(A0.true[,k], 
-     main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(0,500))
-lines(A0.l[,k], col = "red")
-lines(A0.l[,k] + 2*A0.sd[,k], col = "red", lty = 2)
-lines(A0.l[,k] - 2*A0.sd[,k], col = "red", lty = 2)
-legend("topleft", legend = "plus/minus 2 sd", col = "red", lty = 2)
