@@ -20,9 +20,10 @@ reach_avg <- TRUE
 spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
+err_type <- "no_err"
 
 # Make a directory to store results
-exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling)
+exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type)
 fits_dir <- "/Users/jschap/Desktop/Cross_Sections/Outputs/" # directory for modeling outputs
 exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
 
@@ -104,6 +105,19 @@ print(duration)
 
 nlsb <- c(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8) # this is 19.1 Gb
 rm(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8)
+
+# ------------------------------------------------------------------------------------------------
+# Load true hydraulic parameters
+
+A0_true_ra <- readRDS(file.path(exp_dir, "lf.rds"))
+S0_true_ra <- readRDS(file.path(exp_dir, "lf.rds"))
+
+# ------------------------------------------------------------------------------------------------
+# Load predicted hydraulic parameters
+
+load("Outputs/nr3774_fitted_models_no_err/z0.rda")
+load("Outputs/nr3774_fitted_models_no_err/A.rda")
+load("WP.rda")
 
 # ------------------------------------------------------------------------------------------------
 # Compute cross section data from raw bathymetry
@@ -207,114 +221,69 @@ nlsb1 <- nlsb[3501:3774]
 saveRDS(nlsb1, paste0("nlsb", 3501, "to", 3774, ".rds"))
 
 
-# ------------------------------------------------------------------------------------------------
-# Calculate true hydraulic parameters
+# ------------------------------------------------------------------------------------------------------------
+# Compute true z0
 
-load(file.path(saveloc, "r_hydraul_params_true.rda")) # load true hydraulic parameters
+z0.true.xs <- unlist(lapply(cross_sections$b, min))
+z0.true.ra <- ra(z0.true.xs, n = 2000)
+saveRDS(z0.true.xs, file = file.path(exp_dir, "z0_true_xs.rds")) # cross section
+saveRDS(z0.true.ra, file = file.path(exp_dir, "z0_true_ra.rds")) # reach-averaged
 
-z0.true.xs <- unlist(lapply(cross_sections$b, min)) # get true bed elevations, though focus should be on hydraulic parameters, especially A0, WP0
-z0.true <- ra(z0.true.xs, n = 2000)
-save(z0.true, z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = "z0.rda")
+# ------------------------------------------------------------------------------------------------------------
+# Compute true s0
+
+s0.true.xs <- diff(z0.true.xs)
+s0.true.ra <- diff(z0.true.ra)
+saveRDS(s0.true.xs, file = file.path(exp_dir, "s0_true_xs.rds")) 
+saveRDS(s0.true.ra, file = file.path(exp_dir, "s0_true_ra.rds"))
+
+# ------------------------------------------------------------------------------------------------------------
+# Compute true A, WP
+
+# Calculate true hydraulic parameters for cross sections
+n.xs <- length(xWSEw)
+A <- vector(length = n.xs)
+WP <- vector(length = n.xs)
+for (k in 1:n.xs)
+{
+  x <- cross_sections$x[[k]]
+  b <- cross_sections$b[[k]]
+  WSE <- max(b) # bankfull
+  A[k] <- calc_A(x, b, WSE)
+  WP[k] <- calc_WP(x, b, WSE)
+}
+saveRDS(A.true.xs, file = file.path(exp_dir, "A_true_xs.rds")) 
+saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds")) 
+
+# Calculate reach-average hydraulic parameters
+n <- 2000 # number of segments in a reach = 10 km/5 m = 2000
+A.r <- ra(A, n)
+WP.r <- ra(WP, n)
+saveRDS(A.r, file = file.path(exp_dir, "A_true_ra.rds")) 
+saveRDS(WP.r, file = file.path(exp_dir, "WP_true_ra.rds")) 
+
+# ------------------------------------------------------------------------------------------------------------
+# Compute true A0
 
 # Calculate true A0
-A0.true <- array(dim = c(nr, n_exp_levels))
-w0 <- array(dim = c(nr, n_exp_levels)) # lowest observed width value, for use above
+A0.true.ra <- array(dim = c(nr, n_exp_levels))
+w0.ra <- array(dim = c(nr, n_exp_levels)) # lowest observed width value
 for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
     WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
     p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
-    w0[r,k] <- min(WSEw_obs$w)
-    A0.true[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
+    w0.ra[r,k] <- min(WSEw_obs$w)
+    A0.true.ra[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
   }
   print(r)
 }
-saveRDS(w0, file = "w0_no_err.rds")
-saveRDS(A0.true, file = "A0_true.rds")
+saveRDS(w0.ra, file = "w0_ra.rds")
+saveRDS(A0.true.ra, file = "A0_true_ra.rds")
 
+# ------------------------------------------------------------------------------------------------
 
-
-# Initialize
-z0.l <- array(dim = c(nr, n_exp_levels))
-z0.sb <- array(dim = c(nr, n_exp_levels))
-z0.sbm <- array(dim = c(nr, n_exp_levels))
-z0.nl <- array(dim = c(nr, n_exp_levels))
-z0.nlsb <- array(dim = c(nr, n_exp_levels))
-
-A.l <- array(dim = c(nr, n_exp_levels))
-A.sb <- array(dim = c(nr, n_exp_levels))
-A.sbm <- array(dim = c(nr, n_exp_levels))
-A.nl <- array(dim = c(nr, n_exp_levels))
-A.nlsb <- array(dim = c(nr, n_exp_levels))
-
-WP.l <- array(dim = c(nr, n_exp_levels))
-WP.sb <- array(dim = c(nr, n_exp_levels))
-WP.sbm <- array(dim = c(nr, n_exp_levels))
-WP.nl <- array(dim = c(nr, n_exp_levels))
-WP.nlsb <- array(dim = c(nr, n_exp_levels))
-
-# Compute z0, A, and WP predictions
-for (r in 1:nr) # takes about 40 minutes to run the full loop
-{
-  for (k in 1:n_exp_levels)
-  { 
-    
-    # if statements handle cases where the model is NULL/no model was fit
-    if (class(lf[[r]][[k]]) == "lm")
-    {
-      z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
-      A.l[r,k] <- calc_model_A(lf[[r]][[k]], type = "linear")
-      WP.l[r,k] <- calc_model_WP(lf[[r]][[k]], type = "linear")
-    }
-    if (class(sb[[r]][[k]][[1]]) == "lm")
-    {
-      z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sb[r,k] <- calc_model_A(sb[[r]][[k]], type = "sb")
-      WP.sb[r,k] <- calc_model_WP(sb[[r]][[k]], type = "sb")
-    }
-    if (any(class(sbm[[r]][[k]][[1]])=="lm"))
-    {
-      z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sbm[r,k] <- calc_model_A(sbm[[r]][[k]], type = "sbm")
-      WP.sbm[r,k] <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
-    }
-    if (class(nl[[r]][[k]]) == "nls")
-    {
-      z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
-      A.nl[r,k] <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
-      WP.nl[r,k] <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
-    }
-    if (class(nlsb[[r]][[k]][[1]]) == "nls")
-    {
-      z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
-      WP.nlsb[r,k] <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
-    }
-    
-  }
-  if (r%%10==0) {print(paste("progress:", r, "of", nr))}
-}
-
-for (r in 1:nr) # just calculate area for nlsb method
-{
-  for (k in 1:n_exp_levels)
-  {
-    if (class(nlsb[[r]][[k]][[1]]) == "nls")
-    {
-      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
-    }
-  }
-  print(r)
-}
-
-
-save(A.r, A.l, A.sb, A.sbm, A.nl, A.nlsb, file = "A.rda")
-save(WP.r, WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = "WP.rda")
-
-load("Outputs/nr3774_fitted_models_no_err/z0.rda")
-load("Outputs/nr3774_fitted_models_no_err/A.rda")
-load("WP.rda")
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of z0, A, WP along the river
@@ -367,63 +336,108 @@ legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
 
 # Repeat for RMSE
 
+
 # ------------------------------------------------------------------------------------------------
-# Calculate A0 for each type of model
+# Predict hydraulic parameters
+
+# Initialize
+z0.l <- array(dim = c(nr, n_exp_levels))
+z0.sb <- array(dim = c(nr, n_exp_levels))
+z0.sbm <- array(dim = c(nr, n_exp_levels))
+z0.nl <- array(dim = c(nr, n_exp_levels))
+z0.nlsb <- array(dim = c(nr, n_exp_levels))
+
+A.l <- array(dim = c(nr, n_exp_levels))
+A.sb <- array(dim = c(nr, n_exp_levels))
+A.sbm <- array(dim = c(nr, n_exp_levels))
+A.nl <- array(dim = c(nr, n_exp_levels))
+A.nlsb <- array(dim = c(nr, n_exp_levels))
+
+WP.l <- array(dim = c(nr, n_exp_levels))
+WP.sb <- array(dim = c(nr, n_exp_levels))
+WP.sbm <- array(dim = c(nr, n_exp_levels))
+WP.nl <- array(dim = c(nr, n_exp_levels))
+WP.nlsb <- array(dim = c(nr, n_exp_levels))
 
 A0.l <- array(dim = c(nr, n_exp_levels))
 A0.sb <- array(dim = c(nr, n_exp_levels))
 A0.sbm <- array(dim = c(nr, n_exp_levels))
 A0.nl <- array(dim = c(nr, n_exp_levels))
 A0.nlsb <- array(dim = c(nr, n_exp_levels))
-for (r in 1:nr)
+
+for (r in 1:nr) # takes about an hour to run the full loop
 {
   for (k in 1:n_exp_levels)
-  {
+  { 
+    
     # if statements handle cases where the model is NULL/no model was fit
     if (class(lf[[r]][[k]]) == "lm")
     {
+      z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
+      A.l[r,k] <- calc_model_A(lf[[r]][[k]], type = "linear")
+      WP.l[r,k] <- calc_model_WP(lf[[r]][[k]], type = "linear")
       A0.l[r,k] <- calc_model_A0(lf[[r]][[k]], type = "linear")
     }
     if (class(sb[[r]][[k]][[1]]) == "lm")
     {
+      z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.sb[r,k] <- calc_model_A(sb[[r]][[k]], type = "sb")
+      WP.sb[r,k] <- calc_model_WP(sb[[r]][[k]], type = "sb")
       A0.sb[r,k] <- calc_model_A0(sb[[r]][[k]], type = "sb")
     }
     if (any(class(sbm[[r]][[k]][[1]])=="lm"))
     {
+      z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.sbm[r,k] <- calc_model_A(sbm[[r]][[k]], type = "sbm")
+      WP.sbm[r,k] <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
       A0.sbm[r,k] <- calc_model_A0(sbm[[r]][[k]], type = "sbm")
     }
     if (class(nl[[r]][[k]]) == "nls")
     {
+      z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
+      A.nl[r,k] <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
+      WP.nl[r,k] <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
       A0.nl[r,k] <- calc_model_A0(nl[[r]][[k]], type = "nl", w0 = w0[r,k])
     }
     if (class(nlsb[[r]][[k]][[1]]) == "nls")
     {
+      z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
+      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
+      WP.nlsb[r,k] <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
       A0.nlsb[r,k] <- calc_model_A0(nlsb[[r]][[k]], type = "nlsb", w0 = w0[r,k])
     }
+    
   }
-  print(r)
+  if (r%%10==0) {print(paste("progress:", r, "of", nr))}
 }
-save(A0.true, A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = "A0.rda")
+
+# for (r in 1:nr) # just calculate area for nlsb method
+# {
+#   for (k in 1:n_exp_levels)
+#   {
+#     if (class(nlsb[[r]][[k]][[1]]) == "nls")
+#     {
+#       A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]])
+#     }
+#   }
+#   print(r)
+# }
+
+save(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = file.path(exp_dir, "z0_pred.rda"))
+save(A.l, A.sb, A.sbm, A.nl, A.nlsb, file = file.path(exp_dir, "A_pred.rda"))
+save(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
+save(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
+
+# Compute slope via finite difference
+s0.l <- diff(z0.l)
+s0.sb <- diff(z0.sb)
+s0.sbm <- diff(z0.sbm)
+s0.nl <- diff(z0.nl)
+s0.nlsb <- diff(z0.nlsb)
+save(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
 
 # ------------------------------------------------------------------------------------------------
-
-
-# ------------------------------------------------------------------------------------------------
-# Plot A0 vs. predicted A0 at different exposure levels
-
-k <- 19
-plot(A0.true[,k], main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(0,500))
-lines(A0.l[,k], col = "red")
-lines(A0.sb[,k], col = "orange")
-lines(A0.sbm[,k], col = "purple")
-lines(A0.nl[,k], col = "green")
-lines(A0.nlsb[,k], col = "blue")
-legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
-
-# ------------------------------------------------------------------------------------------------
-# Plot A0 vs. predicted A0 at different exposure levels, and plot prediction error for linear models
+# Calculate A0 prediction error for linear model with no measurement error
 
 A0.var <- array(dim = c(nr, n_exp_levels))
 for (r in 1:nr)
@@ -438,26 +452,75 @@ for (r in 1:nr)
 }
 A0.sd <- sqrt(A0.var)
 summary(A0.sd)
-
-k <- 17
-plot(A0.true[,k], 
-     main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
-     type = "l", ylim = c(0,500))
-lines(A0.l[,k], col = "red")
-lines(A0.l[,k] + 2*A0.sd[,k], col = "red", lty = 2)
-lines(A0.l[,k] - 2*A0.sd[,k], col = "red", lty = 2)
-legend("topleft", legend = "plus/minus 2 sd", col = "red", lty = 2)
+saveRDS(A0.sd, file.path(exp_dir, "A0_sd.rds"))
 
 # ------------------------------------------------------------------------------------------------
-# Make plots of average z0, A, WP error at each exposure level
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ---------------------------------------- Plotting ----------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
-pred_A0 <- list(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb)
-plot_bias(expo, pred_A0, A0.true, na.rm = TRUE,  # plot_bias will not work here bc A0.true depends on exposure level. Need a new function.
-          main = "A0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-1000,6500))
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+# ------------------------------------------------------------------------------------------------
+# Plot z0, A0, S0, A, WP along the river at each exposure level
+
+k <- 19 # choose an exposure level
+
+# A0
+plot(A0.true[,k], main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(0,500))
+lines(A0.l[,k], col = "red")
+lines(A0.sb[,k], col = "orange")
+lines(A0.sbm[,k], col = "purple")
+lines(A0.nl[,k], col = "green")
+lines(A0.nlsb[,k], col = "blue")
+legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
 
-bias <- array(dim = c(n_exp_levels, 5))
+# ------------------------------------------------------------------------------------------------
+# Make plots of average z0, A, WP, s0 error at each exposure level
+
+# z0
+pred_z0 <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
+plot_bias(expo, pred_z0, z0.true, na.rm = TRUE,
+          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-25,3))
+legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# s0
+pred_s0 <- list(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb)
+# Convert units to cm/km
+s0.true.cmkm <- lapply(s0.true, prod, 1e5)
+pred.s0.cmkm <- lapply(pred_s0, prod, 1e5)
+plot_bias(expo, pred.s0.cmkm, s0.true.cmkm, na.rm = TRUE,
+          main = "s0 bias vs. exposure level, no meas. error", ylab = "Bias (cm/km)")
+legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# A
+pred_A <- list(A.l, A.sb, A.sbm, A.nl, A.nlsb)
+plot_bias(expo, pred_A, A.true, na.rm = TRUE,
+          main = "A bias vs. exposure level, no meas. error", ylab = "Bias (m^2)")
+legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# WP
+pred_WP <- list(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb)
+plot_bias(expo, pred_WP, WP.true, na.rm = TRUE,
+          main = "WP bias vs. exposure level, no meas. error", ylab = "Bias (m)")
+legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
+       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+
+# A0
+bias <- array(dim = c(n_exp_levels, 5)) # cannot use plot_bias because A0 changes with exposure level
 na.rm = TRUE
 for (k in 1:n_exp_levels)
 {
@@ -480,65 +543,28 @@ lines(100*expo, bias$nlsb, col = "blue")
 abline(0,0)
 legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
        col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
-saveRDS(bias, file = "A0_bias_no_err.rda")
+saveRDS(bias, file = "A0_bias.rda")
 
 # ------------------------------------------------------------------------------------------------
-# Model selection: Do split sample validation with each model
 
-n_exp_levels <- 19
-expo <- seq(0.05,0.95, by = 0.05)
-sse <- array(dim = c(n_exp_levels, 5), data = 0)
-for (k in 1:n_exp_levels)
-{
-  sum1 <- 0
-  sum2 <- 0
-  sum3 <- 0
-  sum4 <- 0
-  sum5 <- 0
-  for (r in 1:nr)
-  {
-    sum1 <- sum1 + (A0.l[r,k] - A0.true[r,k])^2
-    sum2 <- sum2 + (A0.sb[r,k] - A0.true[r,k])^2
-    sum3 <- sum3 + (A0.sbm[r,k] - A0.true[r,k])^2
-    sum4 <- sum4 + (A0.nl[r,k] - A0.true[r,k])^2
-    sum5 <- sum5 + (A0.nlsb[r,k] - A0.true[r,k])^2
-  }
-  sse[k,1] <- sum1
-  sse[k,2] <- sum2
-  sse[k,3] <- sum3
-  sse[k,4] <- sum4
-  sse[k,5] <- sum5
-}
-sse <- as.data.frame(sse)
-names(sse) <- c("l","sb","sbm","nl","nlsb")
 
-plot(expo*100, sse[,1], 
-     xlab = "channel exposure (%)", 
-     ylab = "prediction error sse (m^4)", 
-     type = "l", 
-     col = "red",
-     main = "prediction SSE for A0"
-)
-lines(expo*100, sse[,2], col = "orange")
-lines(expo*100, sse[,3], col = "purple")
-lines(expo*100, sse[,4], col = "green")
-lines(expo*100, sse[,5], col = "blue")
-legend("topright", legend = c("Linear","SB","SBM","NL","NLSB"), 
-       col = c("red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
-saveRDS(sse, file = "A0_prediction_sse.rda")
 
-# It's pretty clear that the NLSB method performs the best. However, there has been no accounting for model complexity.
-# AIC and BIC can account for model complexity. However, calc_gof computes them wrt the fitted WSE-w values.
-# I am interested in the goodness of fit for A0. Could AIC be calculated for this?
+
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
+# --------------------------------------------- Scrap---------------------------------------------
 # ------------------------------------------------------------------------------------------------
-
-# Scrap
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
 
 # Perform slope break method for all cross sections
 
@@ -597,3 +623,66 @@ pred.var <- sd_wse^2 + cov.pars[1,1]
 
 # Crashed at r=2724, k=14
 # Error: at least one coef is NA: breakpoints at the boundary?
+
+
+# ------------------------------------------------------------------------------------------------
+# Model selection: Do split sample validation with each model
+
+n_exp_levels <- 19
+expo <- seq(0.05,0.95, by = 0.05)
+sse <- array(dim = c(n_exp_levels, 5), data = 0)
+for (k in 1:n_exp_levels)
+{
+  sum1 <- 0
+  sum2 <- 0
+  sum3 <- 0
+  sum4 <- 0
+  sum5 <- 0
+  for (r in 1:nr)
+  {
+    sum1 <- sum1 + (A0.l[r,k] - A0.true[r,k])^2
+    sum2 <- sum2 + (A0.sb[r,k] - A0.true[r,k])^2
+    sum3 <- sum3 + (A0.sbm[r,k] - A0.true[r,k])^2
+    sum4 <- sum4 + (A0.nl[r,k] - A0.true[r,k])^2
+    sum5 <- sum5 + (A0.nlsb[r,k] - A0.true[r,k])^2
+  }
+  sse[k,1] <- sum1
+  sse[k,2] <- sum2
+  sse[k,3] <- sum3
+  sse[k,4] <- sum4
+  sse[k,5] <- sum5
+}
+sse <- as.data.frame(sse)
+names(sse) <- c("l","sb","sbm","nl","nlsb")
+
+plot(expo*100, sse[,1], 
+     xlab = "channel exposure (%)", 
+     ylab = "prediction error sse (m^4)", 
+     type = "l", 
+     col = "red",
+     main = "prediction SSE for A0"
+)
+lines(expo*100, sse[,2], col = "orange")
+lines(expo*100, sse[,3], col = "purple")
+lines(expo*100, sse[,4], col = "green")
+lines(expo*100, sse[,5], col = "blue")
+legend("topright", legend = c("Linear","SB","SBM","NL","NLSB"), 
+       col = c("red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
+saveRDS(sse, file = "A0_prediction_sse.rda")
+
+# It's pretty clear that the NLSB method performs the best. However, there has been no accounting for model complexity.
+# AIC and BIC can account for model complexity. However, calc_gof computes them wrt the fitted WSE-w values.
+# I am interested in the goodness of fit for A0. Could AIC be calculated for this?
+
+# ------------------------------------------------------------------------------------------------
+# Plot A0 vs. predicted A0 at different exposure levels, and plot prediction error for linear models
+# (This plot will look better if I do it in Matlab)
+
+k <- 17
+plot(A0.true[,k], 
+     main = paste("A0 (m^2) at", expo[k]*100,"% exposure"), 
+     type = "l", ylim = c(0,500))
+lines(A0.l[,k], col = "red")
+lines(A0.l[,k] + 2*A0.sd[,k], col = "red", lty = 2)
+lines(A0.l[,k] - 2*A0.sd[,k], col = "red", lty = 2)
+legend("topleft", legend = "plus/minus 2 sd", col = "red", lty = 2)
