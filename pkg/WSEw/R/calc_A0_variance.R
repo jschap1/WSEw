@@ -1,6 +1,6 @@
-#' Calculate A0 error
+#' Calculate A0 variance
 #' 
-#' Calculates A0 error for the linear case
+#' Calculates A0 variance for the linear case
 #' @export
 #' @param m linear model
 #' @param sd_h standard deviation of WSE measurement error (m)

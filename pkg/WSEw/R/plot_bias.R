@@ -26,6 +26,14 @@ plot_bias <- function(expo, pred_vals, true_vals, na.rm = TRUE, ...)
   nl <- pred_vals[[4]]
   nlsb <- pred_vals[[5]]
   
+  # # Handle NaN values
+  # l[is.na(l)] <- 9999
+  # sb[is.na(sb)] <- 9999
+  # sbm[is.na(sbm)] <- 9999
+  # nl[is.na(nl)] <- 9999
+  # nlsb[is.na(nlsb)] <- 9999
+  # true_vals[is.na(true_vals)] <- 9999
+  
   # Storing in a data frame
   bias <- array(dim = c(n_levels, 5))
   for (k in 1:n_levels)
