@@ -110,13 +110,14 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
     {
       # Use one slope break
       b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints
-      if (is.null(b)) 
+      sb.ind <- b[1]
+      print(sb.ind)
+      if (is.na(sb.ind)) 
       {
-        b<-NA
+        sb.ind<-nn
         print("No breakpoints could be identified")
       }
       
-      sb.ind <- b[1]
       WSEw1 <- WSEw[1:sb.ind,]
       WSEw2 <- WSEw[sb.ind:nn,]
       
@@ -142,6 +143,8 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
   attributes(fits) <- list(sb.ind = sb.ind) # adding the sb.ind as an output
   return(fits)
 }
+
+# -------------------------------------------------------------------------------------------------------------------------------------
 
 #' Slope Break Test
 #' 

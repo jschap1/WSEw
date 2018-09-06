@@ -98,7 +98,7 @@ calc_WSEw3 <- function(cross_sections, dist = "exponential", pars = c(0.9428, 74
 #' @param m linear model used to detrend the data
 #' @param n number of replicates
 #' @example z.sim <- sim_z(scale, shape1, shape2, m1, min(z), max(z), n=100)
-#' @importFrom actuar burr
+#' @imports actuar
 
 sim_z <- function(scale = 0.3187264, shape1 = 0.3211963, shape2 = 25.1872518, 
                   zmin = 0.9375944, zmax = 1,  n)

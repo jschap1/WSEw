@@ -16,6 +16,7 @@ library(raster)
 library(strucchange)
 library(segmented)
 library(minpack.lm)
+library(actuar) # needed if using Burr distribution in calc_WSEw3
 library(WSEw)
 
 setwd("Desktop/Cross_Sections")
@@ -28,9 +29,10 @@ spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
 err_type <- "no_err"
+M <- 100 # number of replicates
 
 # Make a directory to store results
-exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type)
+exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
 fits_dir <- "/Users/jschap/Desktop/Cross_Sections/Outputs/" # directory for modeling outputs
 exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
 
@@ -190,6 +192,18 @@ for (r in 1:nr)
   nl[[r]] <- vector(length = n_exp_levels, "list")
   nlsb[[r]] <- vector(length = n_exp_levels, "list")
 }
+for (r in 1:nr)
+{
+  for (k in 1:n_exp_levels)
+  {
+    WSEw_obs[[r]][[k]] <- vector(length = M, "list")
+    lf[[r]][[k]] <- vector(length = M, "list")
+    sb[[r]][[k]] <- vector(length = n_exp_levels, "list")
+    sbm[[r]][[k]] <- vector(length = n_exp_levels, "list")
+    nl[[r]][[k]] <- vector(length = n_exp_levels, "list")
+    nlsb[[r]][[k]] <- vector(length = n_exp_levels, "list")
+  }
+}
 
 # To do: use the advice here: https://stackoverflow.com/questions/12135400/errors-in-segmented-package-breakpoints-confusion
 # This will likely allow sbm fits to work more often, by restarting multiple times
@@ -200,7 +214,10 @@ for (r in 1:nr) # loop over reaches
 {
   for (k in 1:n_exp_levels) # loop over exposure levels
   {
-    WSEw_obs[[r]][[k]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k], sd_wse = 0, sd_w = 0)
+    for (m in 1:M)
+    {
+      WSEw_obs[[r]][[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k])
+    }
   }
   if (r%%5 == 0)
   {
@@ -217,7 +234,17 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    lf[[r]][[k]] <- fit_linear(WSEw_obs[[r]][[k]])
+    for (m in 1:M)
+    {
+      lf[[r]][[k]][[m]] <- fit_linear(WSEw_obs[[r]][[k]][[m]])
+    }
+  }
+  if (r%%5 == 0)
+  {
+    current.time <- Sys.time()
+    te <- current.time - begin.time
+    print(paste("Processed", r, "of", nr, "cross sections")) # display progress
+    print(paste("Time elapsed:", te, "units"))
   }
 }
 
@@ -226,7 +253,17 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    sb[[r]][[k]] <- fit_slopebreak(WSEw_obs[[r]][[k]], multiple_breaks = FALSE, continuity = TRUE)
+    for (m in 1:M)
+    {
+      sb[[r]][[k]][[m]] <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)
+    }
+  }
+  if (r%%5 == 0)
+  {
+    current.time <- Sys.time()
+    te <- current.time - begin.time
+    print(paste("Processed", r, "of", nr, "cross sections")) # display progress
+    print(paste("Time elapsed:", te, "units"))
   }
 }
 
@@ -235,7 +272,17 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    try(sbm[[r]][[k]] <- fit_slopebreak(WSEw_obs[[r]][[k]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+    for (m in 1:M)
+    {
+      try(sbm[[r]][[k]][[m]] <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+    }
+  }
+  if (r%%5 == 0)
+  {
+    current.time <- Sys.time()
+    te <- current.time - begin.time
+    print(paste("Processed", r, "of", nr, "cross sections")) # display progress
+    print(paste("Time elapsed:", te, "units"))
   }
 }
 
@@ -244,7 +291,17 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    nl[[r]][[k]] <- fit_nonlinear(WSEw_obs[[r]][[k]])
+    for (m in 1:M)
+    {
+      nl[[r]][[k]][[m]] <- fit_nonlinear(WSEw_obs[[r]][[k]][[m]])
+    }
+  }
+  if (r%%5 == 0)
+  {
+    current.time <- Sys.time()
+    te <- current.time - begin.time
+    print(paste("Processed", r, "of", nr, "cross sections")) # display progress
+    print(paste("Time elapsed:", te, "units"))
   }
 }
 
@@ -254,7 +311,10 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    nlsb[[r]][[k]] <- fit_nlsb(WSEw_obs[[r]][[k]])
+    for (m in 1:M)
+    {
+      nlsb[[r]][[k]][[m]] <- fit_nlsb(WSEw_obs[[r]][[k]][[m]])
+    }
   }
   if (r%%5 == 0)
   {
@@ -369,42 +429,45 @@ saveRDS(A0.true.ra, file = file.path(exp_dir, "A0_true_ra.rds"))
 # Predict hydraulic parameters
 
 # Initialize
-z0.l <- array(dim = c(nr, n_exp_levels))
-z0.sb <- array(dim = c(nr, n_exp_levels))
-z0.sbm <- array(dim = c(nr, n_exp_levels))
-z0.nl <- array(dim = c(nr, n_exp_levels))
-z0.nlsb <- array(dim = c(nr, n_exp_levels))
+z0.l <- array(dim = c(nr, n_exp_levels, M))
+z0.sb <- array(dim = c(nr, n_exp_levels, M))
+z0.sbm <- array(dim = c(nr, n_exp_levels, M))
+z0.nl <- array(dim = c(nr, n_exp_levels, M))
+z0.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
-A.l <- array(dim = c(nr, n_exp_levels))
-A.sb <- array(dim = c(nr, n_exp_levels))
-A.sbm <- array(dim = c(nr, n_exp_levels))
-A.nl <- array(dim = c(nr, n_exp_levels))
-A.nlsb <- array(dim = c(nr, n_exp_levels))
+A.l <- array(dim = c(nr, n_exp_levels, M))
+A.sb <- array(dim = c(nr, n_exp_levels, M))
+A.sbm <- array(dim = c(nr, n_exp_levels, M))
+A.nl <- array(dim = c(nr, n_exp_levels, M))
+A.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
-WP.l <- array(dim = c(nr, n_exp_levels))
-WP.sb <- array(dim = c(nr, n_exp_levels))
-WP.sbm <- array(dim = c(nr, n_exp_levels))
-WP.nl <- array(dim = c(nr, n_exp_levels))
-WP.nlsb <- array(dim = c(nr, n_exp_levels))
+WP.l <- array(dim = c(nr, n_exp_levels, M))
+WP.sb <- array(dim = c(nr, n_exp_levels, M))
+WP.sbm <- array(dim = c(nr, n_exp_levels, M))
+WP.nl <- array(dim = c(nr, n_exp_levels, M))
+WP.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
-A0.l <- array(dim = c(nr, n_exp_levels))
-A0.sb <- array(dim = c(nr, n_exp_levels))
-A0.sbm <- array(dim = c(nr, n_exp_levels))
-A0.nl <- array(dim = c(nr, n_exp_levels))
-A0.nlsb <- array(dim = c(nr, n_exp_levels))
+A0.l <- array(dim = c(nr, n_exp_levels, M))
+A0.sb <- array(dim = c(nr, n_exp_levels, M))
+A0.sbm <- array(dim = c(nr, n_exp_levels, M))
+A0.nl <- array(dim = c(nr, n_exp_levels, M))
+A0.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
 # Linear
 for (r in 1:nr) # takes 5 minutes for 3774 cross sections at 19 exposure levels
 {
   for (k in 1:n_exp_levels)
   { 
-    # if statements handle cases where the model is NULL/no model was fit
-    if (class(lf[[r]][[k]]) == "lm")
+    for (m in 1:M)
     {
-      z0.l[r,k] <- predict(lf[[r]][[k]], newdata = data.frame(w = 0))
-      A.l[r,k] <- calc_model_A(lf[[r]][[k]], type = "linear")
-      WP.l[r,k] <- calc_model_WP(lf[[r]][[k]], type = "linear")
-      A0.l[r,k] <- calc_model_A0(lf[[r]][[k]], type = "linear")
+      # if statements handle cases where the model is NULL/no model was fit
+      if (class(lf[[r]][[k]]) == "lm")
+      {
+        z0.l[r,k,m] <- predict(lf[[r]][[k]][[m]], newdata = data.frame(w = 0))
+        A.l[r,k,m] <- calc_model_A(lf[[r]][[k]][[m]], type = "linear")
+        WP.l[r,k,m] <- calc_model_WP(lf[[r]][[k]][[m]], type = "linear")
+        A0.l[r,k,m] <- calc_model_A0(lf[[r]][[k]][[m]], type = "linear")
+      }
     }
   }
   if (r %% 10 == 0)
@@ -418,12 +481,15 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   { 
-    if (class(sb[[r]][[k]][[1]]) == "lm")
+    for (m in 1:M)
     {
-      z0.sb[r,k] <- predict(sb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sb[r,k] <- calc_model_A(sb[[r]][[k]], type = "sb")
-      WP.sb[r,k] <- calc_model_WP(sb[[r]][[k]], type = "sb")
-      A0.sb[r,k] <- calc_model_A0(sb[[r]][[k]], type = "sb")
+      if (class(sb[[r]][[k]][[1]]) == "lm")
+      {
+        z0.sb[r,k,m] <- predict(sb[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.sb[r,k,m] <- calc_model_A(sb[[r]][[k]][[m]], type = "sb")
+        WP.sb[r,k,m] <- calc_model_WP(sb[[r]][[k]][[m]], type = "sb")
+        A0.sb[r,k,m] <- calc_model_A0(sb[[r]][[k]][[m]], type = "sb")
+      }
     }
   }
   if (r %% 10 == 0)
@@ -437,12 +503,15 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   { 
-    if (any(class(sbm[[r]][[k]][[1]])=="lm"))
+    for (m in 1:M)
     {
-      z0.sbm[r,k] <- predict(sbm[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.sbm[r,k] <- calc_model_A(sbm[[r]][[k]], type = "sbm")
-      WP.sbm[r,k] <- calc_model_WP(sbm[[r]][[k]], type = "sbm")
-      A0.sbm[r,k] <- calc_model_A0(sbm[[r]][[k]], type = "sbm")
+      if (any(class(sbm[[r]][[k]][[1]])=="lm"))
+      {
+        z0.sbm[r,k,m] <- predict(sbm[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.sbm[r,k,m] <- calc_model_A(sbm[[r]][[k]][[m]], type = "sbm")
+        WP.sbm[r,k,m] <- calc_model_WP(sbm[[r]][[k]][[m]], type = "sbm")
+        A0.sbm[r,k,m] <- calc_model_A0(sbm[[r]][[k]][[m]], type = "sbm")
+      }
     }
   }
   if (r %% 10 == 0)
@@ -456,12 +525,15 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   { 
-    if (class(nl[[r]][[k]]) == "nls")
+    for (m in 1:M)
     {
-      z0.nl[r,k] <- predict(nl[[r]][[k]], newdata = data.frame(w = 0))
-      A.nl[r,k] <- calc_model_A(nl[[r]][[k]], type = "nl", WSEw = rWSEw[[r]])
-      WP.nl[r,k] <- calc_model_WP(nl[[r]][[k]], type = "nl", w = rWSEw[[r]]$w)
-      A0.nl[r,k] <- calc_model_A0(nl[[r]][[k]], type = "nl", w0 = w0.ra[r,k])
+      if (class(nl[[r]][[k]]) == "nls")
+      {
+        z0.nl[r,k,m] <- predict(nl[[r]][[k]][[m]], newdata = data.frame(w = 0))
+        A.nl[r,k,m] <- calc_model_A(nl[[r]][[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
+        WP.nl[r,k,m] <- calc_model_WP(nl[[r]][[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
+        A0.nl[r,k,m] <- calc_model_A0(nl[[r]][[k]][[m]], type = "nl", w0 = w0.ra[r,k])
+      }
     }
   }
   if (r %% 10 == 0)
@@ -475,12 +547,15 @@ for (r in 1:nr) # takes 2 minutes for 3774 cross sections at 19 exposure levels
 {
   for (k in 1:n_exp_levels)
   { 
-    if (class(nlsb[[r]][[k]][[1]]) == "nls")
+    for (m in 1:M)
     {
-      z0.nlsb[r,k] <- predict(nlsb[[r]][[k]][[1]], newdata = data.frame(w = 0))
-      A.nlsb[r,k] <- calc_model_A(nlsb[[r]][[k]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
-      WP.nlsb[r,k] <- calc_model_WP(nlsb[[r]][[k]], type = "nlsb", w = rWSEw[[r]]$w)
-      A0.nlsb[r,k] <- calc_model_A0(nlsb[[r]][[k]], type = "nlsb", w0 = w0.ra[r,k])
+      if (class(nlsb[[r]][[k]][[1]]) == "nls")
+      {
+        z0.nlsb[r,k,m] <- predict(nlsb[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.nlsb[r,k,m] <- calc_model_A(nlsb[[r]][[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
+        WP.nlsb[r,k,m] <- calc_model_WP(nlsb[[r]][[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
+        A0.nlsb[r,k,m] <- calc_model_A0(nlsb[[r]][[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
+      }
     }
   }
   if (r %% 10 == 0)
@@ -495,11 +570,11 @@ save(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda
 save(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
 
 # Compute slope via finite difference
-s0.l <- diff(z0.l)
-s0.sb <- diff(z0.sb)
-s0.sbm <- diff(z0.sbm)
-s0.nl <- diff(z0.nl)
-s0.nlsb <- diff(z0.nlsb)
+s0.l <- apply(z0.l, c(2,3), diff)
+s0.sb <- apply(z0.sb, c(2,3), diff)
+s0.sbm <- apply(z0.sbm, c(2,3), diff)
+s0.nl <- apply(z0.nl, c(2,3), diff)
+s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
 save(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
 
 # ------------------------------------------------------------------------------------------------
