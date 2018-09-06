@@ -111,7 +111,6 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
       # Use one slope break
       b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints
       sb.ind <- b[1]
-      print(sb.ind)
       if (is.na(sb.ind)) 
       {
         sb.ind<-nn

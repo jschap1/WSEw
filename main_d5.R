@@ -8,6 +8,7 @@
 #   Changed looping structure to avoid having to load all models into memory at once
 # Revised 9/6/2018 JRS
 #   Added Monte Carlo simulation capability. Can set M = 1 replicate for deterministic case.
+#   Changed the way models are stored to avoid having to store too much data in RAM.
 
 # ------------------------------------------------------------------------------------------------
 
@@ -19,7 +20,7 @@ library(minpack.lm)
 library(actuar) # needed if using Burr distribution in calc_WSEw3
 library(WSEw)
 
-setwd("Desktop/Cross_Sections")
+setwd("/Users/jschap/Desktop/Cross_Sections")
 
 # Experiment description
 n_exp_levels <- 19
@@ -28,7 +29,7 @@ reach_avg <- TRUE
 spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
-err_type <- "no_err"
+err_type <- "mc"
 M <- 100 # number of replicates
 
 # Make a directory to store results
@@ -176,39 +177,22 @@ expo <- seq(0.05, 0.95, length.out = n_exp_levels) # exposure levels
 n_exp_levels <- length(expo)
 nr <- length(rWSEw)
 
-# Initialize outputs
+# Initialize WSEw_obs
 WSEw_obs <- vector(length = nr, "list")
-lf <- vector(length = nr, "list")
-sb <- vector(length = nr, "list")
-sbm <- vector(length = nr, "list")
-nl <- vector(length = nr, "list")
-nlsb <- vector(length = nr, "list")
 for (r in 1:nr)
 {
   WSEw_obs[[r]] <- vector(length = n_exp_levels, "list")
-  lf[[r]] <- vector(length = n_exp_levels, "list")
-  sb[[r]] <- vector(length = n_exp_levels, "list")
-  sbm[[r]] <- vector(length = n_exp_levels, "list")
-  nl[[r]] <- vector(length = n_exp_levels, "list")
-  nlsb[[r]] <- vector(length = n_exp_levels, "list")
 }
 for (r in 1:nr)
 {
-  for (k in 1:n_exp_levels)
-  {
-    WSEw_obs[[r]][[k]] <- vector(length = M, "list")
-    lf[[r]][[k]] <- vector(length = M, "list")
-    sb[[r]][[k]] <- vector(length = n_exp_levels, "list")
-    sbm[[r]][[k]] <- vector(length = n_exp_levels, "list")
-    nl[[r]][[k]] <- vector(length = n_exp_levels, "list")
-    nlsb[[r]][[k]] <- vector(length = n_exp_levels, "list")
-  }
+ for (k in 1:n_exp_levels)
+ {
+   WSEw_obs[[r]][[k]] <- vector(length = M, "list")
+ }
 }
 
-# To do: use the advice here: https://stackoverflow.com/questions/12135400/errors-in-segmented-package-breakpoints-confusion
-# This will likely allow sbm fits to work more often, by restarting multiple times
-
 # Make observations
+set.seed(704753262)
 begin.time <- Sys.time()
 for (r in 1:nr) # loop over reaches
 {
@@ -236,7 +220,14 @@ for (r in 1:nr)
   {
     for (m in 1:M)
     {
-      lf[[r]][[k]][[m]] <- fit_linear(WSEw_obs[[r]][[k]][[m]])
+      model1 <- fit_linear(WSEw_obs[[r]][[k]][[m]])
+      if (!is.null(model1)) # needed to preserve list dimensions. However, if there is even one NA value, the whole set of replicates <- NA
+      {
+        lf[[r]][[k]][[m]] <- model1
+      } else
+      {
+        lf[[r]][[k]][[m]] <- NA
+      }
     }
   }
   if (r%%5 == 0)
@@ -244,7 +235,7 @@ for (r in 1:nr)
     current.time <- Sys.time()
     te <- current.time - begin.time
     print(paste("Processed", r, "of", nr, "cross sections")) # display progress
-    print(paste("Time elapsed:", te, "units"))
+    print(te)
   }
 }
 
@@ -255,7 +246,14 @@ for (r in 1:nr)
   {
     for (m in 1:M)
     {
-      sb[[r]][[k]][[m]] <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)
+      model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)
+      if (!is.null(model1))
+      {
+        sb[[r]][[k]][[m]] <- model1
+      } else
+      {
+        sb[[r]][[k]][[m]] <- NA
+      }
     }
   }
   if (r%%5 == 0)
@@ -266,6 +264,9 @@ for (r in 1:nr)
     print(paste("Time elapsed:", te, "units"))
   }
 }
+
+# To do: use the advice here: https://stackoverflow.com/questions/12135400/errors-in-segmented-package-breakpoints-confusion
+# This will likely allow sbm fits to work more often, by restarting multiple times
 
 # Fit SBM model
 for (r in 1:nr)
@@ -274,7 +275,14 @@ for (r in 1:nr)
   {
     for (m in 1:M)
     {
-      try(sbm[[r]][[k]][[m]] <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+      try(model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+      if (!is.null(model1))
+      {
+        sbm[[r]][[k]][[m]] <- model1
+      } else
+      {
+        sbm[[r]][[k]][[m]] <- NA
+      }
     }
   }
   if (r%%5 == 0)
@@ -286,6 +294,7 @@ for (r in 1:nr)
   }
 }
 
+begin.time <- Sys.time()
 # Fit nonlinear model
 for (r in 1:nr)
 {
@@ -293,7 +302,14 @@ for (r in 1:nr)
   {
     for (m in 1:M)
     {
-      nl[[r]][[k]][[m]] <- fit_nonlinear(WSEw_obs[[r]][[k]][[m]])
+      try(model1 <- fit_nonlinear(WSEw_obs[[r]][[k]][[m]]))
+      if (!is.null(model1))
+      {
+        nl[[r]][[k]][[m]] <- model1
+      } else
+      {
+        nl[[r]][[k]][[m]] <- NA
+      }
     }
   }
   if (r%%5 == 0)
@@ -304,17 +320,26 @@ for (r in 1:nr)
     print(paste("Time elapsed:", te, "units"))
   }
 }
+print(Sys.time() - begin.time)
 
 # Fit NLSB model
-begin.time <- Sys.time() # takes 1 hour to run
+begin.time <- Sys.time()
 for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
     for (m in 1:M)
     {
-      nlsb[[r]][[k]][[m]] <- fit_nlsb(WSEw_obs[[r]][[k]][[m]])
+      try(model1 <- fit_nlsb(WSEw_obs[[r]][[k]][[m]]))
+      if (!is.null(model1))
+      {
+        nlsb[[r]][[k]][[m]] <- model1
+      } else
+      {
+        nlsb[[r]][[k]][[m]] <- NA
+      }
     }
+    print(k)
   }
   if (r%%5 == 0)
   {
@@ -324,6 +349,7 @@ for (r in 1:nr)
     print(paste("Time elapsed:", te, "units"))
   }
 }
+print(Sys.time() - begin.time)
 
 # ------------------------------------------------------------------------------------------------
 # Save fitted models

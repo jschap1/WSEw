@@ -7,6 +7,8 @@
 #' @importFrom strucchange breakpoints
 #' @importFrom minpack.lm nlsLM
 #' @export
+#' @details Eventually, it would be good to improve the initial guesses for the parameters, say, using linearization as described here:
+#' https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
 
 fit_nlsb <- function(WSEw, h = 5)
 {
@@ -24,7 +26,7 @@ fit_nlsb <- function(WSEw, h = 5)
   {
     # for each possible breakpoint, find the LSE of the best fit
     
-    fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 1), 
+    fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
                    data = WSEw[1:i,])
     
     a0 <- coef(fit.a)[1]
@@ -33,7 +35,7 @@ fit_nlsb <- function(WSEw, h = 5)
     xb <- WSEw$w[i]
     
     fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
-                   start = c(b1 = 1e-4, b2 = 1), 
+                   start = c(b1 = 1e-4, b2 = 2), 
                    data = WSEw[(i):n,])
     
     LSE <- sum(resid(fit.a)^2) + sum(resid(fit.b)^2)
