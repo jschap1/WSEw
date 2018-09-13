@@ -136,6 +136,12 @@ s0.true.xs <- readRDS(file.path(exp_dir, "s0_true_xs.rds"))
 z0.true.ra <- readRDS(file.path(exp_dir, "z0_true_ra.rds"))
 z0.true.xs <- readRDS(file.path(exp_dir, "z0_true_xs.rds"))
 
+
+
+# ------------------------------------------------------------------------------------------------
+# Load observations
+WSEw_obs <- readRDS(file.path(exp_dir, "WSEw_obs.rds"))
+
 # ------------------------------------------------------------------------------------------------
 # Load predicted hydraulic parameters
 
@@ -195,6 +201,8 @@ for (r in 1:nr)
    WSEw_obs[[r]][[k]] <- vector(length = M, "list")
  }
 }
+
+# ---------------------------------------------------------------------------------------------------------------
 
 # Make observations
 set.seed(704753262)
@@ -430,8 +438,8 @@ saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds"))
 
 # Calculate reach-average hydraulic parameters
 n <- 2000 # number of segments in a reach = 10 km/5 m = 2000
-A.true.ra <- ra(A, n)
-WP.true.ra <- ra(WP, n)
+A.true.ra <- ra(A.true.xs, n)
+WP.true.ra <- ra(WP.true.xs, n)
 plot(A.true.ra, type="l")
 plot(WP.true.ra, type="l")
 saveRDS(A.true.ra, file = file.path(exp_dir, "A_true_ra.rds")) 
@@ -486,23 +494,25 @@ A0.nl <- array(dim = c(nr, n_exp_levels, M))
 A0.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
 # Linear
-for (r in 1:nr) # takes 5 minutes for 3774 cross sections at 19 exposure levels
+for (r in 1:nr) # takes 5 minutes for 50 cross sections at 19 exposure levels
 {
+  lf_name <- paste0("lf/lf_", "r_", r, ".rds")
+  lf <- readRDS(file.path(exp_dir, lf_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
     {
       # if statements handle cases where the model is NULL/no model was fit
-      if (class(lf[[r]][[k]]) == "lm")
+      if (class(lf[[k]][[m]]) == "lm")
       {
-        z0.l[r,k,m] <- predict(lf[[r]][[k]][[m]], newdata = data.frame(w = 0))
-        A.l[r,k,m] <- calc_model_A(lf[[r]][[k]][[m]], type = "linear")
-        WP.l[r,k,m] <- calc_model_WP(lf[[r]][[k]][[m]], type = "linear")
-        A0.l[r,k,m] <- calc_model_A0(lf[[r]][[k]][[m]], type = "linear")
+        z0.l[r,k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
+        A.l[r,k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
+        WP.l[r,k,m] <- calc_model_WP(lf[[k]][[m]], type = "linear")
+        A0.l[r,k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear")
       }
     }
   }
-  if (r %% 10 == 0)
+  if (r %% 1 == 0)
   {
     print(paste("progress:", r, "of", nr))
   }
@@ -511,20 +521,22 @@ for (r in 1:nr) # takes 5 minutes for 3774 cross sections at 19 exposure levels
 # Slope break
 for (r in 1:nr)
 {
+  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
+  sb <- readRDS(file.path(exp_dir, sb_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
     {
-      if (class(sb[[r]][[k]][[1]]) == "lm")
+      if (class(sb[[k]][[m]][[1]]) == "lm")
       {
-        z0.sb[r,k,m] <- predict(sb[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
-        A.sb[r,k,m] <- calc_model_A(sb[[r]][[k]][[m]], type = "sb")
-        WP.sb[r,k,m] <- calc_model_WP(sb[[r]][[k]][[m]], type = "sb")
-        A0.sb[r,k,m] <- calc_model_A0(sb[[r]][[k]][[m]], type = "sb")
+        z0.sb[r,k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.sb[r,k,m] <- calc_model_A(sb[[k]][[m]], type = "sb")
+        WP.sb[r,k,m] <- calc_model_WP(sb[[k]][[m]], type = "sb")
+        A0.sb[r,k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb")
       }
     }
   }
-  if (r %% 10 == 0)
+  if (r %% 1 == 0)
   {
     print(paste("progress:", r, "of", nr))
   }
@@ -533,20 +545,22 @@ for (r in 1:nr)
 # SBM
 for (r in 1:nr)
 {
+  sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
+  sbm <- readRDS(file.path(exp_dir, sbm_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
     {
-      if (any(class(sbm[[r]][[k]][[1]])=="lm"))
+      if (any(class(sbm[[k]][[m]][[1]])=="lm"))
       {
-        z0.sbm[r,k,m] <- predict(sbm[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
-        A.sbm[r,k,m] <- calc_model_A(sbm[[r]][[k]][[m]], type = "sbm")
-        WP.sbm[r,k,m] <- calc_model_WP(sbm[[r]][[k]][[m]], type = "sbm")
-        A0.sbm[r,k,m] <- calc_model_A0(sbm[[r]][[k]][[m]], type = "sbm")
+        z0.sbm[r,k,m] <- predict(sbm[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.sbm[r,k,m] <- calc_model_A(sbm[[k]][[m]], type = "sbm")
+        WP.sbm[r,k,m] <- calc_model_WP(sbm[[k]][[m]], type = "sbm")
+        A0.sbm[r,k,m] <- calc_model_A0(sbm[[k]][[m]], type = "sbm")
       }
     }
   }
-  if (r %% 10 == 0)
+  if (r %% 1 == 0)
   {
     print(paste("progress:", r, "of", nr))
   }
@@ -555,42 +569,46 @@ for (r in 1:nr)
 # Nonlinear
 for (r in 1:nr)
 {
+  nl_name <- paste0("nl/nl_", "r_", r, ".rds")
+  nl <- readRDS(file.path(exp_dir, nl_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
     {
-      if (class(nl[[r]][[k]]) == "nls")
+      if (class(nl[[k]][[m]]) == "nls")
       {
-        z0.nl[r,k,m] <- predict(nl[[r]][[k]][[m]], newdata = data.frame(w = 0))
-        A.nl[r,k,m] <- calc_model_A(nl[[r]][[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
-        WP.nl[r,k,m] <- calc_model_WP(nl[[r]][[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
-        A0.nl[r,k,m] <- calc_model_A0(nl[[r]][[k]][[m]], type = "nl", w0 = w0.ra[r,k])
+        z0.nl[r,k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
+        A.nl[r,k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
+        WP.nl[r,k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
+        A0.nl[r,k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.ra[r,k])
       }
     }
   }
-  if (r %% 10 == 0)
+  if (r %% 1 == 0)
   {
     print(paste("progress:", r, "of", nr))
   }
 }
 
 # NLSB
-for (r in 1:nr) # takes 2 minutes for 3774 cross sections at 19 exposure levels
+for (r in 1:nr)
 {
+  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
+  nlsb <- readRDS(file.path(exp_dir, nlsb_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
     {
-      if (class(nlsb[[r]][[k]][[1]]) == "nls")
+      if (class(nlsb[[k]][[m]][[1]]) == "nls")
       {
-        z0.nlsb[r,k,m] <- predict(nlsb[[r]][[k]][[m]][[1]], newdata = data.frame(w = 0))
-        A.nlsb[r,k,m] <- calc_model_A(nlsb[[r]][[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
-        WP.nlsb[r,k,m] <- calc_model_WP(nlsb[[r]][[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
-        A0.nlsb[r,k,m] <- calc_model_A0(nlsb[[r]][[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
+        z0.nlsb[r,k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        A.nlsb[r,k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
+        WP.nlsb[r,k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
+        A0.nlsb[r,k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
       }
     }
   }
-  if (r %% 10 == 0)
+  if (r %% 1 == 0)
   {
     print(paste("progress:", r, "of", nr))
   }
@@ -612,20 +630,20 @@ save(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda
 # ------------------------------------------------------------------------------------------------
 # Calculate A0 prediction error for linear model with no measurement error
 
-A0.var <- array(dim = c(nr, n_exp_levels))
-for (r in 1:nr)
-{
-  for (k in 1:n_exp_levels)
-  {
-    if (class(lf[[r]][[k]]) == "lm")
-    {
-      A0.var[r,k] <- calc_A0_variance(lf[[r]][[k]])
-    }
-  }
-}
-A0.sd <- sqrt(A0.var)
-summary(A0.sd)
-saveRDS(A0.sd, file.path(exp_dir, "A0_sd.rds"))
+# A0.var <- array(dim = c(nr, n_exp_levels))
+# for (r in 1:nr)
+# {
+#   for (k in 1:n_exp_levels)
+#   {
+#     if (class(lf[[r]][[k]]) == "lm")
+#     {
+#       A0.var[r,k] <- calc_A0_variance(lf[[r]][[k]])
+#     }
+#   }
+# }
+# A0.sd <- sqrt(A0.var)
+# summary(A0.sd)
+# saveRDS(A0.sd, file.path(exp_dir, "A0_sd.rds"))
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -641,6 +659,8 @@ saveRDS(A0.sd, file.path(exp_dir, "A0_sd.rds"))
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
+# This is as far as I've gotten.
+# Consider switching to Matlab and using tools from CEE251D DA project
 
 par(mfrow = c(1,1), mar = c(5,5,2,5))
 par(mfrow = c(2,2))
