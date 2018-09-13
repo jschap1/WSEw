@@ -24,7 +24,7 @@ setwd("/Users/jschap/Desktop/Cross_Sections")
 
 # Experiment description
 n_exp_levels <- 19
-nr <- 3774
+nr <- 50
 reach_avg <- TRUE
 spacing <- 5 # m
 swot_sampling <- "even"
@@ -40,6 +40,11 @@ exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outpu
 if (!dir.exists(exp_dir))
 {
   dir.create(exp_dir)
+  dir.create(file.path(exp_dir, "lf"))
+  dir.create(file.path(exp_dir, "sb"))
+  dir.create(file.path(exp_dir, "sbm"))
+  dir.create(file.path(exp_dir, "nl"))
+  dir.create(file.path(exp_dir, "nlsb"))
 }
 
 # ------------------------------------------------------------------------------------------------
@@ -193,7 +198,7 @@ for (r in 1:nr)
 
 # Make observations
 set.seed(704753262)
-begin.time <- Sys.time()
+begin.time <- Sys.time() # takes 41 s for nr = 50, M = 100
 for (r in 1:nr) # loop over reaches
 {
   for (k in 1:n_exp_levels) # loop over exposure levels
@@ -202,35 +207,43 @@ for (r in 1:nr) # loop over reaches
     {
       WSEw_obs[[r]][[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k])
     }
+    print(k)
   }
+  ## save data for cross section (to avoid bulky files)
+  #fname <- paste0("WSEw_obs_r_", r, ".rds")
+  #saveRDS(WSEw_obs, file = file.path(exp_dir, fname))
   if (r%%5 == 0)
   {
     current.time <- Sys.time()
-    te <- current.time - begin.time
+    te <- 
     print(paste("Processed", r, "of", nr, "cross sections")) # display progress
-    print(paste("Time elapsed:", te, "units"))
+    print(current.time - begin.time)
   }
 }
 saveRDS(WSEw_obs, file = file.path(exp_dir, "WSEw_obs.rds"))
 
 # Fit linear model
-for (r in 1:nr)
+for (r in 1:nr) # takes 3 min. for 50 cross sections, M=100
 {
+  lf <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
+    lf[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
       model1 <- fit_linear(WSEw_obs[[r]][[k]][[m]])
-      if (!is.null(model1)) # needed to preserve list dimensions. However, if there is even one NA value, the whole set of replicates <- NA
+      if (!is.null(model1))
       {
-        lf[[r]][[k]][[m]] <- model1
+        lf[[k]][[m]] <- model1
       } else
       {
-        lf[[r]][[k]][[m]] <- NA
+        lf[[k]][[m]] <- model1 <- NA
       }
     }
   }
-  if (r%%5 == 0)
+  lf_name <- paste0("lf/lf_", "r_", r, ".rds")
+  saveRDS(lf, file = file.path(exp_dir, lf_name))
+  if (r%%1 == 0)
   {
     current.time <- Sys.time()
     te <- current.time - begin.time
@@ -238,25 +251,31 @@ for (r in 1:nr)
     print(te)
   }
 }
+# lf_name <- paste0("lf_", "r_", r, "_expo_", 100*expo[k], "_rep_", m, ".rds")
+# saveRDS(lf, file = file.path(exp_dir, lf_name))
 
 # Fit SB model
-for (r in 1:nr)
+for (r in 1:nr) # 24-seconds per cross section
 {
+  sb <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
+    sb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)
+      try(model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)) # just in case it decides to throw an error
       if (!is.null(model1))
       {
-        sb[[r]][[k]][[m]] <- model1
+        sb[[k]][[m]] <- model1
       } else
       {
-        sb[[r]][[k]][[m]] <- NA
+        sb[[k]][[m]] <- NA
       }
     }
   }
-  if (r%%5 == 0)
+  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
+  saveRDS(sb, file = file.path(exp_dir, sb_name))
+  if (r%%1 == 0)
   {
     current.time <- Sys.time()
     te <- current.time - begin.time
@@ -269,23 +288,27 @@ for (r in 1:nr)
 # This will likely allow sbm fits to work more often, by restarting multiple times
 
 # Fit SBM model
-for (r in 1:nr)
+for (r in 1:nr) # 1.6 minutes per cross section, M = 100
 {
+  sbm <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
+    sbm[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
       try(model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
       if (!is.null(model1))
       {
-        sbm[[r]][[k]][[m]] <- model1
+        sbm[[k]][[m]] <- model1
       } else
       {
-        sbm[[r]][[k]][[m]] <- NA
+        sbm[[k]][[m]] <- NA
       }
     }
   }
-  if (r%%5 == 0)
+  sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
+  saveRDS(sbm, file = file.path(exp_dir, sbm_name))
+  if (r%%1 == 0)
   {
     current.time <- Sys.time()
     te <- current.time - begin.time
@@ -296,23 +319,27 @@ for (r in 1:nr)
 
 begin.time <- Sys.time()
 # Fit nonlinear model
-for (r in 1:nr)
+for (r in 1:nr) # 11 seconds per cross section, M = 100
 {
+  nl <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
+    nl[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
       try(model1 <- fit_nonlinear(WSEw_obs[[r]][[k]][[m]]))
       if (!is.null(model1))
       {
-        nl[[r]][[k]][[m]] <- model1
+        nl[[k]][[m]] <- model1
       } else
       {
-        nl[[r]][[k]][[m]] <- NA
+        nl[[k]][[m]] <- NA
       }
     }
   }
-  if (r%%5 == 0)
+  nl_name <- paste0("nl/nl_", "r_", r, ".rds")
+  saveRDS(nl, file = file.path(exp_dir, nl_name))
+  if (r%%1 == 0)
   {
     current.time <- Sys.time()
     te <- current.time - begin.time
@@ -323,25 +350,29 @@ for (r in 1:nr)
 print(Sys.time() - begin.time)
 
 # Fit NLSB model
-begin.time <- Sys.time()
+begin.time <- Sys.time() # 1.45 minutes per cross section, M = 100
 for (r in 1:nr)
 {
+  nlsb <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
+    nlsb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
       try(model1 <- fit_nlsb(WSEw_obs[[r]][[k]][[m]]))
       if (!is.null(model1))
       {
-        nlsb[[r]][[k]][[m]] <- model1
+        nlsb[[k]][[m]] <- model1
       } else
       {
-        nlsb[[r]][[k]][[m]] <- NA
+        nlsb[[k]][[m]] <- NA
       }
     }
     print(k)
   }
-  if (r%%5 == 0)
+  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
+  saveRDS(nlsb, file = file.path(exp_dir, nlsb_name))
+  if (r%%1 == 0)
   {
     current.time <- Sys.time()
     te <- current.time - begin.time
@@ -354,33 +385,8 @@ print(Sys.time() - begin.time)
 # ------------------------------------------------------------------------------------------------
 # Save fitted models
 
-# It is a large amount of data. Saving may crash R.
-saveRDS(lf, "Outputs/lf.rds")
-saveRDS(sb, "Outputs/sb.rds") # takes about 3 minutes to save 2.3 GB
-saveRDS(sbm, "Outputs/sbm.rds")
-
-# Breaking down this save because it takes a long time
-ind1 <- 0
-for (j in seq(500, 3500, by = 500))
-{
-  ind1 <- j-500+1
-  #print(ind1)
-  nl1 <- nl[ind1:j]
-  saveRDS(nl1, paste0("nl", ind1, "to", j, ".rds"))
-  print(j)
-}
-
-# Breaking down this save because it takes a long time
-ind1 <- 0
-for (j in seq(500, 3500, by = 500))
-{
-  ind1 <- j-500+1
-  nlsb1 <- nlsb[ind1:j]
-  saveRDS(nlsb1, paste0("nlsb", ind1, "to", j, ".rds"))
-  print(j)
-}
-nlsb1 <- nlsb[3501:3774]
-saveRDS(nlsb1, paste0("nlsb", 3501, "to", 3774, ".rds"))
+# This is done as the models are fitted, above.
+# Still need to revise code below for Monte Carlo implementation.
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true z0
