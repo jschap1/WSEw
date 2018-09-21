@@ -7,7 +7,7 @@ pred_linear_par <- function(r)
   A.l <- array(dim = c(n_exp_levels, M))
   WP.l <- array(dim = c(n_exp_levels, M))
   A0.l <- array(dim = c(n_exp_levels, M))
-  lf_name <- paste0("lf/lf_", "r_", r, ".rds") # load fitted model
+  lf_name <- paste0("lf/lf_", "r_", r, "_test.rds") # load fitted model
   lf <- readRDS(file.path(exp_dir, lf_name))
   for (k in 1:n_exp_levels)
   { 
@@ -29,7 +29,7 @@ pred_linear_par <- function(r)
 # Slope break
 pred_sb_par <- function(r)
 {
-  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
+  sb_name <- paste0("sb/sb_", "r_", r, "_test.rds")
   sb <- readRDS(file.path(exp_dir, sb_name))
   z0.sb <- array(dim = c(n_exp_levels, M))
   A.sb <- array(dim = c(n_exp_levels, M))
@@ -54,7 +54,7 @@ pred_sb_par <- function(r)
 # SBM
 pred_sbm_par <- function(r)
 {
-  sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
+  sbm_name <- paste0("sbm/sbm_", "r_", r, "_test.rds")
   print(sbm_name)
   if (file.exists(file.path(exp_dir, sbm_name))) # error check in case no model was fit for this cross section
   {
@@ -90,7 +90,7 @@ pred_nl_par <- function(r)
   A.nl <- array(dim = c(n_exp_levels, M))
   WP.nl <- array(dim = c(n_exp_levels, M))
   A0.nl <- array(dim = c(n_exp_levels, M))  
-  nl_name <- paste0("nl/nl_", "r_", r, ".rds")
+  nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
   nl <- readRDS(file.path(exp_dir, nl_name))
   for (k in 1:n_exp_levels)
   { 
@@ -99,8 +99,8 @@ pred_nl_par <- function(r)
       if (class(nl[[k]][[m]]) == "nls")
       {
         z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
-        A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
-        WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
+        A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = xWSEw[[r]])
+        WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = xWSEw[[r]]$w)
         A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.ra[r,k])
       }
     }
@@ -115,7 +115,7 @@ pred_nlsb_par <- function(r)
   A.nlsb <- array(dim = c(n_exp_levels, M))
   WP.nlsb <- array(dim = c(n_exp_levels, M))
   A0.nlsb <- array(dim = c(n_exp_levels, M))  
-  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
+  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, "_test.rds")
   nlsb <- readRDS(file.path(exp_dir, nlsb_name))
   for (k in 1:n_exp_levels)
   { 
@@ -124,8 +124,8 @@ pred_nlsb_par <- function(r)
       if (class(nlsb[[k]][[m]][[1]]) == "nls")
       {
         z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
-        A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
-        WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
+        A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = xWSEw[[r]]) # there may be a bug in the type = nlsb code here
+        WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = xWSEw[[r]]$w)
         A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
       }
     }

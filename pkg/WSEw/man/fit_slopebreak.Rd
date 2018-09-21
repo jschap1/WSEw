@@ -23,6 +23,10 @@ fit_slopebreak(WSEw, mersel = FALSE, thres = 0.015, window = 4,
 \item{thres}{moving average window for Mersel method, must be provided if using Mersel method. Default value is 4.}
 }
 \description{
+Fits any of several types of "slope break" fits to WSE-w data
+}
+\details{
+# if no slope breaks are identified, it just fits a single linear model
 Can do the following types of fits
 1. Linear with one breakpoint, continuous
 2. Linear with one breakpoint, noncontinuous

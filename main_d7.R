@@ -17,6 +17,9 @@
 #   Note: some parts of the code have not been updated, so be careful when running it
 # Revised 9/17/2018
 #   Implemented multicore processing for prediction
+# Revised 9/21/2018
+#   Removed SBM functionality, eliminated redundancies, vectorized loops
+#   This is the optimization before running the code many times.
 
 # ------------------------------------------------------------------------------------------------
 
@@ -25,9 +28,7 @@ library(foreach)
 library(doMC)
 library(raster)
 library(strucchange)
-library(segmented)
 library(minpack.lm)
-library(actuar) # needed if using Burr distribution in calc_WSEw3
 library(WSEw)
 
 setwd("/Users/jschap/Desktop/Cross_Sections")
@@ -52,11 +53,13 @@ if (!dir.exists(exp_dir))
   dir.create(exp_dir)
   dir.create(file.path(exp_dir, "lf"))
   dir.create(file.path(exp_dir, "sb"))
-  dir.create(file.path(exp_dir, "sbm"))
   dir.create(file.path(exp_dir, "nl"))
   dir.create(file.path(exp_dir, "nlsb"))
   dir.create(file.path(exp_dir, "obs"))
 }
+
+set.seed(704753262)
+source("Codes/modelfit_par.R") # load the fitting functions
 
 # ------------------------------------------------------------------------------------------------
 # Load raw data
@@ -107,29 +110,6 @@ load("Data/Processed/processed_xs_data.rda")
 
 lf <- readRDS(file.path(exp_dir, "lf.rds"))
 sb <- readRDS(file.path(exp_dir, "sb.rds")) 
-sbm <- readRDS(file.path(exp_dir, "sbm.rds"))
-
-nl1 <- readRDS(file.path(exp_dir, "nl_1_to_3500.rds")) # ~ 2 min, 8.8 Gb
-nl2 <- readRDS(file.path(exp_dir, "nl3501to3774.rds")) # 16 seconds, 0.6 Gb
-nl <- c(nl1, nl2)
-rm(nl1, nl2)
-gc()
-
-begin.time <- Sys.time() # 6.5 min, ~30 Gb
-nlsb1 <- readRDS(file.path(exp_dir, "nlsb1to500.rds"))
-nlsb2 <- readRDS(file.path(exp_dir, "nlsb501to1000.rds"))
-nlsb3 <- readRDS(file.path(exp_dir, "nlsb1001to1500.rds"))
-nlsb4 <- readRDS(file.path(exp_dir, "nlsb1501to2000.rds"))
-nlsb5 <- readRDS(file.path(exp_dir, "nlsb2001to2500.rds"))
-nlsb6 <- readRDS(file.path(exp_dir, "nlsb2501to3000.rds"))
-nlsb7 <- readRDS(file.path(exp_dir, "nlsb3001to3500.rds"))
-nlsb8 <- readRDS(file.path(exp_dir, "nlsb3501to3774.rds"))
-duration <- Sys.time() - begin.time
-print(duration)
-
-nlsb <- c(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8) # this is 19.1 Gb
-rm(nlsb1, nlsb2, nlsb3, nlsb4, nlsb5, nlsb6, nlsb7, nlsb8)
-gc()
 
 # ------------------------------------------------------------------------------------------------
 # Load true hydraulic parameters
@@ -149,7 +129,7 @@ z0.true.xs <- readRDS(file.path(exp_dir, "z0_true_xs.rds"))
 
 # ------------------------------------------------------------------------------------------------
 # Load observations
-WSEw_obs <- readRDS(file.path(exp_dir, "WSEw_obs.rds"))
+# WSEw_obs <- readRDS(file.path(exp_dir, "WSEw_obs.rds"))
 
 # ------------------------------------------------------------------------------------------------
 # Load predicted hydraulic parameters
@@ -176,12 +156,8 @@ cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = r
 # Method 1: find corresponding flow width for WSE ranging from empty to bankfull conditions
 xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data points depends on discretization
 
-# Method 3: use a probability distribution based on stage data to simulate SWOT observations
-xWSEw1 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(1*365/10)) # one year of obs
-xWSEw3 <- calc_WSEw3(cross_sections, dist = "burr", n.obs = floor(3*365/10)) # 3 yrs of obs
-
 rWSEw <- reach_avg(xWSEw)
-rWSEw_burr <- reach_avg(xWSEw3)
+rWSEw_burr <- reach_avg(xWSEw)
 
 save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, "/Data/Processed_Data/processed_xs_data.rda"))
 
@@ -199,25 +175,21 @@ expo <- seq(0.05, 0.95, length.out = n_exp_levels) # exposure levels
 n_exp_levels <- length(expo)
 nr <- length(rWSEw)
 
-# ---------------------------------------------------------------------------------------------------------------
-
-set.seed(704753262)
-source("Codes/modelfit_par.R") # load the fitting functions
-
 # Run the parallel computations (see computation_time_calculator.xls)
 
 ncores <- detectCores()
 registerDoMC(cores = ncores - 1)
 
+begin.time <- Sys.time()
 WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r)} # returns a dummy value; the point is to save .rds files
-lfval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_linear_par(r)}
-sbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sb_par(r)}
-sbmval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sbm_par(r)}
-nlval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_nl_par(r)}
-nlsbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_nlsb_par(r)}
+print(Sys.time() - begin.time)
 
 begin.time <- Sys.time()
-sbmval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sbm_par(r)}
+lfval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_linear_par(r)}
+print(Sys.time() - begin.time)
+
+begin.time <- Sys.time()
+sbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sb_par(r)}
 print(Sys.time() - begin.time)
 
 begin.time <- Sys.time()
@@ -240,15 +212,6 @@ for (r in 1:nr)
   }
 }
 
-for (r in 1:nr) # this takes about 1.5 minutes per cross section
-{
-  sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
-  if(!file.exists(file.path(exp_dir, sbm_name)))
-  {
-    fit_sbm_par(r)
-  }
-}
-
 # --------------------------------------------------------------------------------------------------------------------------------------------
 # Plot for presentation (one cross section)
 r <- 2500
@@ -261,7 +224,6 @@ points(0, rWSEw[[1]]$WSE[1], col = "black", pch = 8)
 # Fit models
 lf1 <- fit_linear(WSEw_obs1)
 sb1 <- fit_slopebreak(WSEw_obs1, multiple_breaks = FALSE, continuity = TRUE)
-sbm1 <- fit_slopebreak(WSEw_obs1, multiple_breaks = TRUE, continuity = TRUE)
 nl1 <- fit_nonlinear(WSEw_obs1)
 nlsb1 <- fit_nlsb(WSEw_obs1)
 
@@ -276,10 +238,6 @@ lines(WSEw_obs1$w[1:sb1.ind], predict(sb1[[1]]), col = "orange")
 lines(WSEw_obs1$w[(sb1.ind):nn], predict(sb1[[2]]), col = "orange")
 points(0, predict(sb1[[1]], newdata = data.frame(w=0)), col = "orange", pch = 19)
 
-# plot SBM
-lines(WSEw_obs1$w, predict(sbm1[[1]]), col = "purple")
-points(0, predict(sbm1[[1]], newdata = data.frame(w=0)), col = "purple", pch = 19)
-
 # plot nl
 lines(WSEw_obs1$w, predict(nl1), col = "green")
 points(0, predict(nl1, newdata = data.frame(w=0)), col = "green", pch = 19)
@@ -290,15 +248,8 @@ lines(WSEw_obs1$w[1:nlsb1.ind], predict(nlsb1[[1]]), col = "blue")
 lines(WSEw_obs1$w[(nlsb1.ind):nn], predict(nlsb1[[2]]), col = "blue")
 points(0, predict(nlsb1[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19)
 
-legend("topleft", legend = c("Data", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
-
-
-# ------------------------------------------------------------------------------------------------
-# Save fitted models
-
-# This is done as the models are fitted, above.
-# Still need to revise code below for Monte Carlo implementation.
+legend("topleft", legend = c("Data", "Linear","SB","NL","NLSB"), 
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true z0
@@ -387,12 +338,6 @@ pred_sb <- foreach(r = 1:nr) %dopar% {pred_sb_par(r)}
 print(Sys.time() - begin.time)
 save(pred_sb, file = file.path(exp_dir, "pred_sb_bu.rda"))
 
-# This may not work if there are missing models in the sbm folder
-begin.time <- Sys.time()
-pred_sbm <- foreach(r = 1:nr) %dopar% {pred_sbm_par(r)}
-print(Sys.time() - begin.time)
-save(pred_sbm, file = file.path(exp_dir, "pred_sbm_bu.rda"))
-
 begin.time <- Sys.time()
 pred_nl <- foreach(r = 1:nr) %dopar% {pred_nl_par(r)}
 print(Sys.time() - begin.time)
@@ -410,99 +355,58 @@ load(file.path(exp_dir, "pred_nlsb_bu.rda"))
 # Initialize
 z0.l <- array(dim = c(nr, n_exp_levels, M))
 z0.sb <- array(dim = c(nr, n_exp_levels, M))
-z0.sbm <- array(dim = c(nr, n_exp_levels, M))
 z0.nl <- array(dim = c(nr, n_exp_levels, M))
 z0.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
 A.l <- array(dim = c(nr, n_exp_levels, M))
 A.sb <- array(dim = c(nr, n_exp_levels, M))
-A.sbm <- array(dim = c(nr, n_exp_levels, M))
 A.nl <- array(dim = c(nr, n_exp_levels, M))
 A.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
 WP.l <- array(dim = c(nr, n_exp_levels, M))
 WP.sb <- array(dim = c(nr, n_exp_levels, M))
-WP.sbm <- array(dim = c(nr, n_exp_levels, M))
 WP.nl <- array(dim = c(nr, n_exp_levels, M))
 WP.nlsb <- array(dim = c(nr, n_exp_levels, M))
 
 A0.l <- array(dim = c(nr, n_exp_levels, M))
 A0.sb <- array(dim = c(nr, n_exp_levels, M))
-A0.sbm <- array(dim = c(nr, n_exp_levels, M))
 A0.nl <- array(dim = c(nr, n_exp_levels, M))
 A0.nlsb <- array(dim = c(nr, n_exp_levels, M))
-
-# for (r in 1:nr)
-# {
-#   z0.l[r,,] <- pred_lf[[r]]$z0
-#   A0.l[r,,] <- pred_lf[[r]]$A0
-# }
 
 for (r in 1:nr)
 {
   z0.l[r,,] <- pred_lf[[r]]$z0
   z0.sb[r,,] <- pred_sb[[r]]$z0
-  # z0.sbm[r,,] <- pred_sbm[[r]]$z0
   z0.nl[r,,] <- pred_nl[[r]]$z0
   z0.nlsb[r,,] <- pred_nlsb[[r]]$z0
   
   A0.l[r,,] <- pred_lf[[r]]$A0
   A0.sb[r,,] <- pred_sb[[r]]$A0
-  # A0.sbm[r,,] <- pred_sbm[[r]]$A0
   A0.nl[r,,] <- pred_nl[[r]]$A0
   A0.nlsb[r,,] <- pred_nlsb[[r]]$A0
   
   A.l[r,,] <- pred_lf[[r]]$A
   A.sb[r,,] <- pred_sb[[r]]$A
-  # A.sbm[r,,] <- pred_sbm[[r]]$A
   A.nl[r,,] <- pred_nl[[r]]$A
   A.nlsb[r,,] <- pred_nlsb[[r]]$A
   
   WP.l[r,,] <- pred_lf[[r]]$WP
   WP.sb[r,,] <- pred_sb[[r]]$WP
-  # WP.sbm[r,,] <- pred_sbm[[r]]$WP
   WP.nl[r,,] <- pred_nl[[r]]$WP
   WP.nlsb[r,,] <- pred_nlsb[[r]]$WP
 }
 
-for (r in 1:nr)
-{
-  z0.sbm[r,,] <- pred_sbm[[r]]$z0
-  A0.sbm[r,,] <- pred_sbm[[r]]$A0
-  A.sbm[r,,] <- pred_sbm[[r]]$A
-  WP.sbm[r,,] <- pred_sbm[[r]]$WP
-}
-
-save(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb, file = file.path(exp_dir, "z0_pred.rda"))
-save(A.l, A.sb, A.sbm, A.nl, A.nlsb, file = file.path(exp_dir, "A_pred.rda"))
-save(WP.l, WP.sb, WP.sbm, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
-save(A0.l, A0.sb, A0.sbm, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
+save(z0.l, z0.sb, z0.nl, z0.nlsb, file = file.path(exp_dir, "z0_pred.rda"))
+save(A.l, A.sb, A.nl, A.nlsb, file = file.path(exp_dir, "A_pred.rda"))
+save(WP.l, WP.sb, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
+save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
 
 # Compute slope via finite difference
 s0.l <- apply(z0.l, c(2,3), diff)
 s0.sb <- apply(z0.sb, c(2,3), diff)
-s0.sbm <- apply(z0.sbm, c(2,3), diff)
 s0.nl <- apply(z0.nl, c(2,3), diff)
 s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
-save(s0.l, s0.sb, s0.sbm, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
-
-# ------------------------------------------------------------------------------------------------
-# Calculate A0 prediction error for linear model with no measurement error
-
-# A0.var <- array(dim = c(nr, n_exp_levels))
-# for (r in 1:nr)
-# {
-#   for (k in 1:n_exp_levels)
-#   {
-#     if (class(lf[[r]][[k]]) == "lm")
-#     {
-#       A0.var[r,k] <- calc_A0_variance(lf[[r]][[k]])
-#     }
-#   }
-# }
-# A0.sd <- sqrt(A0.var)
-# summary(A0.sd)
-# saveRDS(A0.sd, file.path(exp_dir, "A0_sd.rds"))
+save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -547,10 +451,6 @@ z0.sb.lower <- array(dim = c(nr, n_exp_levels))
 z0.sb.med <- array(dim = c(nr, n_exp_levels))
 z0.sb.upper <- array(dim = c(nr, n_exp_levels))
 
-z0.sbm.lower <- array(dim = c(nr, n_exp_levels))
-z0.sbm.med <- array(dim = c(nr, n_exp_levels))
-z0.sbm.upper <- array(dim = c(nr, n_exp_levels))
-
 z0.nl.lower <- array(dim = c(nr, n_exp_levels))
 z0.nl.med <- array(dim = c(nr, n_exp_levels))
 z0.nl.upper <- array(dim = c(nr, n_exp_levels))
@@ -574,11 +474,6 @@ for (r in 1:nr)
     z0.sb.med[r,k] <- as.numeric(q1[2])
     z0.sb.upper[r,k] <- as.numeric(q1[3])
     
-    q1 <- quantile(z0.sbm[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
-    z0.sbm.lower[r,k] <- as.numeric(q1[1])
-    z0.sbm.med[r,k] <- as.numeric(q1[2])
-    z0.sbm.upper[r,k] <- as.numeric(q1[3])
-    
     q1 <- quantile(z0.nl[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
     z0.nl.lower[r,k] <- as.numeric(q1[1])
     z0.nl.med[r,k] <- as.numeric(q1[2])
@@ -599,10 +494,6 @@ A0.l.upper <- array(dim = c(nr, n_exp_levels))
 A0.sb.lower <- array(dim = c(nr, n_exp_levels))
 A0.sb.med <- array(dim = c(nr, n_exp_levels))
 A0.sb.upper <- array(dim = c(nr, n_exp_levels))
-
-A0.sbm.lower <- array(dim = c(nr, n_exp_levels))
-A0.sbm.med <- array(dim = c(nr, n_exp_levels))
-A0.sbm.upper <- array(dim = c(nr, n_exp_levels))
 
 A0.nl.lower <- array(dim = c(nr, n_exp_levels))
 A0.nl.med <- array(dim = c(nr, n_exp_levels))
@@ -626,11 +517,6 @@ for (r in 1:nr)
     A0.sb.med[r,k] <- as.numeric(q1[2])
     A0.sb.upper[r,k] <- as.numeric(q1[3])
     
-    q1 <- quantile(A0.sbm[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
-    A0.sbm.lower[r,k] <- as.numeric(q1[1])
-    A0.sbm.med[r,k] <- as.numeric(q1[2])
-    A0.sbm.upper[r,k] <- as.numeric(q1[3])
-    
     q1 <- quantile(A0.nl[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
     A0.nl.lower[r,k] <- as.numeric(q1[1])
     A0.nl.med[r,k] <- as.numeric(q1[2])
@@ -651,10 +537,6 @@ s0.l.upper <- array(dim = c(nr, n_exp_levels))
 s0.sb.lower <- array(dim = c(nr, n_exp_levels))
 s0.sb.med <- array(dim = c(nr, n_exp_levels))
 s0.sb.upper <- array(dim = c(nr, n_exp_levels))
-
-s0.sbm.lower <- array(dim = c(nr, n_exp_levels))
-s0.sbm.med <- array(dim = c(nr, n_exp_levels))
-s0.sbm.upper <- array(dim = c(nr, n_exp_levels))
 
 s0.nl.lower <- array(dim = c(nr, n_exp_levels))
 s0.nl.med <- array(dim = c(nr, n_exp_levels))
@@ -678,11 +560,6 @@ for (r in 1:nr)
     s0.sb.med[r,k] <- as.numeric(q1[2])
     s0.sb.upper[r,k] <- as.numeric(q1[3])
     
-    q1 <- quantile(s0.sbm[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
-    s0.sbm.lower[r,k] <- as.numeric(q1[1])
-    s0.sbm.med[r,k] <- as.numeric(q1[2])
-    s0.sbm.upper[r,k] <- as.numeric(q1[3])
-    
     q1 <- quantile(s0.nl[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
     s0.nl.lower[r,k] <- as.numeric(q1[1])
     s0.nl.med[r,k] <- as.numeric(q1[2])
@@ -703,10 +580,6 @@ WP.l.upper <- array(dim = c(nr, n_exp_levels))
 WP.sb.lower <- array(dim = c(nr, n_exp_levels))
 WP.sb.med <- array(dim = c(nr, n_exp_levels))
 WP.sb.upper <- array(dim = c(nr, n_exp_levels))
-
-WP.sbm.lower <- array(dim = c(nr, n_exp_levels))
-WP.sbm.med <- array(dim = c(nr, n_exp_levels))
-WP.sbm.upper <- array(dim = c(nr, n_exp_levels))
 
 WP.nl.lower <- array(dim = c(nr, n_exp_levels))
 WP.nl.med <- array(dim = c(nr, n_exp_levels))
@@ -730,11 +603,6 @@ for (r in 1:nr)
     WP.sb.med[r,k] <- as.numeric(q1[2])
     WP.sb.upper[r,k] <- as.numeric(q1[3])
     
-    q1 <- quantile(WP.sbm[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
-    WP.sbm.lower[r,k] <- as.numeric(q1[1])
-    WP.sbm.med[r,k] <- as.numeric(q1[2])
-    WP.sbm.upper[r,k] <- as.numeric(q1[3])
-    
     q1 <- quantile(WP.nl[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
     WP.nl.lower[r,k] <- as.numeric(q1[1])
     WP.nl.med[r,k] <- as.numeric(q1[2])
@@ -755,10 +623,6 @@ A.l.upper <- array(dim = c(nr, n_exp_levels))
 A.sb.lower <- array(dim = c(nr, n_exp_levels))
 A.sb.med <- array(dim = c(nr, n_exp_levels))
 A.sb.upper <- array(dim = c(nr, n_exp_levels))
-
-A.sbm.lower <- array(dim = c(nr, n_exp_levels))
-A.sbm.med <- array(dim = c(nr, n_exp_levels))
-A.sbm.upper <- array(dim = c(nr, n_exp_levels))
 
 A.nl.lower <- array(dim = c(nr, n_exp_levels))
 A.nl.med <- array(dim = c(nr, n_exp_levels))
@@ -782,11 +646,6 @@ for (r in 1:nr)
     A.sb.med[r,k] <- as.numeric(q1[2])
     A.sb.upper[r,k] <- as.numeric(q1[3])
     
-    q1 <- quantile(A.sbm[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
-    A.sbm.lower[r,k] <- as.numeric(q1[1])
-    A.sbm.med[r,k] <- as.numeric(q1[2])
-    A.sbm.upper[r,k] <- as.numeric(q1[3])
-    
     q1 <- quantile(A.nl[r,k,], c(0.05, 0.5, 0.95), na.rm = TRUE)
     A.nl.lower[r,k] <- as.numeric(q1[1])
     A.nl.med[r,k] <- as.numeric(q1[2])
@@ -798,47 +657,6 @@ for (r in 1:nr)
     A.nlsb.upper[r,k] <- as.numeric(q1[3])
   }
 }
-
-# ------------------------------------------------------------------------------------------------
-# Make a filled plot showing percentiles of the z0 predictions for each estimate
-
-# using ggplot2
-
-k <- 16
-
-# plot linear predictions
-f2 <- ggplot(l.pred, aes(x=r), main = "Linear method predictions") +  
-  geom_line(aes(y = z0.med), col = "red") + 
-  geom_ribbon(aes(ymin = z0.lower, ymax = z0.upper), alpha = 0.2, fill = "red")
-
-# add slope break predictions
-
-
-f3 <- f2 + geom_line(data = sb.pred, aes(y = z0.med), col = "orange") + 
-  geom_ribbon(data = sb.pred, aes(ymin = z0.lower, ymax = z0.upper), alpha = 0.2, fill = "orange")
-
-# add sbm predictions
-
-
-f4 <- f3 + geom_line(data = sbm.pred, aes(y = z0.med), col = "purple") + 
-  geom_ribbon(data = sbm.pred, aes(ymin = z0.lower, ymax = z0.upper), alpha = 0.2, fill = "purple")
-
-# add nonlinear predictions
-
-
-f5 <- f4 + geom_line(data = nl.pred, aes(y = z0.med), col = "green") + 
-  geom_ribbon(data = nl.pred, aes(ymin = z0.lower, ymax = z0.upper), alpha = 0.2, fill = "green")
-
-# add nonlinear slope break predictions
-
-f6 <- f5 + geom_line(data = nlsb.pred, aes(y = z0.med), col = "blue") + 
-  geom_ribbon(data = nlsb.pred, aes(ymin = z0.lower, ymax = z0.upper), 
-              alpha = 0.2, fill = "blue")
-
-z0.true.df <- data.frame(r = 1:nr, z0 = z0.true.ra[1:10]) # add true values
-
-f7 <- f6 + geom_line(data = z0.true.df, aes(x = r, y = z0)) + ylim(132, 137)
-f7
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of median z0, A0 along the river
@@ -857,12 +675,6 @@ sb.pred <- data.frame(r = 1:nr,
                       s0.med = s0.sb.med[,k], s0.lower = s0.sb.lower[,k], s0.upper = s0.sb.upper[,k],
                       WP.med = WP.sb.med[,k], WP.lower = WP.sb.lower[,k], WP.upper = WP.sb.upper[,k],
                       A.med = A.sb.med[,k], A.lower = A.sb.lower[,k], A.upper = A.sb.upper[,k])
-sbm.pred <- data.frame(r = 1:nr, 
-                       z0.med = z0.sbm.med[,k], z0.lower = z0.sbm.lower[,k], z0.upper = z0.sbm.upper[,k],
-                       A0.med = A0.sbm.med[,k], A0.lower = A0.sbm.lower[,k], A0.upper = A0.sbm.upper[,k],
-                       s0.med = s0.sbm.med[,k], s0.lower = s0.sbm.lower[,k], s0.upper = s0.sbm.upper[,k],
-                       WP.med = WP.sbm.med[,k], WP.lower = WP.sbm.lower[,k], WP.upper = WP.sbm.upper[,k],
-                       A.med = A.sbm.med[,k], A.lower = A.sbm.lower[,k], A.upper = A.sbm.upper[,k])
 nl.pred <- data.frame(r = 1:nr, 
                       z0.med = z0.nl.med[,k], z0.lower = z0.nl.lower[,k], z0.upper = z0.nl.upper[,k],
                       A0.med = A0.nl.med[,k], A0.lower = A0.nl.lower[,k], A0.upper = A0.nl.upper[,k],
@@ -882,11 +694,10 @@ plot(z0.true.ra, main = paste("Median z0 (m) at", expo[k]*100,"% exposure"),
      xlab = "reach-average cross section", ylab = "z0")
 lines(l.pred$z0.med, col = "red")
 lines(sb.pred$z0.med, col = "orange")
-lines(sbm.pred$z0.med, col = "purple")
 lines(nl.pred$z0.med, col = "green")
 lines(nlsb.pred$z0.med, col = "blue")
-legend("bottomright", legend = c("True", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("bottomright", legend = c("True", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A0
 plot(A0.true.ra[,k], main = paste("Median A0 at", expo[k]*100,"% exposure (sq. m)"), 
@@ -894,11 +705,10 @@ plot(A0.true.ra[,k], main = paste("Median A0 at", expo[k]*100,"% exposure (sq. m
      xlab = "Cross section", ylab = "A0")
 lines(l.pred$A0.med, col = "red")
 lines(sb.pred$A0.med, col = "orange")
-lines(sbm.pred$A0.med, col = "purple")
 lines(nl.pred$A0.med, col = "green")
 lines(nlsb.pred$A0.med, col = "blue")
-legend("bottomright", legend = c("True", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("bottomright", legend = c("True", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # s0
 plot(s0.true.ra*1e5, main = paste("s0 (cm/km) at", expo[k]*100,"% exposure"), 
@@ -906,17 +716,15 @@ plot(s0.true.ra*1e5, main = paste("s0 (cm/km) at", expo[k]*100,"% exposure"),
      xlab = "reach-average cross section", ylab = "bed slope")
 lines(1e5*l.pred$s0.med, col = "red")
 lines(1e5*sb.pred$s0.med, col = "orange")
-lines(1e5*sbm.pred$s0.med, col = "purple")
 lines(1e5*nl.pred$s0.med, col = "green")
 lines(1e5*nlsb.pred$s0.med, col = "blue")
-legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topleft", legend = c("True", "Linear","SB","NL","NLSB"), 
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 K <- 1000 # Smooth slope using a k-point moving average
 s0.true.ra.smooth <- filter(s0.true.ra, sides = 2, filter = rep(1/K,K))
 s0.l.smooth <- filter(l.pred$s0.med, sides = 2, filter = rep(1/K,K))
 s0.sb.smooth <- filter(sb.pred$s0.med, sides = 2, filter = rep(1/K,K))
-s0.sbm.smooth <- filter(sbm.pred$s0.med, sides = 2, filter = rep(1/K,K))
 s0.nl.smooth <- filter(nl.pred$s0.med, sides = 2, filter = rep(1/K,K))
 s0.nlsb.smooth <- filter(nlsb.pred$s0.med, sides = 2, filter = rep(1/K,K))
 
@@ -926,72 +734,30 @@ plot(s0.true.ra.smooth*1e5, main = paste("s0 (cm/km) at", expo[k]*100,"% exposur
      xlab = "reach-average cross section", ylab = "smoothed bed slope")
 lines(1e5*s0.l.smooth, col = "red")
 lines(1e5*s0.sb.smooth, col = "orange")
-lines(1e5*s0.sbm.smooth, col = "purple")
 lines(1e5*s0.nl.smooth, col = "green")
 lines(1e5*s0.nlsb.smooth, col = "blue")
-legend("bottomright", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("bottomright", legend = c("True", "Linear","SB","NL","NLSB"), 
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A
 plot(A.true.ra[1:10], main = paste("Flow area (m^2) at", expo[k]*100,"% exposure"), 
      type = "l", ylim = c(0,6000))
 lines(l.pred$A.med, col = "red")
 lines(sb.pred$A.med, col = "orange")
-lines(sbm.pred$A.med, col = "purple")
 lines(nl.pred$A.med, col = "green")
 lines(nlsb.pred$A.med, col = "blue")
-legend("bottomleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("bottomleft", legend = c("True", "Linear","SB","NL","NLSB"), 
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # WP
 plot(WP.true.ra[1:10], main = paste("Wetted perimeter (m) at", expo[k]*100,"% exposure"), 
      type = "l", ylim = c(450,850))
 lines(l.pred$WP.med, col = "red")
 lines(sb.pred$WP.med, col = "orange")
-lines(sbm.pred$WP.med, col = "purple")
 lines(nl.pred$WP.med, col = "green")
 lines(nlsb.pred$WP.med, col = "blue")
 legend("topleft", legend = c("True", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
-
-# I could have saved a lot of trouble just by using z0.l, z0.sb, etc. data frames of medians of the predictions 
-# Doing that now.
-
-z0.l.med <- apply(z0.l, c(1,2), median)
-z0.sb.med <- apply(z0.sb, c(1,2), median)
-z0.sbm.med <- apply(z0.sbm, c(1,2), median)
-z0.nl.med <- apply(z0.nl, c(1,2), median)
-z0.nlsb.med <- apply(z0.nlsb, c(1,2), median)
-
-A0.l.med <- apply(A0.l, c(1,2), median)
-A0.sb.med <- apply(A0.sb, c(1,2), median)
-A0.sbm.med <- apply(A0.sbm, c(1,2), median)
-A0.nl.med <- apply(A0.nl, c(1,2), median)
-A0.nlsb.med <- apply(A0.nlsb, c(1,2), median)
-
-# s0.l.med <- apply(s0.l, c(1,2), median) # this changes the size from 3774 to 3773 by 19
-# s0.sb.med <- apply(s0.sb, c(1,2), median)
-# s0.sbm.med <- apply(s0.sbm, c(1,2), median)
-# s0.nl.med <- apply(s0.nl, c(1,2), median)
-# s0.nlsb.med <- apply(s0.nlsb, c(1,2), median)
-
-WP.l.med <- apply(WP.l, c(1,2), median)
-WP.sb.med <- apply(WP.sb, c(1,2), median)
-WP.sbm.med <- apply(WP.sbm, c(1,2), median)
-WP.nl.med <- apply(WP.nl, c(1,2), median)
-WP.nlsb.med <- apply(WP.nlsb, c(1,2), median)
-
-A.l.med <- apply(A.l, c(1,2), median)
-A.sb.med <- apply(A.sb, c(1,2), median)
-A.sbm.med <- apply(A.sbm, c(1,2), median)
-A.nl.med <- apply(A.nl, c(1,2), median)
-A.nlsb.med <- apply(A.nlsb, c(1,2), median)
-
-z0_med <- list(z0.l.med, z0.sb.med, z0.sbm.med, z0.nl.med, z0.nlsb.med)
-s0_med <- list(s0.l.med, s0.sb.med, s0.sbm.med, s0.nl.med, s0.nlsb.med)
-A_med <- list(A.l.med, A.sb.med, A.sbm.med, A.nl.med, A.nlsb.med)
-WP_med <- list(WP.l.med, WP.sb.med, WP.sbm.med, WP.nl.med, WP.nlsb.med)
-# A0_med <- list(A0.l.med, A0.sb.med, A0.sbm.med, A0.nl.med, A0.nlsb.med)
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of average z0, A, WP, s0, A0 error at each exposure level
@@ -999,52 +765,50 @@ WP_med <- list(WP.l.med, WP.sb.med, WP.sbm.med, WP.nl.med, WP.nlsb.med)
 # z0
 z0.bias <- plot_bias(expo, z0_med, z0.true.ra[1:nr], na.rm = TRUE,
                      main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-25,3))
-legend("bottomright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("bottomright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # s0
 s0.bias <- plot_bias(expo, s0_med, s0.true.ra[1:(nr-1)], na.rm = TRUE,
                      main = "s0 bias vs. exposure level, no meas. error", ylab = "Bias (cm/km)")
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A
 A.bias <- plot_bias(expo, A_med, A.true.ra[1:nr], na.rm = TRUE,
                     main = "A bias vs. exposure level, no meas. error", ylab = "Bias (m^2)")
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # WP
 WP.bias <- plot_bias(expo, WP_med, WP.true.ra[1:nr], na.rm = TRUE,
                      main = "WP bias vs. exposure level, no meas. error", ylab = "Bias (m)")
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A0
-A0.bias <- array(dim = c(n_exp_levels, 5)) # cannot use plot_bias because A0 changes with exposure level
+A0.bias <- array(dim = c(n_exp_levels, 4)) # cannot use plot_bias because A0 changes with exposure level
 na.rm = TRUE
 for (k in 1:n_exp_levels)
 {
   A0.bias[k,1] <- mean(A0.l.med - A0.true.ra[,k], na.rm = na.rm)
   A0.bias[k,2] <- mean(A0.sb.med - A0.true.ra[,k], na.rm = na.rm)
-  A0.bias[k,3] <- mean(A0.sbm.med - A0.true.ra[,k], na.rm = na.rm)
-  A0.bias[k,4] <- mean(A0.nl.med - A0.true.ra[,k], na.rm = na.rm)
-  A0.bias[k,5] <- mean(A0.nlsb.med - A0.true.ra[,k], na.rm = na.rm)
+  A0.bias[k,3] <- mean(A0.nl.med - A0.true.ra[,k], na.rm = na.rm)
+  A0.bias[k,4] <- mean(A0.nlsb.med - A0.true.ra[,k], na.rm = na.rm)
 }
 A0.bias <- as.data.frame(A0.bias)
-names(A0.bias) <- c("l","sb","sbm","nl","nlsb")
+names(A0.bias) <- c("l","sb","nl","nlsb")
 
 # Plot A0.bias vs. exposure level
 par(opar)
 plot(100*expo, abs(A0.bias$l), col = "red", type = "l", xlab = "Channel exposure (%)", 
      main = "Abs(A0.bias) using median as estimate (m2)", ylab = "A0.bias (m)", ylim = c(0,2000))
 lines(100*expo, abs(A0.bias$sb), col = "orange")
-lines(100*expo, abs(A0.bias$sbm), col = "purple")
 lines(100*expo, abs(A0.bias$nl), col = "green")
 lines(100*expo, abs(A0.bias$nlsb), col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 save(z0.bias, s0.bias, A.bias, WP.bias, A0.bias, file = file.path(exp_dir, "bias.rda"))
 
@@ -1056,18 +820,17 @@ A.rmse <- compute_rmse(A_med, A.true.ra)
 WP.rmse <- compute_rmse(WP_med, WP.true.ra)
 s0.rmse <- compute_rmse(s0_med, s0.true.ra)
 
-A0.rmse <- array(dim = c(n_exp_levels, 5)) # cannot use compute_rmse because A0 changes with exposure level
+A0.rmse <- array(dim = c(n_exp_levels, 4)) # cannot use compute_rmse because A0 changes with exposure level
 na.rm = TRUE
 for (k in 1:n_exp_levels)
 {
   A0.rmse[k,1] <- ((1/length(A0.true.ra[,k]))*t(A0.l.med[,k] - A0.true.ra[,k])%*%(A0.l.med[,k] - A0.true.ra[,k]))^0.5
   A0.rmse[k,2] <- ((1/length(A0.true.ra[,k]))*t(A0.sb.med[,k] - A0.true.ra[,k])%*%(A0.sb.med[,k] - A0.true.ra[,k]))^0.5
-  A0.rmse[k,3] <- ((1/length(A0.true.ra[,k]))*t(A0.sbm.med[,k] - A0.true.ra[,k])%*%(A0.sbm.med[,k] - A0.true.ra[,k]))^0.5
-  A0.rmse[k,4] <- ((1/length(A0.true.ra[,k]))*t(A0.nl.med[,k] - A0.true.ra[,k])%*%(A0.nl.med[,k] - A0.true.ra[,k]))^0.5
-  A0.rmse[k,5] <- ((1/length(A0.true.ra[,k]))*t(A0.nlsb.med[,k] - A0.true.ra[,k])%*%(A0.nlsb.med[,k] - A0.true.ra[,k]))^0.5
+  A0.rmse[k,3] <- ((1/length(A0.true.ra[,k]))*t(A0.nl.med[,k] - A0.true.ra[,k])%*%(A0.nl.med[,k] - A0.true.ra[,k]))^0.5
+  A0.rmse[k,4] <- ((1/length(A0.true.ra[,k]))*t(A0.nlsb.med[,k] - A0.true.ra[,k])%*%(A0.nlsb.med[,k] - A0.true.ra[,k]))^0.5
 }
 A0.rmse <- as.data.frame(A0.rmse)
-names(A0.rmse) <- c("l","sb","sbm","nl","nlsb")
+names(A0.rmse) <- c("l","sb","nl","nlsb")
 
 save(z0.rmse, s0.rmse, A.rmse, WP.rmse, A0.rmse, file = file.path(exp_dir, "rmse.rda"))
 
@@ -1079,58 +842,53 @@ plot(100*expo, z0.rmse$l, col = "red", type = "l", xlab = "Channel exposure (%)"
      main = "z0 RMSE (m)", ylab = "z0.rmse (m)",
      ylim = c(0,10))
 lines(100*expo, z0.rmse$sb, col = "orange")
-lines(100*expo, z0.rmse$sbm, col = "purple")
 lines(100*expo, z0.rmse$nl, col = "green")
 lines(100*expo, z0.rmse$nlsb, col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # s0
 plot(100*expo, s0.rmse$l, col = "red", type = "l", xlab = "Channel exposure (%)", 
      main = "s0 RMSE (cm/km)", ylab = "s0.rmse (m)")
 lines(100*expo, s0.rmse$sb, col = "orange")
-lines(100*expo, s0.rmse$sbm, col = "purple")
 lines(100*expo, s0.rmse$nl, col = "green")
 lines(100*expo, s0.rmse$nlsb, col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A
 plot(100*expo, A.rmse$l, col = "red", type = "l", xlab = "Channel exposure (%)", 
      main = "A RMSE (m2)", ylab = "A.rmse (m)",
      ylim = c(0,7000))
 lines(100*expo, A.rmse$sb, col = "orange")
-lines(100*expo, A.rmse$sbm, col = "purple")
 lines(100*expo, A.rmse$nl, col = "green")
 lines(100*expo, A.rmse$nlsb, col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # WP
 plot(100*expo, WP.rmse$l, col = "red", type = "l", xlab = "Channel exposure (%)", 
      main = "WP RMSE (m)", ylab = "WP.rmse (m)",
      ylim = c(0,4))
 lines(100*expo, WP.rmse$sb, col = "orange")
-lines(100*expo, WP.rmse$sbm, col = "purple")
 lines(100*expo, WP.rmse$nl, col = "green")
 lines(100*expo, WP.rmse$nlsb, col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"),
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # A0
 plot(100*expo, A0.rmse$l, col = "red", type = "l", xlab = "Channel exposure (%)",
      main = "A0.rmse (m2)", ylab = "A0.rmse (m)", ylim = c(0,2000))
 lines(100*expo, A0.rmse$sb, col = "orange")
-lines(100*expo, A0.rmse$sbm, col = "purple")
 lines(100*expo, A0.rmse$nl, col = "green")
 lines(100*expo, A0.rmse$nlsb, col = "blue")
 abline(0,0)
-legend("topright", legend = c("Zero", "Linear","SB","SBM","NL","NLSB"), 
-       col = c("black", "red","orange", "purple","green","blue"), lwd = c(1,1,1,1,1,1), ncol = 3)
+legend("topright", legend = c("Zero", "Linear","SB","NL","NLSB"),
+       col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of median z0, A0 profiles with error bounds
@@ -1150,12 +908,6 @@ sb.pred <- data.frame(r = 1:nr,
                       s0.med = s0.sb.med[,k], s0.lower = s0.sb.lower[,k], s0.upper = s0.sb.upper[,k],
                       WP.med = WP.sb.med[,k], WP.lower = WP.sb.lower[,k], WP.upper = WP.sb.upper[,k],
                       A.med = A.sb.med[,k], A.lower = A.sb.lower[,k], A.upper = A.sb.upper[,k])
-sbm.pred <- data.frame(r = 1:nr, 
-                       z0.med = z0.sbm.med[,k], z0.lower = z0.sbm.lower[,k], z0.upper = z0.sbm.upper[,k],
-                       A0.med = A0.sbm.med[,k], A0.lower = A0.sbm.lower[,k], A0.upper = A0.sbm.upper[,k],
-                       s0.med = s0.sbm.med[,k], s0.lower = s0.sbm.lower[,k], s0.upper = s0.sbm.upper[,k],
-                       WP.med = WP.sbm.med[,k], WP.lower = WP.sbm.lower[,k], WP.upper = WP.sbm.upper[,k],
-                       A.med = A.sbm.med[,k], A.lower = A.sbm.lower[,k], A.upper = A.sbm.upper[,k])
 nl.pred <- data.frame(r = 1:nr, 
                       z0.med = z0.nl.med[,k], z0.lower = z0.nl.lower[,k], z0.upper = z0.nl.upper[,k],
                       A0.med = A0.nl.med[,k], A0.lower = A0.nl.lower[,k], A0.upper = A0.nl.upper[,k],
@@ -1208,28 +960,24 @@ k <- 16
 # z0 IQR
 z0.l.iqr <- apply(z0.l, c(1,2), IQR, na.rm = TRUE)
 z0.sb.iqr <- apply(z0.sb, c(1,2), IQR, na.rm = TRUE)
-# z0.sbm.iqr <- apply(z0.sbm, c(1,2), IQR, na.rm = TRUE)
 z0.nl.iqr <- apply(z0.nl, c(1,2), IQR, na.rm = TRUE)
 z0.nlsb.iqr <- apply(z0.nlsb, c(1,2), IQR, na.rm = TRUE)
 
 # A0 IQR
 A0.l.iqr <- apply(A0.l, c(1,2), IQR, na.rm = TRUE)
 A0.sb.iqr <- apply(A0.sb, c(1,2), IQR, na.rm = TRUE)
-# A0.sbm.iqr <- apply(A0.sbm, c(1,2), IQR, na.rm = TRUE)
 A0.nl.iqr <- apply(A0.nl, c(1,2), IQR, na.rm = TRUE)
 A0.nlsb.iqr <- apply(A0.nlsb, c(1,2), IQR, na.rm = TRUE)
 
 # z0 sd
 z0.l.sd <- apply(z0.l, c(1,2), sd, na.rm = TRUE)
 z0.sb.sd <- apply(z0.sb, c(1,2), sd, na.rm = TRUE)
-# z0.sbm.sd <- apply(z0.sbm, c(1,2), sd, na.rm = TRUE)
 z0.nl.sd <- apply(z0.nl, c(1,2), sd, na.rm = TRUE)
 z0.nlsb.sd <- apply(z0.nlsb, c(1,2), sd, na.rm = TRUE)
 
 # A0 sd
 A0.l.sd <- apply(A0.l, c(1,2), sd, na.rm = TRUE)
 A0.sb.sd <- apply(A0.sb, c(1,2), sd, na.rm = TRUE)
-# A0.sbm.sd <- apply(A0.sbm, c(1,2), sd, na.rm = TRUE)
 A0.nl.sd <- apply(A0.nl, c(1,2), sd, na.rm = TRUE)
 A0.nlsb.sd <- apply(A0.nlsb, c(1,2), sd, na.rm = TRUE)
 

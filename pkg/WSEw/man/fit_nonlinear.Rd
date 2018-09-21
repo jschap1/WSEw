@@ -4,10 +4,12 @@
 \alias{fit_nonlinear}
 \title{Nonlinear Fit for WSE-w Relationship}
 \usage{
-fit_nonlinear(WSEw)
+fit_nonlinear(WSEw, h = 5)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
+
+\item{h}{minimum amount of data to perform fit}
 }
 \description{
 Nonlinear Fit for WSE-w Relationship

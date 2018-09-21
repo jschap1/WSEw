@@ -8,22 +8,14 @@
 
 fit_linear <- function(WSEw,  mersel = FALSE, thres = NULL)
 {
-  
-  if (length(WSEw$WSE)<2*5) 
-  {
-    print("Not enough data points")
-    return(NULL)
-  }
-  
+
   if (!mersel)
   {
-    
     lf <- lm(WSE~w, data = WSEw)
     return(lf)
     
   } else
   {
-    
     tl <- test_linear(WSEw$WSE, WSEw$w, thres = thres)
     if (tl)
     {
