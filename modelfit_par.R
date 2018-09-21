@@ -1,15 +1,37 @@
 # Parallelized fitting functions for main_d6 model fitting in parallel with foreach
 
+# Make observations
+observe_par <- function(r)
+{
+  WSEw_obs <- vector(length = n_exp_levels, "list")
+  for (k in 1:n_exp_levels) # loop over exposure levels
+  {
+    WSEw_obs[[k]] <- vector(length = M, "list")
+    for (m in 1:M)
+    {
+      WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k])
+    }
+  }
+  # save data for cross section (to avoid bulky files)
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds")
+  saveRDS(WSEw_obs, file = file.path(exp_dir, obsname))
+  return(0)
+}
+
+# -------------------------------------------------------------------------------------------------------------------------------------
+
 # Fit linear model
 fit_linear_par <- function(r)
 {
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
+  WSEw_obs <- readRDS(file.path(exp_dir, obsname))
   lf <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     lf[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      model1 <- fit_linear(WSEw_obs[[r]][[k]][[m]])
+      model1 <- fit_linear(WSEw_obs[[k]][[m]])
       if (!is.null(model1))
       {
         lf[[k]][[m]] <- model1
@@ -27,13 +49,15 @@ fit_linear_par <- function(r)
 # Fit SB model
 fit_sb_par <- function(r)
 {
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds")
+  WSEw_obs <- readRDS(file.path(exp_dir, obsname))
   sb <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     sb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)) # just in case it decides to throw an error
+      try(model1 <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = FALSE, continuity = TRUE)) # just in case it decides to throw an error
       if (!is.null(model1))
       {
         sb[[k]][[m]] <- model1
@@ -54,13 +78,15 @@ fit_sb_par <- function(r)
 # Fit SBM model
 fit_sbm_par <- function(r)
 {
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
+  WSEw_obs <- readRDS(file.path(exp_dir, obsname))
   sbm <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     sbm[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_slopebreak(WSEw_obs[[r]][[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
+      try(model1 <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = TRUE, continuity = TRUE)) # sometimes this throws errors
       if (!is.null(model1))
       {
         sbm[[k]][[m]] <- model1
@@ -78,13 +104,15 @@ fit_sbm_par <- function(r)
 # Fit nonlinear model
 fit_nl_par <- function(r)
 {
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
+  WSEw_obs <- readRDS(file.path(exp_dir, obsname))
   nl <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     nl[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_nonlinear(WSEw_obs[[r]][[k]][[m]]))
+      try(model1 <- fit_nonlinear(WSEw_obs[[k]][[m]]))
       if (!is.null(model1))
       {
         nl[[k]][[m]] <- model1
@@ -102,13 +130,15 @@ fit_nl_par <- function(r)
 # Fit NLSB model
 fit_nlsb_par <- function(r)
 {
+  obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
+  WSEw_obs <- readRDS(file.path(exp_dir, obsname))
   nlsb <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     nlsb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_nlsb(WSEw_obs[[r]][[k]][[m]]))
+      try(model1 <- fit_nlsb(WSEw_obs[[k]][[m]]))
       if (!is.null(model1))
       {
         nlsb[[k]][[m]] <- model1
