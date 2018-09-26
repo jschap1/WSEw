@@ -118,6 +118,15 @@ calc_WP_nl <- function(wbf, a, s)
     f <- (1+(2*a*(s-1)*w^(s-1))^2)^0.5
     return(f)
   }
+  # print(paste("f", fun))
+  # print(paste("wbf", wbf))
+  # print(paste("a", a))
+  # print(paste("s", s))
+  if (s<=0) # does not work if s<=0 
+  {
+    WP <- NA
+    return(WP)
+  }
   WP <- integrate(f = fun, lower = 0, upper = wbf, a = a, s = s) # passing additional arguments to fun 
   WP <- WP$value
   return(WP)
@@ -128,16 +137,24 @@ calc_WP_nl <- function(wbf, a, s)
 calc_WP_nlsb <- function(wbf, wsb, a1, a2, s1, s2)
 {
 
+  if (s1 <= 0 | s2 <= 0) # does not work if s<=0 
+  {
+    WP <- NA
+    return(WP)
+  }
+  
   fun1 <- function(w, a1, s1)
   {
     f <- (1+(2*a1*(s1-1)*w^(s1-1))^2)^0.5
     return(f)
   }
+  
   fun2 <- function(w, a2, s2)
   {
     f <- (1+(2*a2*(s2-1)*w^(s2-1))^2)^0.5
     return(f)
   }
+  
   WP1 <- integrate(f = fun1, lower = 0, upper = wsb, a1 = a1, s1 = s1)
   WP2 <- integrate(f = fun2, lower = wsb, upper = wbf, a2 = a2, s2 = s2)
   WP <- WP1$value + WP2$value

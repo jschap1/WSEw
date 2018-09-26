@@ -11,6 +11,5 @@ plot(cross_sections$x[r][[1]], cross_sections$b[r][[1]], type="l",
      xlab = "x (m)", ylab = "b (m)", main = "Example cross section")
 plot(WSE~w, xWSEw[[r]], xlab = "width (m)", ylab = "height (m)", main = "Height-width samples")
 
-
 # reach averaged (smoothed)
 plot(WSE~w, rWSEw[[r]])

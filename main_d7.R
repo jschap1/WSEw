@@ -33,19 +33,24 @@ library(WSEw)
 
 setwd("/Users/jschap/Desktop/Cross_Sections")
 
+library(devtools)
+library(roxygen2)
+update_WSEw()
+
 # Experiment description
 n_exp_levels <- 19
-nr <- 3774
-reach_avg <- TRUE
+# nr <- 3774
+nr <- 5773
+reach_avg <- FALSE
 spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
 err_type <- "mc"
-M <- 100 # number of replicates
+M <- 1 # number of replicates
 
 # Make a directory to store results
 exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
-fits_dir <- "/Users/jschap/Desktop/Cross_Sections/Outputs/" # directory for modeling outputs
+fits_dir <- "/Volumes/HD3/Cross_Sections" # directory for modeling outputs
 exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
 
 if (!dir.exists(exp_dir))
@@ -60,6 +65,7 @@ if (!dir.exists(exp_dir))
 
 set.seed(704753262)
 source("Codes/modelfit_par.R") # load the fitting functions
+source("Codes/predict_par.R") # load the predicting functions
 
 # ------------------------------------------------------------------------------------------------
 # Load raw data
@@ -173,7 +179,7 @@ legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black",
 
 expo <- seq(0.05, 0.95, length.out = n_exp_levels) # exposure levels
 n_exp_levels <- length(expo)
-nr <- length(rWSEw)
+# nr <- length(rWSEw)
 
 # Run the parallel computations (see computation_time_calculator.xls)
 
@@ -192,7 +198,7 @@ begin.time <- Sys.time()
 sbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sb_par(r)}
 print(Sys.time() - begin.time)
 
-begin.time <- Sys.time()
+begin.time <- Sys.time() # need to get these to run, somehow...
 nlval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_nl_par(r)}
 print(Sys.time() - begin.time)
 
@@ -310,10 +316,10 @@ for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
-    WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
-    p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
+    WSEw_obs <- observe(xWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+    p <- max(which(xWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
     w0.ra[r,k] <- min(WSEw_obs$w)
-    A0.true.ra[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
+    A0.true.ra[r,k] <- calc_A_from_WSEw(xWSEw[[r]][1:p,])
   }
   print(r)
 }
@@ -347,7 +353,7 @@ begin.time <- Sys.time()
 pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r)}
 print(Sys.time() - begin.time)
 save(pred_nlsb, file = file.path(exp_dir, "pred_nlsb_bu.rda"))
-load(file.path(exp_dir, "pred_nlsb_bu.rda"))
+# load(file.path(exp_dir, "pred_nlsb_bu.rda"))
 
 # ------------------------------------------------------------------------------------------------------------
 # Reformat to a more convenient format

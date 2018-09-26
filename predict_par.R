@@ -86,12 +86,18 @@ pred_sbm_par <- function(r)
 # Nonlinear
 pred_nl_par <- function(r)
 {
+  nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
+  if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
+  {
+    nl <- readRDS(file.path(exp_dir, nl_name))
+  } else
+  {
+    return(list(z0 = NA, A = NA, WP = NA, A0 = NA))
+  }
   z0.nl <- array(dim = c(n_exp_levels, M))
   A.nl <- array(dim = c(n_exp_levels, M))
   WP.nl <- array(dim = c(n_exp_levels, M))
-  A0.nl <- array(dim = c(n_exp_levels, M))  
-  nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
-  nl <- readRDS(file.path(exp_dir, nl_name))
+  A0.nl <- array(dim = c(n_exp_levels, M))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
@@ -101,7 +107,7 @@ pred_nl_par <- function(r)
         z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
         A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = xWSEw[[r]])
         WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = xWSEw[[r]]$w)
-        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.ra[r,k])
+        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.xs[r,k])
       }
     }
   }
@@ -111,12 +117,18 @@ pred_nl_par <- function(r)
 # NLSB
 pred_nlsb_par <- function(r)
 {
+  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
+  if (file.exists(file.path(exp_dir, nlsb_name))) # error check in case no model was fit for this cross section
+  {
+    nlsb <- readRDS(file.path(exp_dir, nlsb_name))
+  } else
+  {
+    return(list(z0 = NA, A = NA, WP = NA, A0 = NA))
+  }
   z0.nlsb <- array(dim = c(n_exp_levels, M))
   A.nlsb <- array(dim = c(n_exp_levels, M))
   WP.nlsb <- array(dim = c(n_exp_levels, M))
   A0.nlsb <- array(dim = c(n_exp_levels, M))  
-  nlsb_name <- paste0("nlsb/nlsb_", "r_", r, "_test.rds")
-  nlsb <- readRDS(file.path(exp_dir, nlsb_name))
   for (k in 1:n_exp_levels)
   { 
     for (m in 1:M)
@@ -126,7 +138,7 @@ pred_nlsb_par <- function(r)
         z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = xWSEw[[r]]) # there may be a bug in the type = nlsb code here
         WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = xWSEw[[r]]$w)
-        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
+        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.xs[r,k])
       }
     }
   }
