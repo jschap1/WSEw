@@ -1,7 +1,15 @@
 setwd("/Users/jschap/Desktop/Cross_Sections")
-
+opar <- par()
 load("Data/Processed/processed_xs_data.rda")
 
-plot(WSE~w, rWSEw[[3000]])
-plot(WSE~w, xWSEw[[3000]])
-plot(cross_sections$x[3000][[1]], cross_sections$b[3000][[1]], type="l")
+r <- 3000
+par(mfrow = c(1,2))
+
+
+# original
+plot(cross_sections$x[r][[1]], cross_sections$b[r][[1]], type="l",
+     xlab = "x (m)", ylab = "b (m)", main = "Example cross section")
+plot(WSE~w, xWSEw[[r]], xlab = "width (m)", ylab = "height (m)", main = "Height-width samples")
+
+# reach averaged (smoothed)
+plot(WSE~w, rWSEw[[r]])

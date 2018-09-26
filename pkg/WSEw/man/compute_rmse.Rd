@@ -18,5 +18,5 @@ rmse, a data frame showing rmse at each exposure level, averaged across all rive
 Computes RMSE between the model predictions of hydraulic parameters and their true values
 }
 \details{
-Must be five pred_vals inputs, corresponding to the linear, slope break, multiple slope break, nonlinear, and nlsb methods
+Must be four pred_vals inputs, corresponding to the linear, slope break, nonlinear, and nlsb methods
 }

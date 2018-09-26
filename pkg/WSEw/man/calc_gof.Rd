@@ -19,7 +19,7 @@ Calculates SSE, AIC, BIC, r2, mean absolute error, and maximum absolute error
 for WSE-w fits.
 }
 \details{
-Calculates goodness-of-fit metrics for a model with respect to the fitted values. 
-R2 is not defined for nonlinear models, but it can be computed for a piecewise linear model/
+Calculates goodness-of-fit metrics for a model with respect to the fitted values.
+R2 is not defined for nonlinear models, but it can be computed for a piecewise linear model
 Piecewise AIC and BIC are computed by summing the AIC, BIC values of the original models. I am like 90% sure this is OK.
 }

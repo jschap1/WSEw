@@ -10,10 +10,10 @@
 #' @details Eventually, it would be good to improve the initial guesses for the parameters, say, using linearization as described here:
 #' https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
 
-fit_nlsb <- function(WSEw, h = 5)
+fit_nlsb <- function(WSEw, h = 10)
 {
   
-  if (length(WSEw$WSE)<2*5) 
+  if (length(WSEw$WSE)<h) 
   {
     print("Not enough data points")
     return(NULL)

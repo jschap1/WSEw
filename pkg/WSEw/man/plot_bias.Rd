@@ -25,7 +25,7 @@ Also calculates bias
 Must be five pred_vals inputs, corresponding to the linear, slope break, multiple slope break, nonlinear, and nlsb methods
 }
 \examples{
-pred_z0 <- list(z0.l, z0.sb, z0.sbm, z0.nl, z0.nlsb)
+pred_z0 <- list(z0.l, z0.sb, z0.nl, z0.nlsb)
 plot_bias(expo, pred_z0, z0.true, na.rm = TRUE, 
          main = "z0 bias vs. exposure level, no meas. error", ylab = "Bias (m)", ylim = c(-2,2))
 }

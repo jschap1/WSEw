@@ -1,11 +1,6 @@
 #' Slope Break Fit for WSE-w Relationship
 #' 
-#' Can do the following types of fits
-#' 1. Linear with one breakpoint, continuous
-#' 2. Linear with one breakpoint, noncontinuous
-#' 3. Linear with several breakpoints, continous 
-#' 4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
-#' 5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections (returns just the lowest fit)
+#' Fits any of several types of "slope break" fits to WSE-w data
 #' @param WSEw WSEw data (at a given level of exposure)
 #' @param mersel flag for Mersel method
 #' @param thres threshold for Mersel method, must be provided if using Mersel method. 0.015 has been used in the past.
@@ -16,29 +11,18 @@
 #' @importFrom segmented seg.control segmented
 #' @importFrom strucchange breakpoints breakfactor
 #' @export
+#' @details # if no slope breaks are identified, it just fits a single linear model
+#' Can do the following types of fits
+#' 1. Linear with one breakpoint, continuous
+#' 2. Linear with one breakpoint, noncontinuous
+#' 3. Linear with several breakpoints, continous 
+#' 4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
+#' 5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections (returns just the lowest fit)
 
 fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015, 
                            window = 4, multiple_breaks = FALSE, continuity = TRUE, minlen = 5)
 {
-  
   nn <- length(WSEw$w) # number of data points
-  if(minlen >= 0.5*nn)
-  {
-    print("Few observations. Using smaller than usual minlen")
-    minlen <- floor(0.5*nn) - 1
-    if (minlen <= 2)
-    {
-      print("minimum segment size must be greater than the number of regressors")
-      return(NULL)
-    }
-  }
-
-  if (nn<=1)
-  {
-    print("No observations")
-    return(NULL)
-  }
-  
   if (mersel)
   {
     # Use original Mersel method
@@ -57,65 +41,15 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
     
     if (multiple_breaks)
     {
-      # Use multiple slope breaks
-      b <- breakpoints(WSE~w, data = WSEw, h=minlen)$breakpoints # h is the minimum number of points required for a section
-      if (is.null(b)) 
-      {
-        b<-NA
-        print("No breakpoints could be identified")
-      }
-      sb.ind <- b[1]
-
-      if (!continuity)
-      {
-        # strucchange package does not force continuity at breakpoints
-        b <- breakpoints(WSE~w, data = WSEw, h=minlen)
-        lf <- lm(WSE ~ w*breakfactor(b), data = WSEw) 
-        fits <- list(lf)
-        # lf1 <- lm(WSE~w, data = WSEw[1:sb.ind,])
-      
-      } else
-      {
-
-        # Using segmented package to perform the fit, with breakpoints from strucchange
-        sctrl <- seg.control(toll = 1e-04, it.max = 1, display = FALSE,
-                             stop.if.error = TRUE, K = 10, quant = FALSE, last = TRUE, maxit.glm = 25, h = 1, 
-                             n.boot=20, size.boot=NULL, gap=FALSE, jt=FALSE, nonParam=TRUE,
-                             random=TRUE, powers=c(1,1), seed=NULL)
-        lf<-lm(WSE~w, data = WSEw)
-        
-        # error catch
-        if (abs(max(WSEw$w[b]) - max(WSEw$w)) < 0.01*max(WSEw$w))
-        {
-          warning("Breakpoints very near the (upper) boundary. Returning NA.")
-          fits <- list(NA,NA)
-        }
-        else if (abs(min(WSEw$w[b])) < 0.01*max(WSEw$w))
-        {
-          warning("Breakpoints very near the (lower) boundary. Returning NA.")
-          fits <- list(NA,NA)
-        }        
-        else
-        {
-          lfsb<-segmented(lf, seg.Z= ~w, control=sctrl, psi=WSEw$w[b])
-          fits <- list(lfsb)
-        }
-        
-      }
-      
-      # Multiple breakpoints
-      # Do segmented regression with multiple (known) breakpoints
-      # Require continuity (or not)
+      print("SBM is not enabled in this version of the code")
     } else
     {
       # Use one slope break
-      # print("hi")
       b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints
       sb.ind <- b[1]
       if (is.na(sb.ind)) 
       {
         sb.ind<-nn
-        print("No breakpoints could be identified")
       }
       
       WSEw1 <- WSEw[1:sb.ind,]
@@ -127,14 +61,12 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
         lf2 <- lm(WSE~w, data = WSEw2) # above slope break
       } else if (continuity)
       {
-        
         lf1 <- lm(WSE~w, data = WSEw1) 
         a0 <- as.numeric(coef(lf1)[1])
         a1 <- as.numeric(coef(lf1)[2])
         wb <- WSEw$w[sb.ind]
         intercept <- a0+a1*wb
         lf2 <- lm(WSE ~ -1 + I(w-wb), data = WSEw2, offset = rep(intercept,dim(WSEw2)[1]))
-        
       }
       fits <- list(lf1, lf2)
     }
@@ -218,3 +150,76 @@ test_slope_break <- function(WSE, w, thres = 0.015, window = 4, m = FALSE)
   
 }
 
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# SCRAP (old SBM code)
+
+# # Use multiple slope breaks
+# b <- breakpoints(WSE~w, data = WSEw, h=minlen)$breakpoints # h is the minimum number of points required for a section
+# if (is.null(b)) 
+# {
+#   b<-NA
+#   print("No breakpoints could be identified")
+# }
+# sb.ind <- b[1]
+# 
+# if (!continuity)
+# {
+#   # strucchange package does not force continuity at breakpoints
+#   b <- breakpoints(WSE~w, data = WSEw, h=minlen)
+#   lf <- lm(WSE ~ w*breakfactor(b), data = WSEw) 
+#   fits <- list(lf)
+#   # lf1 <- lm(WSE~w, data = WSEw[1:sb.ind,])
+# 
+# } else
+# {
+# 
+#   # Using segmented package to perform the fit, with breakpoints from strucchange
+#   sctrl <- seg.control(toll = 1e-04, it.max = 1, display = FALSE,
+#                        stop.if.error = TRUE, K = 10, quant = FALSE, last = TRUE, maxit.glm = 25, h = 1, 
+#                        n.boot=20, size.boot=NULL, gap=FALSE, jt=FALSE, nonParam=TRUE,
+#                        random=TRUE, powers=c(1,1), seed=NULL)
+#   lf<-lm(WSE~w, data = WSEw)
+#   
+#   # error catch
+#   if (abs(max(WSEw$w[b]) - max(WSEw$w)) < 0.01*max(WSEw$w))
+#   {
+#     warning("Breakpoints very near the (upper) boundary. Returning NA.")
+#     fits <- list(NA,NA)
+#   }
+#   else if (abs(min(WSEw$w[b])) < 0.01*max(WSEw$w))
+#   {
+#     warning("Breakpoints very near the (lower) boundary. Returning NA.")
+#     fits <- list(NA,NA)
+#   }        
+#   else
+#   {
+#     lfsb<-segmented(lf, seg.Z= ~w, control=sctrl, psi=WSEw$w[b])
+#     fits <- list(lfsb)
+#   }
+#   
+# }
+# 
+# # Multiple breakpoints
+# # Do segmented regression with multiple (known) breakpoints
+# # Require continuity (or not)
+
+# -------------------------------------------------------------------------------------------------
+# Old error checks
+
+# nn <- length(WSEw$w) # number of data points
+# if(minlen >= 0.5*nn)
+# {
+#   print("Few observations. Using smaller than usual minlen")
+#   minlen <- floor(0.5*nn) - 1
+#   if (minlen <= 2)
+#   {
+#     print("minimum segment size must be greater than the number of regressors")
+#     return(NULL)
+#   }
+# }
+# 
+# if (nn<=1)
+# {
+#   print("No observations")
+#   return(NULL)
+# }
