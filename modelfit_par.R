@@ -9,9 +9,9 @@ observe_par <- function(r)
     WSEw_obs[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
-                                    sd_wse = 0, sd_w = 0)
-      # WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
+      # WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
+      #                               sd_wse = 0, sd_w = 0)
+      WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
     }
   }
   # save data for each cross section (to avoid bulky files)
@@ -109,7 +109,16 @@ fit_nlsb_par <- function(r)
     nlsb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_nlsb(WSEw_obs[[k]][[m]], h = 10))
+      tryCatch(
+        {
+          model1 <- fit_nlsb(WSEw_obs[[k]][[m]], h = 10)
+        }, 
+        error = function(e) 
+        {
+          print("error: nonlinear fit did not converge")
+          model1 <- NULL
+        }
+      )
       if (!is.null(model1))
       {
         nlsb[[k]][[m]] <- model1

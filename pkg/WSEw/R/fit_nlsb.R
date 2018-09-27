@@ -37,8 +37,9 @@ fit_nlsb <- function(WSEw, h = 10)
       }, 
       error = function(e) 
       {
-        print("error: nonlinear fit did not converge")
-        fit.a <- NULL
+        #print("error: nonlinear fit did not converge")
+        fits <- NULL
+        return(fits)
       }
     )
     
@@ -55,8 +56,9 @@ fit_nlsb <- function(WSEw, h = 10)
       }, 
       error = function(e) 
       {
-        print("error: nonlinear fit did not converge")
-        fit.b <- NULL
+        #print("error: nonlinear fit did not converge")
+        fits <- NULL
+        return(fits)
       }
     )
     

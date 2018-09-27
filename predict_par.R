@@ -107,7 +107,7 @@ pred_nl_par <- function(r)
         z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
         A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = xWSEw[[r]])
         WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = xWSEw[[r]]$w)
-        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.xs[r,k])
+        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.ra[r,k])
       }
     }
   }
@@ -138,7 +138,7 @@ pred_nlsb_par <- function(r)
         z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = xWSEw[[r]]) # there may be a bug in the type = nlsb code here
         WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = xWSEw[[r]]$w)
-        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.xs[r,k])
+        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
       }
     }
   }

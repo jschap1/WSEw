@@ -40,10 +40,17 @@ cross.section <- list(x = x, b = b, d = b)
 # WSEw <- calc_WSEw(cross.section, interval = 0.05, dx = 1)
 # Calculate it using calc_WSEw and get_width. Must be run manually.
 
-xn <- 3000
+xn <- 3
 # r <- 1
-cross.section <- list(x = cross_sections$x[[xn]], b = cross_sections$b[[xn]], d = cross_sections$d[[xn]])
-WSEw <- xWSEw[[xn]]
+cross.section <- list(x = cross_sections_avg$x[[xn]], b = cross_sections_avg$b[[xn]], d = cross_sections_avg$d[[xn]])
+# WSEw <- xWSEw[[xn]]
+
+WSEw <- rWSEw[[xn]]
+WSEw <- observe(rWSEw[[xn]], exposure = 0.2)
+
+# plot with and without error
+plot(WSE~w, rWSEw[[xn]]) 
+points(WSE~w, WSEw, pch = 19, col = "red")
 
 # Figure for paper
 # Sample cross section and SWOT sampling (use xn=3000)
@@ -67,23 +74,25 @@ A.nlsb <- calc_model_A(nlsb1, type = "nlsb", WSEw)
 
 z0.l <- predict(lf1, newdata = data.frame(w=0))
 z0.sb <- predict(sb1[[1]], newdata = data.frame(w=0))
-z0.sbm <- predict(sbm1[[1]], newdata = data.frame(w=0))
+# z0.sbm <- predict(sbm1[[1]], newdata = data.frame(w=0))
 z0.nl <- predict(nl1, newdata = data.frame(w=0))
 z0.nlsb <- predict(nlsb1[[1]], newdata = data.frame(w=0))
 
 # Plot modeled cross sections over true cross section
 par(mfrow = c(1,1))
-plot(b~x, cross.section, type = "l", ylim = c(133, 144), main = "Example cross section", lwd = 2, xlab = "x (m)", ylab = "bed elevation (m)")
+plot(b~x, cross.section, type = "l", ylim = c(0, 144), 
+     main = "Reach averaged cross section 3", 
+     lwd = 2, xlab = "x (m)", ylab = "bed elevation (m)")
 plot_model(lf1, type = "linear", col = "red", lty = 2, lwd = 2, add = TRUE)
-plot_model(sb1, type = "sb", col = "purple", lty = 3, lwd = 2, add = TRUE)
-plot_model(sbm1, type = "sbm", col = "green", lwd = 2, add = TRUE)
-plot_model(nl1, type = "nl", WSEw, col = "blue", add = TRUE)
-plot_model(nlsb1, type = "nlsb", WSEw, col = "darkgreen", add = TRUE)
+plot_model(sb1, type = "sb", col = "orange", lty = 3, lwd = 2, add = TRUE)
+# plot_model(sbm1, type = "sbm", col = "green", lwd = 2, add = TRUE)
+plot_model(nl1, type = "nl", WSEw, col = "green", add = TRUE)
+plot_model(nlsb1, type = "nlsb", WSEw, col = "blue", add = TRUE)
 legend("top", ncol = 2, 
-       legend = c("true","linear","sb", "sbm", "nl", "nlsb"), 
-       col = c("black","red","purple","green", "blue", "darkgreen"), 
-       lty = c(1,2,3,1,1,1),
-       lwd = c(2,2,2,2,1,1))
+       legend = c("true","linear","sb", "nl", "nlsb"), 
+       col = c("black","red","orange","green", "blue"), 
+       lty = c(1,2,3,1,1),
+       lwd = c(2,2,2,1,1))
 
 # -------------------------------------------------------------------------------------------------
 # Triangle, rectangle, parabola test cases for A0 prediction

@@ -307,77 +307,81 @@ legend("topleft", legend = c("Data", "Linear","SB","NL","NLSB"),
 # ------------------------------------------------------------------------------------------------------------
 # Compute true z0
 
-z0.true.xs <- unlist(lapply(cross_sections_avg$b, min))
-z0.true.ra <- ra(z0.true.xs, n = 2000)
-saveRDS(z0.true.xs, file = file.path(exp_dir, "z0_true_xs.rds")) # cross section
-saveRDS(z0.true.ra, file = file.path(exp_dir, "z0_true_ra.rds")) # reach-averaged
+z0.true.ra <- unlist(lapply(cross_sections_avg$b, min))
+saveRDS(z0.true.ra, file = file.path(exp_dir, "z0_true_ra.rds")) # cross section
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true s0
 
-s0.true.xs <- diff(z0.true.xs)
-s0.true.ra <- diff(z0.true.ra)
-par(mfrow=c(2,1))
-plot(s0.true.xs, type = "l")
-plot(s0.true.ra, type = "l")
-abline(0,0)
-saveRDS(s0.true.xs, file = file.path(exp_dir, "s0_true_xs.rds")) 
-saveRDS(s0.true.ra, file = file.path(exp_dir, "s0_true_ra.rds"))
+# s0.true.xs <- diff(z0.true.xs)
+# s0.true.ra <- diff(z0.true.ra)
+# par(mfrow=c(2,1))
+# plot(s0.true.xs, type = "l")
+# plot(s0.true.ra, type = "l")
+# abline(0,0)
+# saveRDS(s0.true.xs, file = file.path(exp_dir, "s0_true_xs.rds")) 
+# saveRDS(s0.true.ra, file = file.path(exp_dir, "s0_true_ra.rds"))
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true A, WP
 
 # Calculate true hydraulic parameters for cross sections
-n.xs <- length(xWSEw)
-A.true.xs <- vector(length = n.xs)
-WP.true.xs <- vector(length = n.xs)
-for (k in 1:n.xs)
-{
-  x <- cross_sections$x[[k]]
-  b <- cross_sections$b[[k]]
-  WSE <- max(b) # bankfull
-  A.true.xs[k] <- calc_A(x, b, WSE)
-  WP.true.xs[k] <- calc_WP(x, b, WSE)
-}
-plot(A.true.xs, type="l")
-plot(WP.true.xs, type="l")
-saveRDS(A.true.xs, file = file.path(exp_dir, "A_true_xs.rds")) 
-saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds")) 
+# n.xs <- length(xWSEw)
+# A.true.xs <- vector(length = n.xs)
+# WP.true.xs <- vector(length = n.xs)
+# for (k in 1:n.xs)
+# {
+#   x <- cross_sections$x[[k]]
+#   b <- cross_sections$b[[k]]
+#   WSE <- max(b) # bankfull
+#   A.true.xs[k] <- calc_A(x, b, WSE)
+#   WP.true.xs[k] <- calc_WP(x, b, WSE)
+# }
+# plot(A.true.xs, type="l")
+# plot(WP.true.xs, type="l")
+# saveRDS(A.true.xs, file = file.path(exp_dir, "A_true_xs.rds"))
+# saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds"))
 
 # Calculate reach-average hydraulic parameters
-n <- 2000 # number of segments in a reach = 10 km/5 m = 2000
-A.true.ra <- ra(A.true.xs, n)
-WP.true.ra <- ra(WP.true.xs, n)
+A.true.ra <- vector(length = nr)
+WP.true.ra <- vector(length = nr)
+for (k in 1:nr)
+{
+  x <- cross_sections_avg$x[[k]]
+  b <- cross_sections_avg$b[[k]]
+  WSE <- max(b) # bankfull
+  A.true.ra[k] <- calc_A(x, b, WSE)
+  WP.true.ra[k] <- calc_WP(x, b, WSE)
+}
 plot(A.true.ra, type="l")
 plot(WP.true.ra, type="l")
-saveRDS(A.true.ra, file = file.path(exp_dir, "A_true_ra.rds")) 
-saveRDS(WP.true.ra, file = file.path(exp_dir, "WP_true_ra.rds")) 
+saveRDS(A.true.ra, file = file.path(exp_dir, "A_true_ra.rds"))
+saveRDS(WP.true.ra, file = file.path(exp_dir, "WP_true_ra.rds"))
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true A0
 
 # Calculate true A0 (cross section)
-A0.true.xs <- array(dim = c(nr, n_exp_levels))
-w0.xs <- array(dim = c(nr, n_exp_levels)) # lowest observed width value
-for (r in 1:nr)
-{
-  for (k in 1:n_exp_levels)
-  {
-    WSEw_obs <- observe(xWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
-    p <- max(which(xWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
-    w0.xs[r,k] <- min(WSEw_obs$w)
-    A0.true.xs[r,k] <- calc_A_from_WSEw(xWSEw[[r]][1:p,])
-  }
-  print(r)
-}
-saveRDS(w0.xs, file = file.path(exp_dir, "w0_xs.rds"))
-saveRDS(A0.true.xs, file = file.path(exp_dir, "A0_true_xs.rds"))
+# A0.true.xs <- array(dim = c(nr, n_exp_levels))
+# w0.xs <- array(dim = c(nr, n_exp_levels)) # lowest observed width value
+# for (r in 1:nr)
+# {
+#   for (k in 1:n_exp_levels)
+#   {
+#     WSEw_obs <- observe(xWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
+#     p <- max(which(xWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
+#     w0.xs[r,k] <- min(WSEw_obs$w)
+#     A0.true.xs[r,k] <- calc_A_from_WSEw(xWSEw[[r]][1:p,])
+#   }
+#   print(r)
+# }
+# saveRDS(w0.xs, file = file.path(exp_dir, "w0_xs.rds"))
+# saveRDS(A0.true.xs, file = file.path(exp_dir, "A0_true_xs.rds"))
 
 # Calculate true A0 (reach average)
-n.ra <- 3774
-A0.true.ra <- array(dim = c(n.ra, n_exp_levels))
-w0.ra <- array(dim = c(n.ra, n_exp_levels)) # lowest observed width value
-for (r in 1:n.ra)
+A0.true.ra <- array(dim = c(nr, n_exp_levels))
+w0.ra <- array(dim = c(nr, n_exp_levels)) # lowest observed width value
+for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
   {
@@ -475,11 +479,11 @@ save(WP.l, WP.sb, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
 save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
 
 # Compute slope via finite difference
-s0.l <- apply(z0.l, c(2,3), diff)
-s0.sb <- apply(z0.sb, c(2,3), diff)
-s0.nl <- apply(z0.nl, c(2,3), diff)
-s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
-save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
+# s0.l <- apply(z0.l, c(2,3), diff)
+# s0.sb <- apply(z0.sb, c(2,3), diff)
+# s0.nl <- apply(z0.nl, c(2,3), diff)
+# s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
+# save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -1145,6 +1149,57 @@ hist((A0.nl - A0.true.ra[,k])[,k,],
 hist((A0.nlsb - A0.true.ra[,k])[,k,], 
      main = paste("A0 error (sq. m) at", expo[k]*100,"% exposure, NLSB method"), 
      xlab = "A0 prediction error", "fd", xlim = c(xl,xu))
+
+# ------------------------------------------------------------------------------------------
+# Plot predicted z0 and A0 from each model for each reach-average cross section
+
+par(mfrow = c(2,2))
+
+for (k in seq(4,16,by=4))
+{
+  plot(xlim = c(0,4), 
+       ylim = c(100, 144), xlab = "cross section", ylab = "z0 (m)",
+       main = paste("z0 predictions,", 100*expo[k], "percent exposure"), 
+       "n")
+  if (k==16)
+  {
+    legend("bottomright", legend = c("Truth", "Linear","SB","NL","NLSB"),
+           col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
+  }
+  for (r in 1:nr)
+  {
+    rx <- seq(r-0.25, r+0.25, by = 0.01)
+    ry <- rep(z0.true.ra[r], length(rx))
+    lines(rx, ry, col = "black", pch = 7)
+    points(r, z0.l[r,k,1], col = "red", pch = 1, cex = 1.5)
+    points(r, z0.sb[r,k,1], col = "orange", pch = 1, cex = 1.5)
+    points(r, z0.nl[r,k,1], col = "green", pch = 1, cex = 1.5)
+    points(r, z0.nlsb[r,k,1], col = "blue", pch = 1, cex = 1.5)
+  }
+}
+
+for (k in seq(4,16,by=4)) # something is wrong with the code here
+{
+  plot(xlim = c(0,4), 
+       ylim = c(0, 4500), xlab = "cross section", ylab = "A0 (sq. m)",
+       main = paste("A0 predictions,", 100*expo[k], "percent exposure"), 
+       "n")
+  if (k==16)
+  {
+    legend("topright", legend = c("Truth", "Linear","SB","NL","NLSB"),
+           col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
+  }
+  for (r in 1:nr)
+  {
+    rx <- seq(r-0.25, r+0.25, by = 0.01)
+    ry <- rep(A0.true.ra[r], length(rx))
+    lines(rx, ry, col = "black", pch = 7)
+    points(r, A0.l[r,k,1], col = "red", pch = 1, cex = 1.5)
+    points(r, A0.sb[r,k,1], col = "orange", pch = 1, cex = 1.5)
+    points(r, A0.nl[r,k,1], col = "green", pch = 1, cex = 1.5)
+    points(r, A0.nlsb[r,k,1], col = "blue", pch = 1, cex = 1.5)
+  }
+}
 
 # ------------------------------------------------------------------------------------------------
 # SCRAP 
