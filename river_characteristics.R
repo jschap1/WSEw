@@ -81,3 +81,8 @@ summary(A)
 summary(ra(A,2000))
 plot(A, type = "l")
 plot(ra(A,2000), type = "l")
+
+exp_dir <- "/Volumes/HD3/Cross_Sections/pool_21_ra_FALSE_nr_5773_expo_19_spacing_5_sampling_even_mc_replicates_100"
+save(A, s, wbf, dbf, dbf.max, dist_downstream, 
+     b.min, xdw, power.fits, 
+     file = file.path(exp_dir, "p21_riv_characteristics.rda"))

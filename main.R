@@ -22,7 +22,9 @@
 #   This is the optimization before running the code many times.
 # Revised 9/26/2018
 #   Changed reach averaging method, now uses 3, 10 km reaches for the 30 km study area (pool 21)
-#   Samples SWOT data from gauge time series instead of even sampling method
+#   Started implementing SWOT data from gauge time series instead of even sampling method,
+#   but currently still using even sampling.
+#   Changed name of executive file to "main.R" without a "dN" on the end
 
 # ------------------------------------------------------------------------------------------------
 
@@ -41,17 +43,16 @@ library(roxygen2)
 update_WSEw()
 
 # Experiment description
-n_exp_levels <- 19
 nr <- 3
-reach_avg <- FALSE
+reach_avg <- "10km"
 spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
-err_type <- "mc"
-M <- 100 # number of replicates
+err_type <- "no_err"
+M <- 1 # number of replicates
 
 # Make a directory to store results
-exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_expo_",n_exp_levels,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
+exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
 fits_dir <- "/Volumes/HD3/Cross_Sections" # directory for modeling outputs
 exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
 
@@ -167,7 +168,7 @@ xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data poi
 rWSEw <- reach_avg(xWSEw)
 rWSEw_burr <- reach_avg(xWSEw)
 
-save(cross_sections, xWSEw, rWSEw, file = file.path(saveloc, "/Data/Processed_Data/processed_xs_data.rda"))
+save(cross_sections, xWSEw, rWSEw, file = file.path(exp_dir, "processed_xs_data_10km.rda"))
 
 # Plot the observations
 plot(WSE~w, rWSEw[[1]], main = "WSE-w sampling, three years")
@@ -175,19 +176,64 @@ points(WSE~w, rWSEw_burr[[1]], col="red", pch=19)
 legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black", "red"))
 
 # ------------------------------------------------------------------------------------------------
+# Make reach-average effective cross sections that are 10 km long each
+
+# hist(unlist(lapply(cross_sections$x, length)))
+xs.res <- resample_xs(cross_sections, n = 300)
+xs.avg <- vector(length = 3, "list")
+xs.avg[[1]] <- calc_mean_cross_section(xs.res[1:2000,,])
+xs.avg[[2]] <- calc_mean_cross_section(xs.res[2001:4000,,])
+xs.avg[[3]] <- calc_mean_cross_section(xs.res[4001:5773,,])
+
+# ------------------------------------------------------------------------------------------------
+# Calculate h-w relationship for the reach-average cross sections
+
+# need to reformat
+x <- vector("list", length = nr)
+b <- vector("list", length = nr)
+d <- vector("list", length = nr)
+for (r in 1:nr)
+{
+  x[[r]] <- xs.avg[[r]]$x
+  b[[r]] <- xs.avg[[r]]$b
+  d[[r]] <- xs.avg[[r]]$d
+}
+cross_sections_avg <- list(x = x, b = b, d = d) 
+rWSEw <- calc_WSEw(cross_sections_avg, interval = 0.05, dx = 1)
+
+save(cross_sections, xWSEw, rWSEw, file = file.path(exp_dir, "processed_xs_data_10km.rda"))
+
+par(mfrow = c(3,2))
+plot(b~x, xs.avg[[1]], type = "l", 
+     main = "Reach average cross section 1",
+     xlim = c(0,800), ylim = c(135,144))
+plot(WSE~w, rWSEw[[1]], xlab = "width (m)", ylab = "height (m)", 
+     ylim = c(135, 144), main = "Height-width relationship", type = "o")
+plot(b~x, xs.avg[[2]], type = "l", 
+     main = "Reach average cross section 2",
+     xlim = c(0,800), ylim = c(135,144))
+plot(WSE~w, rWSEw[[2]], xlab = "width (m)", ylab = "height (m)", 
+     ylim = c(135, 144), main = "Height-width relationship", type = "o")
+plot(b~x, xs.avg[[3]], type = "l", 
+     main = "Reach average cross section 3",
+     xlim = c(0,800), ylim = c(135,144))
+plot(WSE~w, rWSEw[[3]], xlab = "width (m)", ylab = "height (m)", 
+     ylim = c(135, 144), main = "Height-width relationship", type = "o")
+
+# ------------------------------------------------------------------------------------------------
 # Main experiments - model fitting at different exposure levels, known measurements
 # Should use errors in variables method, but this can be refined later.
 # Will do this with uncertain measurements later, preferably without MC simulation
 
-expo <- seq(0.05, 0.95, length.out = n_exp_levels) # exposure levels
+expo <- seq(0.05, 0.95, length.out = 19) # exposure levels
 n_exp_levels <- length(expo)
-# nr <- length(rWSEw)
+nr <- length(rWSEw)
 
 # Run the parallel computations (see computation_time_calculator.xls)
 
 ncores <- detectCores()
-registerDoMC(cores = ncores - 1)
-registerDoMC(cores = 12)
+# registerDoMC(cores = ncores - 1)
+registerDoMC(cores = 3)
 
 begin.time <- Sys.time()
 WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r)} # returns a dummy value; the point is to save .rds files
@@ -205,30 +251,19 @@ begin.time <- Sys.time()
 nlval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_nl_par(r)}
 print(Sys.time() - begin.time)
 
-begin.time <- Sys.time()
+begin.time <- Sys.time() # sometimes the gradient is singular for the optimization routine in nlsLM
 nlsbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_nlsb_par(r)}
 print(Sys.time() - begin.time)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------
-# Not all the cross sections ran properly. Run this to fix.
-
-for (r in 1:nr)
-{
-  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
-  if(!file.exists(file.path(exp_dir, sb_name)))
-  {
-    fit_sb_par(r)
-  }
-}
-
-# --------------------------------------------------------------------------------------------------------------------------------------------
 # Plot for presentation (one cross section)
-r <- 2500
+r <- 3
 WSEw_obs1 <- observe(rWSEw[[r]], exposure = 0.5, sd_w = 0, sd_wse = 0)
 plot(WSE~w, WSEw_obs1, xlim = c(0, 800), ylim = c(131,143), 
-     main = paste("Reach averaged cross section", r),
+     main = paste("Reach averaged cross section", r, "at 50% exposure"),
      xlab = "w (m)", ylab = "WSE (m)")
-points(0, rWSEw[[1]]$WSE[1], col = "black", pch = 8)
+lines(WSE~w, rWSEw[[r]])
+# points(0, rWSEw[[1]]$WSE[1], col = "black", pch = 8)
 
 # Fit models
 lf1 <- fit_linear(WSEw_obs1)
@@ -238,24 +273,33 @@ nlsb1 <- fit_nlsb(WSEw_obs1)
 
 # plot linear
 lines(WSEw_obs1$w, predict(lf1), col = "red")
-points(0, predict(lf1, newdata = data.frame(w=0)), col = "red", pch = 19)
+w.vals <- seq(0, min(WSEw_obs1$w), 1)
+lines(w.vals, predict(lf1, newdata = data.frame(w=w.vals)), 
+      col = "red", lty = 2)
+# points(0, predict(lf1, newdata = data.frame(w=0)), col = "red", pch = 19)
 
 # plot slope break
 nn <- length(WSEw_obs1$w)
 sb1.ind <- attributes(sb1)$sb.ind
 lines(WSEw_obs1$w[1:sb1.ind], predict(sb1[[1]]), col = "orange")
 lines(WSEw_obs1$w[(sb1.ind):nn], predict(sb1[[2]]), col = "orange")
-points(0, predict(sb1[[1]], newdata = data.frame(w=0)), col = "orange", pch = 19)
+lines(w.vals, predict(sb1[[1]], newdata = data.frame(w=w.vals)), 
+      col = "orange", lty = 2)
+# points(0, predict(sb1[[1]], newdata = data.frame(w=0)), col = "orange", pch = 19)
 
 # plot nl
 lines(WSEw_obs1$w, predict(nl1), col = "green")
-points(0, predict(nl1, newdata = data.frame(w=0)), col = "green", pch = 19)
+lines(w.vals, predict(nl1, newdata = data.frame(w=w.vals)), 
+      col = "green", lty = 2)
+# points(0, predict(nl1, newdata = data.frame(w=0)), col = "green", pch = 19)
 
 # plot nlsb
 nlsb1.ind <- attributes(nlsb1)$sb.ind
 lines(WSEw_obs1$w[1:nlsb1.ind], predict(nlsb1[[1]]), col = "blue")
 lines(WSEw_obs1$w[(nlsb1.ind):nn], predict(nlsb1[[2]]), col = "blue")
-points(0, predict(nlsb1[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19)
+lines(w.vals, predict(nlsb1[[1]], newdata = data.frame(w=w.vals)), 
+      col = "blue", lty = 2)
+# points(0, predict(nlsb1[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19)
 
 legend("topleft", legend = c("Data", "Linear","SB","NL","NLSB"), 
        col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
@@ -263,7 +307,7 @@ legend("topleft", legend = c("Data", "Linear","SB","NL","NLSB"),
 # ------------------------------------------------------------------------------------------------------------
 # Compute true z0
 
-z0.true.xs <- unlist(lapply(cross_sections$b, min))
+z0.true.xs <- unlist(lapply(cross_sections_avg$b, min))
 z0.true.ra <- ra(z0.true.xs, n = 2000)
 saveRDS(z0.true.xs, file = file.path(exp_dir, "z0_true_xs.rds")) # cross section
 saveRDS(z0.true.ra, file = file.path(exp_dir, "z0_true_ra.rds")) # reach-averaged
@@ -1102,7 +1146,43 @@ hist((A0.nlsb - A0.true.ra[,k])[,k,],
      main = paste("A0 error (sq. m) at", expo[k]*100,"% exposure, NLSB method"), 
      xlab = "A0 prediction error", "fd", xlim = c(xl,xu))
 
+# ------------------------------------------------------------------------------------------------
+# SCRAP 
 
+# it would be good to take off outlier cross sections - say, those with bankfull parameters that are outliers
+ra.xs <- vector(length = nr, "list")
+# make this efficient later
+sumw <- 0
+sumWSE <- 0 
+for (r in 1:2000)
+{
+  sumw <- sumw + xWSEw[[r]]$w
+  sumWSE <- sumWSE + xWSEw[[r]]$WSE
+}
+ra.xs[[1]] <- data.frame(WSE = sumWSE/2000, w = sumw/2000)
+
+sumw <- 0
+sumWSE <- 0 
+for (r in 2001:4000)
+{
+  sumw <- sumw + xWSEw[[r]]$w
+  sumWSE <- sumWSE + xWSEw[[r]]$WSE
+}
+ra.xs[[2]] <- data.frame(WSE = sumWSE/2000, w = sumw/2000)
+
+sumw <- 0
+sumWSE <- 0 
+for (r in 4001:5773)
+{
+  sumw <- sumw + xWSEw[[r]]$w
+  sumWSE <- sumWSE + xWSEw[[r]]$WSE
+}
+# 5773-4001+1
+ra.xs[[3]] <- data.frame(WSE = sumWSE/1773, w = sumw/1773)
+
+plot(WSE~w, ra.xs[[1]])
+plot(WSE~w, ra.xs[[2]])
+plot(WSE~w, ra.xs[[3]])
 
 
 

@@ -9,7 +9,9 @@ observe_par <- function(r)
     WSEw_obs[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
+      WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
+                                    sd_wse = 0, sd_w = 0)
+      # WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
     }
   }
   # save data for each cross section (to avoid bulky files)

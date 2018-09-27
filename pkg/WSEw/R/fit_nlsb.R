@@ -26,17 +26,43 @@ fit_nlsb <- function(WSEw, h = 10)
   {
     # for each possible breakpoint, find the LSE of the best fit
     
-    fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
-                   data = WSEw[1:i,])
+    # fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
+    #                data = WSEw[1:i,])
+    
+    tryCatch(
+      {
+        fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, 
+                       start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
+                       data = WSEw[1:i,])
+      }, 
+      error = function(e) 
+      {
+        print("error: nonlinear fit did not converge")
+        fit.a <- NULL
+      }
+    )
     
     a0 <- coef(fit.a)[1]
     a1 <- coef(fit.a)[2]
     a2 <- coef(fit.a)[3]
     xb <- WSEw$w[i]
     
-    fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
-                   start = c(b1 = 1e-4, b2 = 2), 
-                   data = WSEw[(i):n,])
+    tryCatch(
+      {
+        fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
+                     start = c(b1 = 1e-4, b2 = 2), 
+                     data = WSEw[(i):n,])
+      }, 
+      error = function(e) 
+      {
+        print("error: nonlinear fit did not converge")
+        fit.b <- NULL
+      }
+    )
+    
+    # fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
+    #                start = c(b1 = 1e-4, b2 = 2), 
+    #                data = WSEw[(i):n,])
     
     LSE <- sum(resid(fit.a)^2) + sum(resid(fit.b)^2)
     
