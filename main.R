@@ -25,6 +25,8 @@
 #   Started implementing SWOT data from gauge time series instead of even sampling method,
 #   but currently still using even sampling.
 #   Changed name of executive file to "main.R" without a "dN" on the end
+# Revised 9/27/2018
+#   Consolidated/cleaned up code so there are fewer files, more abstraction
 
 # ------------------------------------------------------------------------------------------------
 
@@ -48,8 +50,8 @@ reach_avg <- "10km"
 spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
-err_type <- "no_err"
-M <- 1 # number of replicates
+err_type <- "MC"
+M <- 500 # number of replicates
 
 # Make a directory to store results
 exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
@@ -67,8 +69,6 @@ if (!dir.exists(exp_dir))
 }
 
 set.seed(704753262)
-source("Codes/modelfit_par.R") # load the fitting functions
-source("Codes/predict_par.R") # load the predicting functions
 
 # ------------------------------------------------------------------------------------------------
 # Load raw data
@@ -112,7 +112,7 @@ points(gauges.utm, pch = 19, col = "black", cex = 0.5)
 # ------------------------------------------------------------------------------------------------
 # Load processed cross section and WSE-w data
 
-load("Data/Processed/processed_xs_data.rda")
+load(file.path(exp_dir, "processed_xs_data_10km.rda"))
 
 # ------------------------------------------------------------------------------------------------
 # Load fitted models (don't try to load them all at once)
@@ -201,9 +201,9 @@ for (r in 1:nr)
 cross_sections_avg <- list(x = x, b = b, d = d) 
 rWSEw <- calc_WSEw(cross_sections_avg, interval = 0.05, dx = 1)
 
-save(cross_sections, xWSEw, rWSEw, file = file.path(exp_dir, "processed_xs_data_10km.rda"))
+save(cross_sections, cross_sections_avg, xWSEw, rWSEw, file = file.path(exp_dir, "processed_xs_data_10km.rda"))
 
-par(mfrow = c(3,2))
+par(mfrow = c(1,2))
 plot(b~x, xs.avg[[1]], type = "l", 
      main = "Reach average cross section 1",
      xlim = c(0,800), ylim = c(135,144))
@@ -211,7 +211,7 @@ plot(WSE~w, rWSEw[[1]], xlab = "width (m)", ylab = "height (m)",
      ylim = c(135, 144), main = "Height-width relationship", type = "o")
 plot(b~x, xs.avg[[2]], type = "l", 
      main = "Reach average cross section 2",
-     xlim = c(0,800), ylim = c(135,144))
+     xlim = c(0,650), ylim = c(135,144))
 plot(WSE~w, rWSEw[[2]], xlab = "width (m)", ylab = "height (m)", 
      ylim = c(135, 144), main = "Height-width relationship", type = "o")
 plot(b~x, xs.avg[[3]], type = "l", 
@@ -313,14 +313,14 @@ saveRDS(z0.true.ra, file = file.path(exp_dir, "z0_true_ra.rds")) # cross section
 # ------------------------------------------------------------------------------------------------------------
 # Compute true s0
 
-# s0.true.xs <- diff(z0.true.xs)
-# s0.true.ra <- diff(z0.true.ra)
-# par(mfrow=c(2,1))
-# plot(s0.true.xs, type = "l")
-# plot(s0.true.ra, type = "l")
-# abline(0,0)
-# saveRDS(s0.true.xs, file = file.path(exp_dir, "s0_true_xs.rds")) 
-# saveRDS(s0.true.ra, file = file.path(exp_dir, "s0_true_ra.rds"))
+s0.true.xs <- diff(z0.true.xs)
+s0.true.ra <- diff(z0.true.ra)
+par(mfrow=c(2,1))
+plot(s0.true.xs, type = "l")
+plot(s0.true.ra, type = "l")
+abline(0,0)
+saveRDS(s0.true.xs, file = file.path(exp_dir, "s0_true_xs.rds"))
+saveRDS(s0.true.ra, file = file.path(exp_dir, "s0_true_ra.rds"))
 
 # ------------------------------------------------------------------------------------------------------------
 # Compute true A, WP
@@ -381,6 +381,7 @@ saveRDS(WP.true.ra, file = file.path(exp_dir, "WP_true_ra.rds"))
 # Calculate true A0 (reach average)
 A0.true.ra <- array(dim = c(nr, n_exp_levels))
 w0.ra <- array(dim = c(nr, n_exp_levels)) # lowest observed width value
+h1.ra <- array(dim = c(nr, n_exp_levels)) # lowest observed height value
 for (r in 1:nr)
 {
   for (k in 1:n_exp_levels)
@@ -388,11 +389,13 @@ for (r in 1:nr)
     WSEw_obs <- observe(rWSEw[[r]], sd_wse = 0, sd_w = 0, exposure = expo[k])
     p <- max(which(rWSEw[[r]]$WSE<min(WSEw_obs$WSE))) # index up to which is not observed
     w0.ra[r,k] <- min(WSEw_obs$w)
-    A0.true.ra[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:p,])
+    h1.ra[r,k] <- min(WSEw_obs$WSE)
+    A0.true.ra[r,k] <- calc_A_from_WSEw(rWSEw[[r]][1:(p+1),])
   }
   print(r)
 }
 saveRDS(w0.ra, file = file.path(exp_dir, "w0_ra.rds"))
+saveRDS(h1.ra, file = file.path(exp_dir, "h1_ra.rds"))
 saveRDS(A0.true.ra, file = file.path(exp_dir, "A0_true_ra.rds"))
 
 # ------------------------------------------------------------------------------------------------
@@ -414,14 +417,14 @@ print(Sys.time() - begin.time)
 save(pred_sb, file = file.path(exp_dir, "pred_sb_bu.rda"))
 
 begin.time <- Sys.time()
-pred_nl <- foreach(r = 1:nr) %dopar% {pred_nl_par(r)}
+pred_nl <- foreach(r = 1:nr) %dopar% {pred_nl_par(r, rWSEw, w0 = w0.ra, h1 = h1.ra)}
 print(Sys.time() - begin.time)
-save(pred_nl, file = file.path(exp_dir, "pred_nl_bu.rda"))
+save(pred_nl, file = file.path(exp_dir, "pred_nl_bu_newA0.rda"))
 
 begin.time <- Sys.time()
-pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r)}
+pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r, rWSEw, w0 = w0.ra, h1 = h1.ra)}
 print(Sys.time() - begin.time)
-save(pred_nlsb, file = file.path(exp_dir, "pred_nlsb_bu.rda"))
+save(pred_nlsb, file = file.path(exp_dir, "pred_nlsb_bu_newA0.rda"))
 # load(file.path(exp_dir, "pred_nlsb_bu.rda"))
 
 # Run predictions again for any reaches where errors occurred
@@ -476,14 +479,34 @@ for (r in 1:nr)
 save(z0.l, z0.sb, z0.nl, z0.nlsb, file = file.path(exp_dir, "z0_pred.rda"))
 save(A.l, A.sb, A.nl, A.nlsb, file = file.path(exp_dir, "A_pred.rda"))
 save(WP.l, WP.sb, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
-save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
+save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred_newa0.rda"))
+
+# !!!
+# names(z0.l) # coerce to data frames and save as sample data for the R package.
 
 # Compute slope via finite difference
-# s0.l <- apply(z0.l, c(2,3), diff)
-# s0.sb <- apply(z0.sb, c(2,3), diff)
-# s0.nl <- apply(z0.nl, c(2,3), diff)
-# s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
-# save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
+s0.l <- apply(z0.l, c(2,3), diff)
+s0.sb <- apply(z0.sb, c(2,3), diff)
+s0.nl <- apply(z0.nl, c(2,3), diff)
+s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
+save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
+
+# ------------------------------------------------------------------------------------------------
+# Check the predicted values and models to make sure they're OK
+
+r <- 1
+k <- 16
+z0.true.ra[r]
+summary(z0.l[r,k,])
+summary(z0.sb[r,k,])
+summary(z0.nl[r,k,])
+summary(z0.nlsb[r,k,])
+
+A0.true.ra[r,k]
+summary(A0.l[r,k,])
+summary(A0.sb[r,k,])
+summary(A0.nl[r,k,])
+summary(A0.nlsb[r,k,])
 
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
@@ -734,10 +757,6 @@ for (r in 1:nr)
     A.nlsb.upper[r,k] <- as.numeric(q1[3])
   }
 }
-
-# |||||||||||||
-# vvvvvvvvvvvvv
-# Entered commands through here, starting 9/24 at 8:52 p.m.
 
 # ------------------------------------------------------------------------------------------------
 # Make plots of median z0, A0 along the river
@@ -1151,55 +1170,36 @@ hist((A0.nlsb - A0.true.ra[,k])[,k,],
      xlab = "A0 prediction error", "fd", xlim = c(xl,xu))
 
 # ------------------------------------------------------------------------------------------
-# Plot predicted z0 and A0 from each model for each reach-average cross section
 
-par(mfrow = c(2,2))
+# Figure N
+#' Plot predicted vs. actual
+#' 
+#' Generates predicted vs. actual figure
+#' Takes the median of the ensemble as the prediction
 
-for (k in seq(4,16,by=4))
-{
-  plot(xlim = c(0,4), 
-       ylim = c(100, 144), xlab = "cross section", ylab = "z0 (m)",
-       main = paste("z0 predictions,", 100*expo[k], "percent exposure"), 
-       "n")
-  if (k==16)
-  {
-    legend("bottomright", legend = c("Truth", "Linear","SB","NL","NLSB"),
-           col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
-  }
-  for (r in 1:nr)
-  {
-    rx <- seq(r-0.25, r+0.25, by = 0.01)
-    ry <- rep(z0.true.ra[r], length(rx))
-    lines(rx, ry, col = "black", pch = 7)
-    points(r, z0.l[r,k,1], col = "red", pch = 1, cex = 1.5)
-    points(r, z0.sb[r,k,1], col = "orange", pch = 1, cex = 1.5)
-    points(r, z0.nl[r,k,1], col = "green", pch = 1, cex = 1.5)
-    points(r, z0.nlsb[r,k,1], col = "blue", pch = 1, cex = 1.5)
-  }
-}
+pred <- c(median(z0.l[1,k,]), median(z0.l[2,k,]), median(z0.l[3,k,]))
+pred <- c(median(z0.sb[1,k,]), median(z0.sb[2,k,]), median(z0.sb[3,k,]))
+pred <- c(median(z0.nl[1,k,]), median(z0.nl[2,k,]), median(z0.nl[3,k,]))
+pred <- c(median(z0.nlsb[1,k,]), median(z0.nlsb[2,k,]), median(z0.nlsb[3,k,]))
 
-for (k in seq(4,16,by=4)) # something is wrong with the code here
-{
-  plot(xlim = c(0,4), 
-       ylim = c(0, 4500), xlab = "cross section", ylab = "A0 (sq. m)",
-       main = paste("A0 predictions,", 100*expo[k], "percent exposure"), 
-       "n")
-  if (k==16)
-  {
-    legend("topright", legend = c("Truth", "Linear","SB","NL","NLSB"),
-           col = c("black", "red","orange","green","blue"), lwd = c(1,1,1,1,1), ncol = 3)
-  }
-  for (r in 1:nr)
-  {
-    rx <- seq(r-0.25, r+0.25, by = 0.01)
-    ry <- rep(A0.true.ra[r], length(rx))
-    lines(rx, ry, col = "black", pch = 7)
-    points(r, A0.l[r,k,1], col = "red", pch = 1, cex = 1.5)
-    points(r, A0.sb[r,k,1], col = "orange", pch = 1, cex = 1.5)
-    points(r, A0.nl[r,k,1], col = "green", pch = 1, cex = 1.5)
-    points(r, A0.nlsb[r,k,1], col = "blue", pch = 1, cex = 1.5)
-  }
-}
+plot(z0.true.ra, pred, 
+     xlab = "true", ylab = "pred", asp = 1, 
+     xlim = c(133,137), ylim = c(133,137), 
+     main = "z0, 95% exposure, nlsb")
+abline(0,1)
+
+# Slope comparisons
+
+k <- 19
+summary(s0.l[2 , k, ])
+hist(s0.l[2 , k, ])
+
+r <- 1
+s0.true.ra[r]
+median(s0.l[r , k, ])
+summary(s0.sb[r , k, ])
+summary(s0.nl[r , k, ])
+hist(s0.nlsb[r , k, ])
 
 # ------------------------------------------------------------------------------------------------
 # SCRAP 

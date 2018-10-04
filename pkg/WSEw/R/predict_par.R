@@ -1,4 +1,13 @@
-# Parallelized functions for main_d6 hydraulic parameter predictions in parallel with foreach
+#' Predict parameters (parallel)
+#'
+#' Parallelized functions for main_d6 hydraulic parameter predictions in parallel with foreach
+#' for WSE-w fits.
+#' @export
+#' @param r cross section number
+#' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break) 
+#' and uses it to predict hydraulic parameters
+#' @return list of z0, A, W0, and A0 predictions
+#' @example pred_vals <- pred_linear_par(r = 1)
 
 # Linear
 pred_linear_par <- function(r)
@@ -19,13 +28,14 @@ pred_linear_par <- function(r)
         z0.l[k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
         A.l[k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
         WP.l[k,m] <- calc_model_WP(lf[[k]][[m]], type = "linear")
-        A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear")
+        A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = TRUE)
       }
     }
   }
   return(list(z0 = z0.l, A = A.l, WP = WP.l, A0 = A0.l))
 }
 
+#' @export
 # Slope break
 pred_sb_par <- function(r)
 {
@@ -44,13 +54,14 @@ pred_sb_par <- function(r)
         z0.sb[k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         A.sb[k,m] <- calc_model_A(sb[[k]][[m]], type = "sb")
         WP.sb[k,m] <- calc_model_WP(sb[[k]][[m]], type = "sb")
-        A0.sb[k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb")
+        A0.sb[k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb", pos.only = TRUE)
       }
     }
   }
   return(list(z0 = z0.sb, A = A.sb, WP = WP.sb, A0 = A0.sb))
 }
 
+#' @export
 # SBM
 pred_sbm_par <- function(r)
 {
@@ -76,15 +87,16 @@ pred_sbm_par <- function(r)
         try(z0.sbm[k,m] <- predict(sbm[[k]][[m]][[1]], newdata = data.frame(w = 0)))
         try(A.sbm[k,m] <- calc_model_A(sbm[[k]][[m]], type = "sbm"))
         try(WP.sbm[k,m] <- calc_model_WP(sbm[[k]][[m]], type = "sbm"))
-        try(A0.sbm[k,m] <- calc_model_A0(sbm[[k]][[m]], type = "sbm"))
+        try(A0.sbm[k,m] <- calc_model_A0(sbm[[k]][[m]], type = "sbm", pos.only = TRUE))
       }
     }
   }
   return(list(z0 = z0.sbm, A = A.sbm, WP = WP.sbm, A0 = A0.sbm))
 }
 
+#' @export
 # Nonlinear
-pred_nl_par <- function(r)
+pred_nl_par <- function(r, WSEw, w0, h1)
 {
   nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
   if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
@@ -105,17 +117,18 @@ pred_nl_par <- function(r)
       if (class(nl[[k]][[m]]) == "nls")
       {
         z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
-        A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = xWSEw[[r]])
-        WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = xWSEw[[r]]$w)
-        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w0 = w0.ra[r,k])
+        A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
+        WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
+        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w0[r,k], h1[r,k], pos.only = TRUE)
       }
     }
   }
   return(list(z0 = z0.nl, A = A.nl, WP = WP.nl, A0 = A0.nl))
 }
 
+#' @export
 # NLSB
-pred_nlsb_par <- function(r)
+pred_nlsb_par <- function(r, WSEw, w0, h1)
 {
   nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
   if (file.exists(file.path(exp_dir, nlsb_name))) # error check in case no model was fit for this cross section
@@ -136,14 +149,11 @@ pred_nlsb_par <- function(r)
       if (class(nlsb[[k]][[m]][[1]]) == "nls")
       {
         z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
-        A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = xWSEw[[r]]) # there may be a bug in the type = nlsb code here
-        WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = xWSEw[[r]]$w)
-        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w0 = w0.ra[r,k])
+        A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
+        WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = WSEw[[r]]$w)
+        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w0[r,k], h1[r,k], pos.only = TRUE)
       }
     }
   }
   return(list(z0 = z0.nlsb, A = A.nlsb, WP = WP.nlsb, A0 = A0.nlsb))
 }
-
-
-

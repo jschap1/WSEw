@@ -4,14 +4,16 @@
 \alias{calc_model_A0}
 \title{Calculate modeled flow area beneath the lowest observed WSE value}
 \usage{
-calc_model_A0(model, type, w0 = NULL)
+calc_model_A0(model, type, w1 = NULL, h1 = NULL, pos.only = FALSE)
 }
 \arguments{
 \item{model}{fitted model to the WSE-w data}
 
 \item{type}{type of model. Default is linear. Options are linear, sb, sbm, nl, and nlsb}
 
-\item{w0}{minimum observed width value for the fit. Only required if fit is nonlinear}
+\item{w1}{minimum observed width value for the fit. Only required if fit is nonlinear}
+
+\item{h1}{minimum observed height value for the fit. Only required if fit is nonlinear}
 }
 \value{
 A0 cross-sectional area of flow beneath lowest observation

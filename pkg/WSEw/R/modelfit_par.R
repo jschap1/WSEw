@@ -1,4 +1,12 @@
-# Parallelized fitting functions for main_d6 model fitting in parallel with foreach
+#' Fit height-width data (parallel)
+#'
+#' Parallelized fitting functions for model fitting with foreach
+#' @export
+#' @param r cross section number
+#' @details Saves fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break) 
+#' and synthetic height-width observations.
+#' @return list of z0, A, W0, and A0 predictions
+#' @example pred_vals <- pred_linear_par(r = 1)
 
 # Make observations
 observe_par <- function(r)
@@ -22,6 +30,7 @@ observe_par <- function(r)
 
 # -------------------------------------------------------------------------------------------------------------------------------------
 
+#' @export
 # Fit linear model
 fit_linear_par <- function(r)
 {
@@ -53,6 +62,7 @@ fit_linear_par <- function(r)
   return(0)
 }
 
+#' @export
 # Fit SB model
 fit_sb_par <- function(r)
 {
@@ -72,6 +82,7 @@ fit_sb_par <- function(r)
   return(0)
 }
 
+#' @export
 # Fit nonlinear model
 fit_nl_par <- function(r)
 {
@@ -98,6 +109,7 @@ fit_nl_par <- function(r)
   return(0)
 }
 
+#' @export
 # Fit NLSB model
 fit_nlsb_par <- function(r)
 {
@@ -132,10 +144,3 @@ fit_nlsb_par <- function(r)
   saveRDS(nlsb, file = file.path(exp_dir, nlsb_name))
   return(0)
 }
-
-# ------------------------------------------------------------------------------------------
-# SCRAP 
-
-#sapply()
-#apply(WSEw_obs, c(2,3), diff)
-# ifelse(nn>2,1,0)
