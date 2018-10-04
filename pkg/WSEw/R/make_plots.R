@@ -300,16 +300,18 @@ characterize_channel <- function(savename, plotflag = FALSE)
 #'                                main = paste("z0 error at", 100*expo[k], "percent channel exposure"), 
 #'                                ylab = "z0 error (m)", legend = FALSE)  
 
-bplab <- c("1","1","1","1","2","2","2","2","3","3","3","3")
-par(mfrow = c(2,2))
-k <- 16
-parameter_predictions_boxplots(A0.l, A0.sb, A0.nl, A0.nlsb, A0.true.ra, k = k, lumped = FALSE, absolute = FALSE,
-                               main = paste("A0 error at", 100*expo[k], "percent channel exposure"),
-                               ylab = "A0 error (sq. m)", legend = FALSE, A0 = TRUE, notch = TRUE, names = bplab)
+# bplab <- c("1","1","1","1","2","2","2","2","3","3","3","3")
+# lumpedlab <- c("L","SB","NL","NLSB")
+# par(mfrow = c(2,2))
+# k <- 4
+# parameter_predictions_boxplots(A0.l, A0.sb, A0.nl, A0.nlsb, A0.true.ra, k = k, lumped = TRUE, absolute = FALSE,
+#                                main = paste("average A0 error at", 100*expo[k], "percent channel exposure"),
+#                                ylab = "A0 error (sq. m)", legend = FALSE, A0 = TRUE, notch = TRUE, names = lumpedlab)
 
 # parameter_predictions_boxplots(z0.l, z0.sb, z0.nl, z0.nlsb, z0.true.ra, k = k, lumped = FALSE, absolute = FALSE,
 #                                main = paste("z0 error at", 100*expo[k], "percent channel exposure"),
-#                                ylab = "z0 error (m)", legend = FALSE, A0 = FALSE, notch = TRUE, names = bplab)
+#                                ylab = "average z0 error (m)", legend = FALSE, A0 = FALSE, notch = TRUE, names = bplab,
+#                                ylim = c(-20,5))
 
 parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, z.true, k,
                                            lumped = FALSE, absolute = FALSE,

@@ -17,9 +17,9 @@ observe_par <- function(r)
     WSEw_obs[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      # WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
-      #                               sd_wse = 0, sd_w = 0)
-      WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
+      WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
+                                    sd_wse = 1e-6, sd_w = 1e-6)
+      # WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
     }
   }
   # save data for each cross section (to avoid bulky files)
@@ -104,7 +104,7 @@ fit_nl_par <- function(r)
       }
     }
   }
-  nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
+  nl_name <- paste0("nl/nl_", "r_", r, ".rds")
   saveRDS(nl, file = file.path(exp_dir, nl_name))
   return(0)
 }
@@ -121,13 +121,13 @@ fit_nlsb_par <- function(r)
     nlsb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      tryCatch(
+      model1 <- tryCatch( # note: it is imperative to have model1 <- tryCatch() to return output at all
         {
           model1 <- fit_nlsb(WSEw_obs[[k]][[m]], h = 10)
         }, 
         error = function(e) 
         {
-          print("error: nonlinear fit did not converge")
+          # print("error: nonlinear fit did not converge")
           model1 <- NULL
         }
       )
@@ -136,6 +136,7 @@ fit_nlsb_par <- function(r)
         nlsb[[k]][[m]] <- model1
       } else
       {
+        print("hi")
         nlsb[[k]][[m]] <- NA
       }
     }

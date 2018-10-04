@@ -16,7 +16,7 @@ pred_linear_par <- function(r)
   A.l <- array(dim = c(n_exp_levels, M))
   WP.l <- array(dim = c(n_exp_levels, M))
   A0.l <- array(dim = c(n_exp_levels, M))
-  lf_name <- paste0("lf/lf_", "r_", r, "_test.rds") # load fitted model
+  lf_name <- paste0("lf/lf_", "r_", r, ".rds") # load fitted model
   lf <- readRDS(file.path(exp_dir, lf_name))
   for (k in 1:n_exp_levels)
   { 
@@ -28,7 +28,7 @@ pred_linear_par <- function(r)
         z0.l[k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
         A.l[k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
         WP.l[k,m] <- calc_model_WP(lf[[k]][[m]], type = "linear")
-        A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = TRUE)
+        A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = FALSE)
       }
     }
   }
@@ -39,7 +39,7 @@ pred_linear_par <- function(r)
 # Slope break
 pred_sb_par <- function(r)
 {
-  sb_name <- paste0("sb/sb_", "r_", r, "_test.rds")
+  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
   sb <- readRDS(file.path(exp_dir, sb_name))
   z0.sb <- array(dim = c(n_exp_levels, M))
   A.sb <- array(dim = c(n_exp_levels, M))
@@ -54,7 +54,7 @@ pred_sb_par <- function(r)
         z0.sb[k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         A.sb[k,m] <- calc_model_A(sb[[k]][[m]], type = "sb")
         WP.sb[k,m] <- calc_model_WP(sb[[k]][[m]], type = "sb")
-        A0.sb[k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb", pos.only = TRUE)
+        A0.sb[k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb", pos.only = FALSE)
       }
     }
   }
@@ -65,7 +65,7 @@ pred_sb_par <- function(r)
 # SBM
 pred_sbm_par <- function(r)
 {
-  sbm_name <- paste0("sbm/sbm_", "r_", r, "_test.rds")
+  sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
   print(sbm_name)
   if (file.exists(file.path(exp_dir, sbm_name))) # error check in case no model was fit for this cross section
   {
@@ -95,10 +95,12 @@ pred_sbm_par <- function(r)
 }
 
 #' @export
+#' @param w1 minimum observed width, nr by n_exp_level by M array
+#' @param h1 minimum observed height, nr by n_exp_level by M array
 # Nonlinear
-pred_nl_par <- function(r, WSEw, w0, h1)
+pred_nl_par <- function(r, WSEw, w1, h1)
 {
-  nl_name <- paste0("nl/nl_", "r_", r, "_test.rds")
+  nl_name <- paste0("nl/nl_", "r_", r, ".rds")
   if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
   {
     nl <- readRDS(file.path(exp_dir, nl_name))
@@ -119,7 +121,7 @@ pred_nl_par <- function(r, WSEw, w0, h1)
         z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
         A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
         WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
-        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w0[r,k], h1[r,k], pos.only = TRUE)
+        A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
       }
     }
   }
@@ -127,8 +129,10 @@ pred_nl_par <- function(r, WSEw, w0, h1)
 }
 
 #' @export
+#' @param w1 minimum observed width, nr by n_exp_level by M array
+#' @param h1 minimum observed height, nr by n_exp_level by M array
 # NLSB
-pred_nlsb_par <- function(r, WSEw, w0, h1)
+pred_nlsb_par <- function(r, WSEw, w1, h1)
 {
   nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
   if (file.exists(file.path(exp_dir, nlsb_name))) # error check in case no model was fit for this cross section
@@ -151,9 +155,46 @@ pred_nlsb_par <- function(r, WSEw, w0, h1)
         z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
         WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = WSEw[[r]]$w)
-        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w0[r,k], h1[r,k], pos.only = TRUE)
+        A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
       }
     }
   }
   return(list(z0 = z0.nlsb, A = A.nlsb, WP = WP.nlsb, A0 = A0.nlsb))
 }
+
+#' @export
+#' @details 
+#' @param pred list of predicted values
+#' @param h1 array of minimum observed heights
+#' This removes the predictions with z0<h1
+clean_by_z0 <- function(pred, h1)
+{
+  for (r in 1:nr)
+  {
+    for (k in 1:n_exp_levels)
+    {
+      neglect_ind <- which(pred[[r]]$z0[k,] > h1[r,k,])
+      pred[[r]]$z0[k,neglect_ind] <- NA
+      pred[[r]]$A0[k,neglect_ind] <- NA
+    }
+  }
+  return(pred)
+}
+
+#' @export
+#' @details 
+#' This removes the predictions with A0<0
+clean_by_A0 <- function(pred, h1)
+{
+  for (r in 1:nr)
+  {
+    for (k in 1:n_exp_levels)
+    {
+      neglect_ind <- which(pred[[r]]$A0[k,] < 0)
+      pred[[r]]$z0[k,neglect_ind] <- NA
+      pred[[r]]$A0[k,neglect_ind] <- NA
+    }
+  }
+  return(pred)
+}
+

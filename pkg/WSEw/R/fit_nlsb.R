@@ -16,7 +16,8 @@ fit_nlsb <- function(WSEw, h = 10)
   if (length(WSEw$WSE)<h) 
   {
     print("Not enough data points")
-    return(NULL)
+    fits <- NULL
+    return(fits)
   }
   
   n <- dim(WSEw)[1] # number of data points
