@@ -57,7 +57,7 @@ spacing <- 5 # m
 swot_sampling <- "even"
 pool <- 21
 err_type <- "MC"
-M <- 100 # number of replicates
+M <- 500 # number of replicates
 
 expo <- seq(0.05, 0.95, length.out = 19) # exposure levels
 n_exp_levels <- length(expo)
@@ -92,20 +92,25 @@ lf <- readRDS(file.path(exp_dir, "lf.rds"))
 sb <- readRDS(file.path(exp_dir, "sb.rds")) 
 
 # True hydraulic parameters
-w0.ra <- readRDS(file.path(truth_dir, "w0_ra.rds"))
-WP.true.xs <- readRDS(file.path(truth_dir, "WP_true_xs.rds"))
+# w0.ra <- readRDS(file.path(truth_dir, "w0_ra.rds"))
+# WP.true.xs <- readRDS(file.path(truth_dir, "WP_true_xs.rds"))
 WP.true.ra <- readRDS(file.path(truth_dir, "WP_true_ra.rds")) 
 
-A.true.xs <- readRDS(file.path(truth_dir, "A_true_xs.rds"))
+# A.true.xs <- readRDS(file.path(truth_dir, "A_true_xs.rds"))
 A.true.ra <- readRDS(file.path(truth_dir, "A_true_ra.rds"))
 A0.true.ra <- readRDS(file.path(truth_dir, "A0_true_ra.rds"))
 
 s0.true.ra <- readRDS(file.path(truth_dir, "s0_true_ra.rds"))
-s0.true.xs <- readRDS(file.path(truth_dir, "s0_true_xs.rds"))
+# s0.true.xs <- readRDS(file.path(truth_dir, "s0_true_xs.rds"))
 z0.true.ra <- readRDS(file.path(truth_dir, "z0_true_ra.rds"))
-z0.true.xs <- readRDS(file.path(truth_dir, "z0_true_xs.rds"))
+# z0.true.xs <- readRDS(file.path(truth_dir, "z0_true_xs.rds"))
 
 # Predicted hydraulic parameters
+load(file.path(exp_dir, "pred_lf_tmp.rda"))
+load(file.path(exp_dir, "pred_sb_tmp.rda"))
+load(file.path(exp_dir, "pred_nl_tmp.rda"))
+load(file.path(exp_dir, "pred_nlsb_tmp.rda"))
+
 load(file.path(exp_dir, "z0_pred.rda"))
 load(file.path(exp_dir, "A_pred.rda"))
 load(file.path(exp_dir, "WP_pred.rda"))
@@ -119,19 +124,24 @@ load(file.path(exp_dir, "s0_pred.rda"))
 # ------------------------------------------------------------------------------------------------
 # UMESC data processing
 
-refWSE <- 470 # refWSE for pool 21 (ft)
+refWSE <- 667 # refWSE for pool 4 (ft)
 refWSE <- refWSE/(39.37/12) #  convert to m
 
 # Bathymetry
 if (!file.exists("Data/p21_depth.tif"))
 {
   bathy.dir <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC"
-  bathy.name <- "bath_pool_21/bath_1999_p21"
+  bathy.name <- "bath_pool_4/bath_1992_p4/w001001.adf"
   bathyfile <- file.path(bathy.dir, bathy.name)
   #levels(umesc)
   umesc <- raster(bathyfile)
-  depth_5 <- as_numeric_raster(umesc, att = "DEPTH_M") # native resolution depths (5 m)
-  writeRaster(depth_5, file = "Data/p21_depth.tif")
+  depth_5 <- as_numeric_raster(umesc, att = "DEPTH_M") # native resolution depths (5 m), takes a while (like 30 minutes or something)
+  
+  depth_5_refined <- depth_5 # there are some very large "depth" values; this gets rid of them
+  depth_5_refined[values(depth_5>100)] <- NA
+  depth_5 <- depth_5_refined
+  
+  writeRaster(depth_5, file = "Data/p4_depth.tif", overwrite = TRUE, progress = "text")
 } else 
 {
   depth_5 <- raster("Data/p21_depth.tif")
@@ -140,8 +150,8 @@ if (!file.exists("Data/p21_depth.tif"))
 
 # River centerline
 riv.dir <- "/Users/jschap/Desktop/Cross_Sections/Data/Centerlines"
-load(file.path(riv.dir, "centerline21.rda"))
-riv <- centerline_p21
+load(file.path(riv.dir, "centerline4.rda"))
+riv <- centerline_p4
 
 # Load USGS stream gauges in UMRB
 gauges <- read.table("/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/Stage/gauges_UMB_QC.txt")
@@ -151,12 +161,12 @@ crs(gauges) <- "+init=epsg:4326"
 gauges.utm <- spTransform(gauges, crs(riv))
 
 # Plot the study area
-plot(depth_5, main = "UMRB Pool 21", xlab = "easting", ylab = "northing")
+plot(depth_5, main = "UMRB Pool 4", xlab = "easting", ylab = "northing")
 lines(riv)
 points(gauges.utm, pch = 19, col = "black", cex = 0.5)
 
-# Compute cross section data from raw bathymetry
-cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE, 
+# Compute cross section data from raw bathymetry (transects_name is defunct)
+cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE,
                                  savename = transects_name, makeplot = FALSE, riv = riv)
 # (Takes about 4 hours at the highest possible resolution)
 
@@ -385,16 +395,11 @@ pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r, rWSEw, w1 = w1, h1 = h1
 print(Sys.time() - begin.time)
 save(pred_nlsb, file = file.path(exp_dir, "pred_nlsb_tmp.rda"))
 
-load(file.path(exp_dir, "pred_lf_tmp.rda"))
-load(file.path(exp_dir, "pred_sb_tmp.rda"))
-load(file.path(exp_dir, "pred_nl_tmp.rda"))
-load(file.path(exp_dir, "pred_nlsb_tmp.rda"))
-
 # Sometimes there are negative A0 values.
 # This occurs when the z0 prediction is higher than the observed h1 and can be attributed to measurement error.
 # This is physically inconsistent, so neglect these predictions and analyze the remaining predicted values.
 
-pred_lf <- clean_by_A0(pred_lf, h1)
+pred_lf <- clean_by_A0(pred_lf, h1) # remove A0 and z0 predictions where A0<0
 pred_sb <- clean_by_A0(pred_sb, h1)
 pred_nl <- clean_by_A0(pred_nl, h1)
 pred_nlsb <- clean_by_A0(pred_nlsb, h1)
@@ -450,7 +455,7 @@ for (r in 1:nr)
 save(z0.l, z0.sb, z0.nl, z0.nlsb, file = file.path(exp_dir, "z0_pred.rda"))
 save(A.l, A.sb, A.nl, A.nlsb, file = file.path(exp_dir, "A_pred.rda"))
 save(WP.l, WP.sb, WP.nl, WP.nlsb, file = file.path(exp_dir, "WP_pred.rda"))
-save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred_newa0.rda"))
+save(A0.l, A0.sb, A0.nl, A0.nlsb, file = file.path(exp_dir, "A0_pred.rda"))
 
 # !!!
 # names(z0.l) # coerce to data frames and save as sample data for the R package.
@@ -461,3 +466,16 @@ s0.sb <- apply(z0.sb, c(2,3), diff)
 s0.nl <- apply(z0.nl, c(2,3), diff)
 s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
 save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
+
+# ----------------------------------------------------------------------------------------------------
+# Calculate prediction error
+
+z0.l.error <- calc_prediction_error(z0.l, z0.true.ra)
+z0.sb.error <- calc_prediction_error(z0.sb, z0.true.ra)
+z0.nl.error <- calc_prediction_error(z0.nl, z0.true.ra)
+z0.nlsb.error <- calc_prediction_error(z0.nlsb, z0.true.ra)
+
+A0.l.error <- calc_prediction_error(A0.l, A0.true.ra, TRUE)
+A0.sb.error <- calc_prediction_error(A0.sb, A0.true.ra, TRUE)
+A0.nl.error <- calc_prediction_error(A0.nl, A0.true.ra, TRUE)
+A0.nlsb.error <- calc_prediction_error(A0.nlsb, A0.true.ra, TRUE)

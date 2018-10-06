@@ -4,9 +4,13 @@
 \alias{characterize_channel}
 \title{Characterize channel}
 \usage{
-characterize_channel(savename, plotflag = FALSE)
+characterize_channel(cross_sections, xWSEw, savename, plotflag = FALSE)
 }
 \arguments{
+\item{cross_sections}{cross section geometry}
+
+\item{xWSEw}{WSE-w data}
+
 \item{savename}{filename to save the fitted models, goodness of fit metrics, and shape parameters}
 }
 \description{

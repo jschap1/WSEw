@@ -17,7 +17,7 @@ true distribution for the linear case with no measurement error
 It is not clear whether this procedure is correct. More details should be worked out.
 Also, this code does not work right now, but it shouldn't be too hard to get running. 
 Just not a priority.
-Fit models to fully-known raech-averaged channel geometry
+Fit models to fully-known reach-averaged channel geometry
 
 Fits WSE-w models given fully exposed cross section geometry with no measurement error
 

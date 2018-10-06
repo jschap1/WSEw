@@ -2,11 +2,45 @@
 % Please edit documentation in R/make_plots.R
 \name{parameter_predictions_scatterplots}
 \alias{parameter_predictions_scatterplots}
-\title{Parameter predictions scatterplots (without error)}
+\title{Hydraulic parameter predictions boxplots}
 \usage{
 parameter_predictions_scatterplots(z0.l, z0.sb, z0.nl, z0.nlsb)
 }
+\arguments{
+\item{z}{list of arrays containing parameter predictions from each class of model}
+
+\item{z.true}{true value of the parameter}
+
+\item{k}{exposure level}
+
+\item{lumped}{flag, if true, lump the cross sections together and just compare methods}
+
+\item{legend}{flag for legend}
+
+\item{absolute}{flag for plotting absolute error}
+
+\item{...}{other parameters as taken by boxplot()}
+}
 \description{
+Makes box and whisker plots showing predicted hydraulic parameter error
+}
+\details{
+If lumped = FALSE, plots the results over each cross section separately.
+}
+\examples{
+expo <- seq(0.05, 0.95, length.out = 19)
+k <- 10
+parameter_predictions_boxplots(z0.l, z0.sb, z0.nl, z0.nlsb, z0.true.ra, k = k, lumped = TRUE, 
+                               main = paste("z0 error for each method at", 100*expo[k], "percent channel exposure"), 
+                               ylab = "z0 error (m)")
+parameter_predictions_boxplots(z0.l, z0.sb, z0.nl, z0.nlsb, z0.true.ra, k = 12, absolute = FALSE, lumped = TRUE)
+par(mfrow = c(2,2))
+k <- 16
+parameter_predictions_boxplots(z0.l, z0.sb, z0.nl, z0.nlsb, z0.true.ra, k = k, lumped = FALSE, absolute = FALSE, 
+                               main = paste("z0 error at", 100*expo[k], "percent channel exposure"), 
+                               ylab = "z0 error (m)", legend = FALSE)  
+Parameter predictions scatterplots (without error)
+
 Plot predicted z0 and A0 from each model for each reach-average cross section
 Assumes there is M = 1 replicate. This should be the no error case.
 This is an earlier iteration of Figure 5

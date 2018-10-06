@@ -76,7 +76,7 @@ sample_size_plot <- function(x, ...)
 # ------------------------------------------------------------------------------
 # Figure 3
 
-#' Fit models to fully-known raech-averaged channel geometry
+#' Fit models to fully-known reach-averaged channel geometry
 #' 
 #' Fits WSE-w models given fully exposed cross section geometry with no measurement error
 #' @export
@@ -195,13 +195,15 @@ plot_gof <- function(gof, ...)
 #' 
 #' Characterizes channel geometry with shape parameter and bankfull parameters
 #' @export
+#' @param cross_sections cross section geometry
+#' @param xWSEw WSE-w data
 #' @param savename filename to save the fitted models, goodness of fit metrics, and shape parameters
 #' @details
 #' Reports the same metrics as Grimaldi et al. (2018)
 #' Drops the first d-w data point to perform fit and avoid an issue with log(0)
-#' @example characterize_channel("channel_chars.rda")
+#' @example characterize_channel(cross_sections_avg, "channel_chars.rda")
 
-characterize_channel <- function(savename, plotflag = FALSE)
+characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FALSE)
 {
   
   n.xs <- length(xWSEw)
@@ -268,7 +270,7 @@ characterize_channel <- function(savename, plotflag = FALSE)
        b.min, xdw, power_model, 
        file = savename)
   
-  print("Saved cross section parameters as savename.")
+  print(paste("Saved cross section parameters as", savename))
   
 }
 
@@ -303,71 +305,71 @@ characterize_channel <- function(savename, plotflag = FALSE)
 # bplab <- c("1","1","1","1","2","2","2","2","3","3","3","3")
 # lumpedlab <- c("L","SB","NL","NLSB")
 # par(mfrow = c(2,2))
-# k <- 4
+# par(opar)
+# k <- 12
 # parameter_predictions_boxplots(A0.l, A0.sb, A0.nl, A0.nlsb, A0.true.ra, k = k, lumped = TRUE, absolute = FALSE,
-#                                main = paste("average A0 error at", 100*expo[k], "percent channel exposure"),
+#                                main = paste("A0 error at", 100*expo[k], "percent channel exposure"),
 #                                ylab = "A0 error (sq. m)", legend = FALSE, A0 = TRUE, notch = TRUE, names = lumpedlab)
 
 # parameter_predictions_boxplots(z0.l, z0.sb, z0.nl, z0.nlsb, z0.true.ra, k = k, lumped = FALSE, absolute = FALSE,
 #                                main = paste("z0 error at", 100*expo[k], "percent channel exposure"),
-#                                ylab = "average z0 error (m)", legend = FALSE, A0 = FALSE, notch = TRUE, names = bplab,
-#                                ylim = c(-20,5))
+#                                ylab = "average z0 error (m)", legend = FALSE, A0 = FALSE, notch = TRUE, names = bplab, M = 500)
 
-parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, z.true, k,
-                                           lumped = FALSE, absolute = FALSE,
-                                           legend = TRUE, A0 = FALSE, ...)
-{
- 
-  z <- c(as.vector(t(z.l[,k,])),
-         as.vector(t(z.sb[,k,])),
-         as.vector(t(z.nl[,k,])),
-         as.vector(t(z.nlsb[,k,])))
-  
-  if (A0)
-  {
-    z.t <- rep(rep(z.true[,k], each = 500), 4)
-  } else
-  {
-    z.t <- rep(rep(z.true, each = 500), 4)
-  }
-  
-  
-  z.err <- z - z.t
-  
-  if (absolute)
-  {
-    z.err <- abs(z.err)
-  }
-  
-  xs <- rep(rep(1:3, each = 500), 4)
-  
-  type <- rep(c(rep("L", 500),
-                rep("SB", 500),
-                rep("NL", 500),
-                rep("NLSB", 500)), 3)
-  
-  df <- data.frame(z.err = z.err, xs = xs, type = type)
-  df$type=factor(df$type, levels=levels(df$type)[c(1,4,2,3)]) # reorder
-  
-  cols <- c("red","orange","green","blue")
-  
-  if (lumped)
-  {
-    boxplot(z.err ~ type, df, col = cols, ...)
-    abline(0,0, lty = 2, lwd = 1.5)
-
-  } else
-  {
-    boxplot(z.err ~ xs + type, df, col = cols, ...)
-    abline(0,0, lty = 2, lwd = 1.5)
-    if (legend)
-    {
-      legend("topleft", horiz = TRUE, legend = c("L","SB","NL","NLSB"), fill = cols)
-    }
-  }
-
-  return(0)
-}
+# parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, z.true, k,
+#                                            lumped = FALSE, absolute = FALSE,
+#                                            legend = TRUE, A0 = FALSE, M, ...)
+# {
+#  
+#   z <- c(as.vector(t(z.l[,k,])),
+#          as.vector(t(z.sb[,k,])),
+#          as.vector(t(z.nl[,k,])),
+#          as.vector(t(z.nlsb[,k,])))
+#   
+#   if (A0)
+#   {
+#     z.t <- rep(rep(z.true[,k], each = M), 4)
+#   } else
+#   {
+#     z.t <- rep(rep(z.true, each = M), 4)
+#   }
+#   
+#   
+#   z.err <- z - z.t
+#   
+#   if (absolute)
+#   {
+#     z.err <- abs(z.err)
+#   }
+#   
+#   xs <- rep(rep(1:3, each = M), 4)
+#   
+#   type <- rep(c(rep("L", M),
+#                 rep("SB", M),
+#                 rep("NL", M),
+#                 rep("NLSB", M)), 3)
+#   
+#   df <- data.frame(z.err = z.err, xs = xs, type = type)
+#   df$type=factor(df$type, levels=levels(df$type)[c(1,4,2,3)]) # reorder
+#   
+#   cols <- c("red","orange","green","blue")
+#   
+#   if (lumped)
+#   {
+#     boxplot(z.err ~ type, df, col = cols, ...)
+#     abline(0,0, lty = 2, lwd = 1.5)
+# 
+#   } else
+#   {
+#     boxplot(z.err ~ xs + type, df, col = cols, ...)
+#     abline(0,0, lty = 2, lwd = 1.5)
+#     if (legend)
+#     {
+#       legend("topleft", horiz = TRUE, legend = c("L","SB","NL","NLSB"), fill = cols)
+#     }
+#   }
+# 
+#   return(0)
+# }
 
 # ------------------------------------------------------------------------------
 # Figure 6
@@ -441,24 +443,130 @@ parameter_predictions_scatterplots <- function(z0.l, z0.sb, z0.nl, z0.nlsb)
 # ------------------------------------------------------------------------------
 # Figure 7
 
+#' Histogram of prediction error
+#' 
+#' Plots a histogram of the prediction error
+#' @examples 
+#' pred_error_hist(z0.sb.error, k = 12, breaks = 100, main = "z0 prediction error, SB, 80% exposure", xlab = "z0 error (m)")
+
+pred_error_hist <- function(z, k, ...)
+{
+  hist(z[,k,], ...)
+}
 
 
 # ------------------------------------------------------------------------------
-# Figure 7
+# Figure 8
 
+#' Histograms of parameter prediction error
+#' 
+#' @export
+#' @examples 
+#' plot_histograms_of_param_error(A0.l.error, A0.sb.error, A0.nl.error, A0.nlsb.error, r = 2, k = 12, xlim = c(-200,200))
+#' plot_histograms_of_param_error(z0.l.error, z0.sb.error, z0.nl.error, z0.nlsb.error, r = 1, k = 12, xlim = c(-4,1))
+
+plot_histograms_of_param_error <- function(z.l, z.sb, z.nl, z.nlsb, r, k, ...)
+{
+  
+  par(mfrow = c(4,1))
+  
+  # L
+  # zu <- ceiling(max(z.l[r,k,], na.rm = TRUE)) # get bounds for plotting
+  # zl <- floor(min(z.l[r,k,], na.rm = TRUE))
+  
+  hist(z.l[r,k,], "fd", main = "L", ...)
+  
+  # SB
+  # zu <- ceiling(max(z.sb[r,k,], na.rm = TRUE))
+  # zl <- floor(min(z.sb[r,k,], na.rm = TRUE))
+  
+  hist(z.sb[r,k,], "fd", main = "SB", ...)
+
+  # NL
+  # zu <- ceiling(max(z.nl[r,k,], na.rm = TRUE))
+  # zl <- floor(min(z.nl[r,k,], na.rm = TRUE))
+  
+  hist(z.nl[r,k,], "fd", main = "NL", ...)
+
+  # NLSB
+  # zu <- ceiling(max(z.nlsb[r,k,], na.rm = TRUE))
+  # zl <- floor(min(z.nlsb[r,k,], na.rm = TRUE))
+  
+  hist(z.nlsb[r,k,], "fd", main = "NLSB", ...)
+}
 
 
 # ------------------------------------------------------------------------------
-# Figure 7
+# Figure 9
 
+# Histograms of fitted parameters
 
+# Load predictions without removing the negative A0s (though they are quite similar either way)
+# thedir <- "/Volumes/HD3/Cross_Sections/pool_21_ra_10km_nr_3_spacing_5_sampling_even_MC_replicates_500/without_removing_negative_areas"
+# load(file.path(thedir, "A0_pred_newa0.rda"))
+# load(file.path(thedir, "z0_pred.rda"))
+#' @export
+#' @details 
+#' Requires predicted parameter values and true values for comparison
+#' @examples 
+#' r <- 1
+#' k <- 12 # 60% exposure
+#' plot_histograms_of_fitted_params(3, 16)
 
-# ------------------------------------------------------------------------------
-# Figure 7
-
-
-
-
+plot_histograms_of_fitted_params <- function(r, k)
+{
+  
+  par(mfrow = c(4,2))
+  
+  # L
+  zu <- ceiling(max(c(z0.true.ra[r], z0.l[r,k,]), na.rm = TRUE)) # get bounds for plotting
+  zl <- floor(min(c(z0.true.ra[r], z0.l[r,k,]), na.rm = TRUE))
+  
+  au <- ceiling(max(c(A0.l[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  al <- floor(min(c(A0.l[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  
+  hist(z0.l[r,k,], "fd", main = "z0, L", xlim = c(zl, zu))
+  abline(v = z0.true.ra[r], col = "red")
+  hist(A0.l[r,k,], "fd", main = "A0, L", xlim = c(al, au))
+  abline(v = A0.true.ra[r,k], col = "red")
+  
+  # SB
+  zu <- ceiling(max(c(z0.true.ra[r], z0.sb[r,k,]), na.rm = TRUE))
+  zl <- floor(min(c(z0.true.ra[r], z0.sb[r,k,]), na.rm = TRUE))
+  
+  au <- ceiling(max(c(A0.sb[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  al <- floor(min(c(A0.sb[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  
+  hist(z0.sb[r,k,], "fd", main = "z0, SB", xlim = c(zl, zu))
+  abline(v = z0.true.ra[r], col = "red")
+  hist(A0.sb[r,k,], "fd", main = "A0, SB", xlim = c(al, au))
+  abline(v = A0.true.ra[r,k], col = "red")
+  
+  # NL
+  zu <- ceiling(max(c(z0.true.ra[r], z0.nl[r,k,]), na.rm = TRUE))
+  zl <- floor(min(c(z0.true.ra[r], z0.nl[r,k,]), na.rm = TRUE))
+  
+  au <- ceiling(max(c(A0.nl[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  al <- floor(min(c(A0.nl[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  
+  hist(z0.nl[r,k,], "fd", main = "z0, NL", xlim = c(zl, zu))
+  abline(v = z0.true.ra[r], col = "red")
+  hist(A0.nl[r,k,], "fd", main = "A0, NL", xlim = c(al, au))
+  abline(v = A0.true.ra[r,k], col = "red")
+  
+  # NLSB
+  zu <- ceiling(max(c(z0.true.ra[r], z0.nlsb[r,k,]), na.rm = TRUE))
+  zl <- floor(min(c(z0.true.ra[r], z0.nlsb[r,k,]), na.rm = TRUE))
+  
+  au <- ceiling(max(c(A0.nlsb[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  al <- floor(min(c(A0.nlsb[r,k,], A0.true.ra[r,k]), na.rm = TRUE))
+  
+  hist(z0.nlsb[r,k,], "fd", main = "z0, NLSB", xlim = c(zl, zu))
+  abline(v = z0.true.ra[r], col = "red")
+  hist(A0.nlsb[r,k,], "fd", main = "A0, NLSB", xlim = c(al, au))
+  abline(v = A0.true.ra[r,k], col = "red")
+  
+}
 
 
 # ------------------------------------------------------------------------------

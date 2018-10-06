@@ -24,6 +24,7 @@ Given a raster with data values coded in an attribute table, creates a raster di
 Loops over every entry in the raster; it is not very efficient.
 }
 \examples{
+umesc <- raster("/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC/bath_pool_21/bath_1999_p21")
 umesc <- raster("bath_pool_21/bath_1999_p21")
 depth <- as_numeric_raster(umesc, att = "DEPTH_M")
 }
