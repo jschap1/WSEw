@@ -9,7 +9,7 @@
 #' @example pred_vals <- pred_linear_par(r = 1)
 
 # Make observations
-observe_par <- function(r)
+observe_par <- function(r, WSEw)
 {
   WSEw_obs <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels) # loop over exposure levels
@@ -17,9 +17,7 @@ observe_par <- function(r)
     WSEw_obs[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      # WSEw_obs[[k]][[m]] <- observe(WSEw = rWSEw[[r]], exposure = expo[k],
-      #                               sd_wse = 1e-6, sd_w = 1e-6)
-      WSEw_obs[[k]][[m]] <- observe(WSEw = xWSEw[[r]], exposure = expo[k])
+      WSEw_obs[[k]][[m]] <- observe(WSEw = WSEw[[r]], exposure = expo[k])
     }
   }
   # save data for each cross section (to avoid bulky files)
@@ -57,7 +55,7 @@ fit_linear_par <- function(r)
       }
     }
   }
-  lf_name <- paste0("lf/lf_", "r_", r, "_test.rds")
+  lf_name <- paste0("lf/lf_", "r_", r, ".rds")
   saveRDS(lf, file = file.path(exp_dir, lf_name))
   return(0)
 }
@@ -77,7 +75,7 @@ fit_sb_par <- function(r)
       try(sb[[k]][[m]] <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = FALSE, continuity = TRUE, minlen = 3))
     }
   }
-  sb_name <- paste0("sb/sb_", "r_", r, "_test.rds")
+  sb_name <- paste0("sb/sb_", "r_", r, ".rds")
   saveRDS(sb, file = file.path(exp_dir, sb_name))
   return(0)
 }

@@ -1,9 +1,25 @@
-# ------------------------------------------------------------------------------------------------
-# Sample heights according to gauge data
+# Generate synthetic SWOT data using river stage time series data in high, medium, and low years
 
-# load gauge data
-load(file.path("/Users/jschap/Desktop/Cross_Sections/Data", "quincy_gauge_data.rda"))
-# gauge$Height # about 70 years of data, choose high, medium, and low periods
+# Based on looking at the annual average plot:
+# Low 1954-1956
+# Medium 1971-1973
+# High 2009-2011
+
+library(WSEw)
+
+setwd("/Users/jschap/Documents/Research/SWOTBATH")
+gaugename <- "./Data/USACE/Stage/quincy_gauge_data.rda"
+
+load(gaugename)
+t <- timevector
+h <- gauge$Height
+
+# This gauge can be considered to be in reach 3 of Pool 21
+
+r <- 3
+rWSEw <- calc_WSEw_from_stage_data(cross_sections_avg, dt, r)
+
+
 hma <- ra(gauge$Height, 3*365)
 
 ncores <- detectCores()
@@ -55,10 +71,7 @@ par(mfrow = c(2,1))
 plot(x~my, df.yr, type = "l")
 # plot(ra(df.yr$x, 3), type=  "l")
 
-# Based on looking at the annual average plot:
-# Low 1954-1956
-# Medium 1971-1973
-# High 2009-2011
+
 
 # plot(x~my,as.ts(df.yr))
 
@@ -76,8 +89,6 @@ h.bf <- 458.59+17 # based on (incomplete) info from USACE
 # throw out any out-of-bank observations for now
 summary(gauge$Height/h.bf)
 summary(h1/h.bf)
-
-
 
 gauge_data <- data.frame(t = t1, h = h1)
 xWSEw <- generate_hw(cross_sections, gauge_data, dx = 1)

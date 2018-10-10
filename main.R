@@ -1,36 +1,6 @@
 # Executive file for WSEw project
 # 
-# Created 8/2/2018 JRS
-# Revised 8/10/2018 JRS
-# Revised 9/5/2018 JRS 
-#   Reorganized for ease of use
-#   Removed scrap code from end of document
-#   Changed looping structure to avoid having to load all models into memory at once
-# Revised 9/6/2018 JRS
-#   Added Monte Carlo simulation capability. Can set M = 1 replicate for deterministic case.
-#   Changed the way models are stored to avoid having to store too much data in RAM.
-# Revised 9/13/2018
-#   Implemented multicore processing with foreach package for model fitting
-#   Removed timers
-#   Put model-fitting functions in a separate R script
-#   Updating plotting functions to use medians
-#   Note: some parts of the code have not been updated, so be careful when running it
-# Revised 9/17/2018
-#   Implemented multicore processing for prediction
-# Revised 9/21/2018
-#   Removed SBM functionality, eliminated redundancies, vectorized loops
-#   This is the optimization before running the code many times.
-# Revised 9/26/2018
-#   Changed reach averaging method, now uses 3, 10 km reaches for the 30 km study area (pool 21)
-#   Started implementing SWOT data from gauge time series instead of even sampling method,
-#   but currently still using even sampling.
-#   Changed name of executive file to "main.R" without a "dN" on the end
-# Revised 9/27/2018
-#   Consolidated/cleaned up code so there are fewer files, more abstraction
-# Revised 10/4/2018
-#   Fixed problems related to negative A0 values, which should only occur when
-#   there is a large amount of error, so the fits slope the wrong way.
-#   Removed most of the plotting code, relegated to "scrap." Will code up in make_plots later.
+# See changelog.txt
 
 # ------------------------------------------------------------------------------------------------
 # Set up environment
