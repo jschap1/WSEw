@@ -67,7 +67,7 @@ parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, k,
          as.vector(t(z.nl[,k,])),
          as.vector(t(z.nlsb[,k,])))
   
-  xs <- rep(rep(1:3, each = M), 4)
+  xs <- rep(rep(1:nr, each = M), 4)
   
   type <- c(rep("L", nr*M), rep("SB", nr*M), rep("NL", nr*M), rep("NLSB", nr*M))
   

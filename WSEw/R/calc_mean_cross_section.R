@@ -39,11 +39,11 @@ resample_xs <- function(cross_sections, n)
   # data frame would be a better output format than array bc names
   xs.res <- array(dim = c(n.xs, n, 3)) # cross sections by numdata by (x,b,d)
   
-  for(x in 1:n.xs)
+  for(x in 1:n.xs) # for each cross section
   {
-    xs <- data.frame(x = cross_sections$x[[x]], b = cross_sections$b[[x]])
+    xs <- data.frame(x = cross_sections$x[[x]], b = cross_sections$b[[x]]) # get coordinates of cross section
     d.coord <- cross_sections$d[[x]]
-    xs.res[x,,] <- cbind(x = approx(xs, n = n)$x, 
+    xs.res[x,,] <- cbind(x = approx(xs, n = n)$x,  # linearly interpolate to the new length n
                          b = approx(xs, n = n)$y, 
                          d = approx(d.coord, n = n)$y)
   }

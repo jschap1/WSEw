@@ -277,7 +277,7 @@ characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FAL
 # ------------------------------------------------------------------------------
 # Figure 5
 
-#' Hydraulic parameter predictions boxplots
+#' Hydraulic parameter predictions boxplots (the current version is in a separate file)
 #' 
 #' Makes box and whisker plots showing predicted hydraulic parameter error
 #' @param z list of arrays containing parameter predictions from each class of model

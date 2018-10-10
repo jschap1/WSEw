@@ -109,26 +109,30 @@ saveRDS(A0.true.ra, file = file.path(truth_dir, "A0_true_ra.rds"))
 
 # the models are much larger and slower to fit bc there are many more data points (not nn = 21, anymore) 
 # and also maybe because the rows are named
-# to make them faster to run and to make them more comparable with the UMRB case, I will thin out the data,
-# using even sampling ********
+# to make them faster to run and to make them more comparable with the UMRB case, I will thin out the data
 
-tWSEw <- thin_evenly(rWSEw[[1]], nn = 21) # use a function similar to the one I used to rescale the cross sections prior to averaging
+tWSEw <- vector(length = nr, "list")
+for (r in 1:nr)
+{
+  tWSEw[[r]] <- data.frame(WSE = approx(rWSEw[[r]]$WSE, n = 21)$y,
+                           w = approx(rWSEw[[r]]$WSE, n = 21)$y)
+}
 
-resample_xs(cross_sections, n = 300) # Adapt resample_xs to do this.
-
+# plot(WSE~w, rWSEw[[r]], type=  "l")
+# points(WSE~w, tWSEw[[r]], col="red")
 
 ncores <- detectCores()
 registerDoMC(cores = max(nr, ncores - 1))
 
 begin.time <- Sys.time()
-WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r, rWSEw)} # returns a dummy value; the point is to save .rds files
+WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r, tWSEw)} # returns a dummy value; the point is to save .rds files
 print(Sys.time() - begin.time)
 
-begin.time <- Sys.time()
+begin.time <- Sys.time() # takes 51 seconds with rWSEw, about 160 MB per file, or 9 MB and 16 s for tWSEw, nn=21
 lfval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_linear_par(r)}
 print(Sys.time() - begin.time)
 
-begin.time <- Sys.time()
+begin.time <- Sys.time() # 3.33 minutes, 13 MB per file for nn=21
 sbval <- foreach(r = 1:nr, .combine = c) %dopar% {fit_sb_par(r)}
 print(Sys.time() - begin.time)
 
@@ -176,12 +180,12 @@ saveRDS(h1, file.path(exp_dir, "h1_obs.rds"))
 saveRDS(w1, file.path(exp_dir, "w1_obs.rds"))
 
 begin.time <- Sys.time()
-pred_nl <- foreach(r = 1:nr) %dopar% {pred_nl_par(r, rWSEw, w1 = w1, h1 = h1)}
+pred_nl <- foreach(r = 1:nr) %dopar% {pred_nl_par(r, tWSEw, w1 = w1, h1 = h1)}
 print(Sys.time() - begin.time)
 save(pred_nl, file = file.path(exp_dir, "pred_nl_tmp.rda"))
 
 begin.time <- Sys.time()
-pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r, rWSEw, w1 = w1, h1 = h1)}
+pred_nlsb <- foreach(r = 1:nr) %dopar% {pred_nlsb_par(r, tWSEw, w1 = w1, h1 = h1)}
 print(Sys.time() - begin.time)
 save(pred_nlsb, file = file.path(exp_dir, "pred_nlsb_tmp.rda"))
 
@@ -256,6 +260,8 @@ s0.sb <- apply(z0.sb, c(2,3), diff)
 s0.nl <- apply(z0.nl, c(2,3), diff)
 s0.nlsb <- apply(z0.nlsb, c(2,3), diff)
 save(s0.l, s0.sb, s0.nl, s0.nlsb, file = file.path(exp_dir, "s0_pred.rda"))
+
+# Many of the A0 predictions are negative. Is it because the coefficients are negative (nonphysical)?
 
 # ----------------------------------------------------------------------------------------------------
 # Calculate prediction error

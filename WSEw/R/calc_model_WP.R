@@ -122,7 +122,7 @@ calc_WP_nl <- function(wbf, a, s)
   # print(paste("wbf", wbf))
   # print(paste("a", a))
   # print(paste("s", s))
-  if (s<=0) # does not work if s<=0 
+  if (s<=0.1) # does not work if s -> 0 
   {
     WP <- NA
     return(WP)
@@ -153,6 +153,12 @@ calc_WP_nlsb <- function(wbf, wsb, a1, a2, s1, s2)
   {
     f <- (1+(2*a2*(s2-1)*w^(s2-1))^2)^0.5
     return(f)
+  }
+  
+  if (s1<=0.1 | s2 <= 0.1) # does not work if s -> 0 
+  {
+    WP <- NA
+    return(WP)
   }
   
   WP1 <- integrate(f = fun1, lower = 0, upper = wsb, a1 = a1, s1 = s1)
