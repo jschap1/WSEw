@@ -2,17 +2,19 @@
 % Please edit documentation in R/extract_xs_wbf.R
 \name{extract_xs_wbf}
 \alias{extract_xs_wbf}
-\title{Extract cross sections and bankfull width}
+\title{Extract cross sections and bankfull width (parallel)}
 \usage{
-extract_xs_wbf(cross_section, depth)
+extract_xs_wbf(cross_section, depth, hpc = TRUE)
 }
 \arguments{
 \item{cross_section}{output from bisect_line_segments()}
 
 \item{depth}{bathymetry raster}
+
+\item{hpc}{flag for "high performance computing"}
 }
 \description{
-Extracts cross sections and bankfull width
+Extracts cross sections and bankfull width in parallel
 }
 \details{
 This is the same as extract_wbf, except that it also outputs the transects
@@ -20,4 +22,8 @@ and has some error catches.
 Extracts data underlying the lines in cross_section.
 Uses first and last overlapped pixels to estimate bankfull width from 
 perpendicular bisectors to the river centerline.
+}
+\examples{
+wbfs_and_mc <- extract_xs_wbf(cross_section, depth, hpc = TRUE)
+wbfs_and_mc <- extract_xs_wbf(cross_section[1:10], depth, hpc = TRUE)
 }

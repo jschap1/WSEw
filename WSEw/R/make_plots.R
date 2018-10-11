@@ -203,12 +203,12 @@ plot_gof <- function(gof, ...)
 #' Drops the first d-w data point to perform fit and avoid an issue with log(0)
 #' @example characterize_channel(cross_sections_avg, "channel_chars.rda")
 
-characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FALSE)
+characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FALSE, section_length = 5)
 {
   
   n.xs <- length(xWSEw)
   
-  dist_downstream <- seq(5, n.xs*5, by = 5) # m
+  dist_downstream <- 1:n.xs*section_length
   wbf <- unlist(lapply(cross_sections$x, max)) # bankfull width
   dbf.max <- unlist(lapply(cross_sections$d, max)) # maximum bankfull depth
   dbf <- unlist(lapply(cross_sections$d, mean)) # average bankfull depth
@@ -238,8 +238,8 @@ characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FAL
   if (plotflag == TRUE)
   {
     
-    png("cross_section_pars_1.png")
-    par(mfrow = c(4,1))
+    png("bankfull_parameters.png")
+    par(mfrow = c(5,1))
     plot(dist_downstream/1000, dbf, type = "l", 
          main = "maximum bankfull depth (m)", xlab = "distance downstream (km)",
          ylab = "dbf_max")
@@ -252,18 +252,24 @@ characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FAL
     plot(dist_downstream/1000, b.min, type = "l", 
          main = "minimum bed elevation (m)", xlab = "distance downstream (km)",
          ylab = "b_min")
-    dev.off()
-    
-    png("cross_section_pars_2.png")
-    par(mfrow = c(2,1))
-    hist(s, main = "shape parameters")
     plot(dist_downstream/1000, A, type = "l", 
          main = "bankfull flow area (sq. m)", 
          xlab = "distance downstream (km)",
-         ylab = "b_min")
+         ylab = "A")
     dev.off()
     
-    print("Saved plots as cross_section_pars_1 and cross_section_pars_2.")
+    png("shape_parameters.png")
+    par(mfrow = c(2,1))
+    plot(dist_downstream/1000, s, type = "l", 
+         main = "shape parameter", 
+         xlab = "distance downstream (km)",
+         ylab = "s")
+    abline(1,0, col = "gray")
+    abline(2,0, col = "gray")
+    hist(s, main = "shape parameters", "fd", col = "lightgray")
+    dev.off()
+    
+    print("Saved plots as bankfull_parameters.png and shape_parameters.png")
   }
   
   save(A, s, wbf, dbf, dbf.max, dist_downstream, 

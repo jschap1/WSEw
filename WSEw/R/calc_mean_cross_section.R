@@ -1,4 +1,63 @@
-#' Calculate Mean Cross Section
+#' Calculate mean cross section (main)
+#' 
+#' @param cross_sections output from auto_transects
+#' @param reach_length desired averaging length (m)
+#' @param section_length distance between cross sections (m)
+#' @return cross_section_avg reach average cross sections
+#' @export
+#' @example cross_sections_avg <- calc_mean_cross_section(cross_sections, reach_length = 10e3, section_length = 1e3)
+
+calc_mean_cross_section <- function(cross_sections, reach_length, section_length)
+{
+  
+  xs.res <- resample_xs(cross_sections, n = 300) 
+  # 300 is arbitrary, just want something fairly large for a small discretization
+  
+  n.xs <- length(cross_sections$x)
+  
+  # number of full reaches, plus potentially a partial reach that is not the full reach_length long
+  n.xs.in.r <- reach_length/section_length # number of cross sections in a reach
+  
+  if (n.xs %% n.xs.in.r == 0) # if it divides evenly
+  {
+    print("There are the perfect number of cross sections for division! Lucky you.")
+    nr <- n.xs/n.xs.in.r
+    start.ind <- seq(1, nr*n.xs.in.r, by = n.xs.in.r)
+    end.ind <- start.ind + n.xs.in.r - 1
+  } else # if it does not divide evenly
+  {
+    print("The last cross section is averaged over a smaller distance than you specified")
+    print(paste("The averaging distance for cross_section_avg", nr, "is", section_length*(n.xs %% n.xs.in.r), "m"))
+    nr <- floor(n.xs/n.xs.in.r) + 1 
+    start.ind <- seq(1, n.xs.in.r*(nr-1), by = n.xs.in.r)
+    end.ind <- start.ind + n.xs.in.r - 1
+    start.ind[nr] <- end.ind[nr-1] + 1
+    end.ind[nr] <- n.xs
+  }
+  
+  xs.avg <- vector(length = nr, "list")
+  for (r in 1:nr)
+  {
+    xs.avg[[r]] <- calc_mean_cross_section_sub(xs.res[start.ind[r]:end.ind[r],,])
+  }
+  
+  x <- vector("list", length = nr)
+  b <- vector("list", length = nr)
+  d <- vector("list", length = nr)
+  for (r in 1:nr)
+  {
+    x[[r]] <- xs.avg[[r]]$x
+    b[[r]] <- xs.avg[[r]]$b
+    d[[r]] <- xs.avg[[r]]$d
+  }
+
+  cross_sections_avg <- list(x = x, b = b, d = d)
+  return(cross_sections_avg)
+  
+}
+
+# ------------------------------------------------------------------------------------------------
+#' Calculate Mean Cross Section (subroutine)
 #' 
 #' Uses linear interpolation to calculate the average cross section from 
 #' among individual cross sections with different lengths
@@ -8,7 +67,7 @@
 #' @examples xs.avg <- calc_mean_cross_section(xs.res, n = 100)
 #' calc_mean_cross_section(xs.res[1:100,,])
 
-calc_mean_cross_section <- function(xs.res)
+calc_mean_cross_section_sub <- function(xs.res)
 {
   mean.x <- apply(xs.res[,,1], 2, mean)
   mean.b <- apply(xs.res[,,2], 2, mean)
@@ -17,6 +76,7 @@ calc_mean_cross_section <- function(xs.res)
   return(xs.avg)
 }
 
+# ------------------------------------------------------------------------------------------------
 #' Resample Cross Section
 #' 
 #' Uses linear interpolation to resample cross sections with different resolutions

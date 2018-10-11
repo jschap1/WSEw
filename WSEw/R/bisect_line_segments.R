@@ -98,6 +98,10 @@ bisect_line_segments2 <- function(rivsplit, w, resolution, mid = FALSE)
     if (mid)
     {
       mid.ind <- round(nl/2)
+      if (mid.ind == 0) # error catch
+      {
+        mid.ind <- 1
+      }
       cm <- rivsplit@lines[[seg]]@Lines[[mid.ind]]@coords # coordinates of the middle line segment
       p1 <- data.frame(x = cm[1,1], y = cm[1,2])
       p2 <- data.frame(x = cm[2,1], y = cm[2,2])

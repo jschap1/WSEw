@@ -34,59 +34,27 @@ auto_transects <- function(section_length, riv, depth, refWSE,
                            makeplot = FALSE)
 {
   
-  # Draw transects and extract depths
-  # depth <- raster(bathy)
-  # depth[depth==9999] <- NA # 9999 is a code that means something, but remove it for our purposes
-  
-  # # Creates a single "polyline" file for input to resample_polyline
-  # x <- coordinates(riv@lines[[1]])[[1]][,1]
-  # y <- coordinates(riv@lines[[1]])[[1]][,2]
-  # polyline = data.frame(x = x, y = y)
-  
-  rivsplit <- splitLines(riv, dist = 10e3)
+  rivsplit <- splitLines(riv, dist = section_length)
   projcrs <- crs(depth)
-  print(projcrs)
   crs(rivsplit) <- projcrs
   
   # Bisect line segments
   cross_section <- bisect_line_segments2(rivsplit, w = halfwidth, resolution = res(depth)[1], mid = TRUE)
   
-  # library(sp)
-  # library(magrittr) # careful, this masks out raster::extract
-  # source("./polylineSplitter.r")
-  # 
-  # ldat <- Line(polyline) %>%
-  #   list() %>%
-  #   Lines(ID = 1) %>%
-  #   list() %>%
-  #   SpatialLines()
-  # 
-  # par(mfrow = c(1,2))
-  # plot(riv, col = rainbow(length(ldat)), main = "Original Line", lwd = 2)
-  # plot(riv.split, col = c("black","green","red","blue"), main = "Split Line", lwd = 2)
-  # 
-  # # Divides the polyline into equal-length segments
-  # rpolyline <- resample_polyline(polyline, interval_length = section_length)
-  # 
-  # # cross_section <- bisect_line_segments(rpolyline, projcrs, halfwidth, resolution = res(depth)[1])
-
   # Plot to check
   if (makeplot)
   {
-    plot(depth, main = "UMRB Bathymetry, Pool 21", xlab = "Easting", ylab = "Northing", legend = FALSE)
+    plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
     lines(riv)
     lines(cross_section, col = "Red") # the segments are numbered from north to south
   }
 
-  print("Extracting values along transects, this can take a long time (10-60 minutes)")
-  
-  res <- extract_xs_wbf(cross_section, depth)
+  print("Extracting values along transects.")
+  print("This can take a LONG time.")
+  print("It takes about 12 seconds per cross section per processor")
+  res <- extract_xs_wbf(cross_section, depth, hpc = TRUE)
   wbf <- res$wbf
   main_channel <- res$main_channel
-  
-  # transects <- extract(depth, cross_section, progress = "text", 
-  #                      along = TRUE, cellnumbers = FALSE)
-  # # note: cannot use cellnumbers if passing a list of cross sections, but it might be helpful to do
   
   # Remove null (empty) transects
   null.ind <- unlist(lapply(main_channel, is.null))
@@ -121,9 +89,6 @@ auto_transects <- function(section_length, riv, depth, refWSE,
     d[[seg]][1] <- 0
     d[[seg]][channel.pix[seg]] <- 0
   }
-  
-  # cross section bankfull width (not entirely correct)
-  # wbf <- estimate_widths(rpolyline, resolution = res(depth), tlength = channel.pix, nseg = nseg) 
   
   x <- vector("list", length = nseg) # x coordinate, using river banks as beginning and end
   for (seg in 1:nseg)

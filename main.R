@@ -13,11 +13,11 @@ library(raster)
 library(strucchange)
 library(minpack.lm)
 library(WSEw)
-
 source("./Codes/polylineSplitter.r")
 
 setwd("/Users/jschap/Documents/Research/SWOTBATH")
-truth_dir <- "/Volumes/HD3/Cross_Sections/true_parameters"
+# truth_dir <- "/Volumes/HD3/Cross_Sections/true_parameters"
+truth_dir <- "./true_parameters"
 opar <- par()
 
 library(devtools)
@@ -158,45 +158,46 @@ cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = r
 # legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black", "red"))
 
 # Make reach-average effective cross sections that are 10 km long each
-# hist(unlist(lapply(cross_sections$x, length)))
-xs.res <- resample_xs(cross_sections, n = 300)
-xs.avg <- vector(length = 3, "list")
-xs.avg[[1]] <- calc_mean_cross_section(xs.res[1:2000,,])
-xs.avg[[2]] <- calc_mean_cross_section(xs.res[2001:4000,,])
-xs.avg[[3]] <- calc_mean_cross_section(xs.res[4001:5773,,])
+reach_length <- 10e3
+cross_sections_avg <- calc_mean_cross_section(cross_sections, reach_length, section_length)
 
 # Calculate h-w relationship for the reach-average cross sections
-# need to reformat
-x <- vector("list", length = nr)
-b <- vector("list", length = nr)
-d <- vector("list", length = nr)
-for (r in 1:nr)
-{
-  x[[r]] <- xs.avg[[r]]$x
-  b[[r]] <- xs.avg[[r]]$b
-  d[[r]] <- xs.avg[[r]]$d
-}
-cross_sections_avg <- list(x = x, b = b, d = d) 
+
 rWSEw <- calc_WSEw(cross_sections_avg, interval = 0.05, dx = 1)
 
-save(cross_sections, cross_sections_avg, xWSEw, rWSEw, file = file.path(truth_dir, "processed_xs_data_10km.rda"))
+saveRDS(cross_sections, file = file.path(truth_dir, "./p26/cross_sections.rds"))
+saveRDS(cross_sections_avg, file = file.path(truth_dir, "./p26/cross_sections_avg.rds"))
+saveRDS(xWSEw, file = file.path(truth_dir, "./p26/xWSEw.rds"))
+saveRDS(rWSEw, file = file.path(truth_dir, "./p26/rWSEw.rds"))
 
-par(mfrow = c(1,2))
-plot(b~x, xs.avg[[1]], type = "l", 
-     main = "Reach average cross section 1",
-     xlim = c(0,800), ylim = c(135,144))
-plot(WSE~w, rWSEw[[1]], xlab = "width (m)", ylab = "height (m)", 
-     ylim = c(135, 144), main = "Height-width relationship", type = "o")
-plot(b~x, xs.avg[[2]], type = "l", 
-     main = "Reach average cross section 2",
-     xlim = c(0,650), ylim = c(135,144))
-plot(WSE~w, rWSEw[[2]], xlab = "width (m)", ylab = "height (m)", 
-     ylim = c(135, 144), main = "Height-width relationship", type = "o")
-plot(b~x, xs.avg[[3]], type = "l", 
-     main = "Reach average cross section 3",
-     xlim = c(0,800), ylim = c(135,144))
-plot(WSE~w, rWSEw[[3]], xlab = "width (m)", ylab = "height (m)", 
-     ylim = c(135, 144), main = "Height-width relationship", type = "o")
+par(mfrow = c(4,2))
+for (r in 1:nr)
+{
+  plot(WSE~w, rWSEw[[r]], xlab = "width (m)", ylab = "height (m)", 
+       main = "Height-width relationship", type = "o")
+}
+
+characterize_channel(cross_sections_avg, rWSEw, 
+                     savename = "p26_channel_params_ra.rda", 
+                     plotflag = TRUE, 
+                     section_length = 10e3)
+
+# par(mfrow = c(1,2))
+# plot(b~x, xs.avg[[1]], type = "l", 
+#      main = "Reach average cross section 1",
+#      xlim = c(0,800), ylim = c(135,144))
+# plot(WSE~w, rWSEw[[1]], xlab = "width (m)", ylab = "height (m)", 
+#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
+# plot(b~x, xs.avg[[2]], type = "l", 
+#      main = "Reach average cross section 2",
+#      xlim = c(0,650), ylim = c(135,144))
+# plot(WSE~w, rWSEw[[2]], xlab = "width (m)", ylab = "height (m)", 
+#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
+# plot(b~x, xs.avg[[3]], type = "l", 
+#      main = "Reach average cross section 3",
+#      xlim = c(0,800), ylim = c(135,144))
+# plot(WSE~w, rWSEw[[3]], xlab = "width (m)", ylab = "height (m)", 
+#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
 
 # ------------------------------------------------------------------------------------------------
 # Calculate true parameters

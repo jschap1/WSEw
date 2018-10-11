@@ -5,7 +5,7 @@
 \title{Characterize channel}
 \usage{
 characterize_channel(cross_sections, xWSEw, savename, plotflag = FALSE,
-  mode)
+  section_length = 5)
 }
 \arguments{
 \item{cross_sections}{cross section geometry}
