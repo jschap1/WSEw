@@ -59,34 +59,41 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   }
 
   print("Extracting values along transects, this can take a long time (10-60 minutes)")
-  transects <- extract(depth, cross_section, progress = "text")
+  
+  res <- extract_xs_wbf(cross_section, depth)
+  wbf <- res$wbf
+  main_channel <- res$main_channel
+  
+  # transects <- extract(depth, cross_section, progress = "text", 
+  #                      along = TRUE, cellnumbers = FALSE)
+  # # note: cannot use cellnumbers if passing a list of cross sections, but it might be helpful to do
   
   # Remove null (empty) transects
-  null.ind <- unlist(lapply(transects, is.null))
-  na.ind <- lapply(transects, is.na)
+  null.ind <- unlist(lapply(main_channel, is.null))
+  na.ind <- lapply(main_channel, is.na)
   na.ind <- unlist(lapply(na.ind, all))
   if (sum(null.ind)>0)
   {
-    transects <- transects[-which(null.ind)]
+    main_channel <- main_channel[-which(null.ind)]
   }
   if (sum(na.ind)>0)
   {
-    transects <- transects[-which(na.ind)]
+    main_channel <- main_channel[-which(na.ind)]
   }
-  nseg <- length(transects)
+  nseg <- length(main_channel)
   
   # ------------------------------------------------------------------------------
   # Extract x-y information for plotting transects
   
   # Get distance of each transect
-  main_channel <- lapply(transects, get_main_channel)
+  # main_channel <- lapply(transects, get_main_channel)
   
   # Zero length channels cause problems
   channel.pix <- unlist(lapply(main_channel, length)) # number of values in each transects list value
   # not the same as channel width because of the angle
   
   # d <- lapply(main_channel, get_depth_from_lutable, depth)
-  d <- main_channel
+  d <- main_channel # depths
   
   # Assume the first and last point are zero depth (banks)
   for (seg in 1:nseg)
@@ -96,7 +103,7 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   }
   
   # cross section bankfull width (not entirely correct)
-  wbf <- estimate_widths(rpolyline, resolution = res(depth), channel.pix, nseg) 
+  # wbf <- estimate_widths(rpolyline, resolution = res(depth), tlength = channel.pix, nseg = nseg) 
   
   x <- vector("list", length = nseg) # x coordinate, using river banks as beginning and end
   for (seg in 1:nseg)
@@ -120,7 +127,7 @@ auto_transects <- function(section_length, riv, depth, refWSE,
     d.smooth[[seg]] <- filter(d[[seg]], sides = 2, filter = rep(1/k,k))
   }
   
-  # Remove empty channels
+  # Remove (nearly) empty channels
   if (any(channel.pix<=10))
   {
     rm.ind <- which(channel.pix<=10)

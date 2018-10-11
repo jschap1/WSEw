@@ -5,8 +5,8 @@ library(tools)
 library(raster)
 library(WSEw)
 
-bathy.dir <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC"
-setwd(bathy.dir)
+setwd("/Users/jschap/Documents/Research/SWOTBATH")
+bathy.dir <- "./Data/UMESC_From_Box/"
 
 # Bathymetry data file names:
 bname <- vector(length = 9)
@@ -18,7 +18,7 @@ bname[5] <- file.path(bathy.dir, "/bath_pool_9/bath_1999_p9/w001001.adf")
 bname[6] <- file.path(bathy.dir, "/pool_10/bath_2001_p10/w001001.adf")
 bname[7] <- file.path(bathy.dir, "bath_pool_13/bath_1997_p13/w001001.adf")
 bname[8] <- file.path(bathy.dir, "/bath_pool_21/bath_1999_p21/w001001.adf")
-bname[9] <- file.path(bathy.dir, "//bath_pool_26/bath_1997_p26/w001001.adf")
+bname[9] <- file.path(bathy.dir, "/bath_pool_26/bath_1997_p26/w001001.adf")
 
 key <- c(4,5,7,8,9,10,13,21,26) # corresponding pool numbers
 
@@ -39,7 +39,7 @@ for (i in 2:length(bname))
 
 # Get cross section geometry
 
-riv.dir <- "/Users/jschap/Desktop/Cross_Sections/Data/Centerlines"
+riv.dir <- "./Data/HydroSHEDs/Centerlines"
 
 rivname <- vector(length = 9)
 rivname[1] <- file.path(riv.dir, "centerline4.rds")
@@ -52,25 +52,26 @@ rivname[7] <- file.path(riv.dir, "centerline13.rds")
 rivname[8] <- file.path(riv.dir, "centerline21.rds")
 rivname[9] <- file.path(riv.dir, "centerline26.rds")
 
-# Reformatting centerline files so they are easier to loop through.
-# i <- 8
-# load(rivname[i])
-# centerline <- centerline_p21
-# saveRDS(centerline, file = file.path(riv.dir, "centerline21.rds"))
-
 refWSE <- c(667, 660, 638.5, 631, 620, 611, 583, 470, 418.5)
 halfwidth <- rep(1000, length(bname))
 halfwidth[1] <- 3000
 halfwidth[6] <- 2000
 halfwidth[7] <- 2000
 
+dname <- vector(length = 9) # names of depth rasters (actually is is bed elevation, but whatever)
+for (i in 1:9)
+{
+  dname[i] <- file.path(bathy.dir, paste0("p", key[i], "_depth.tif"))
+}
+
 for (i in 1:length(bname))
 {
   
   if (i==8) {next} # skip pool 21
   
-  depth_5 <- raster(bname[i])
-  transects_name <- paste0("p", key[i], "_xs_geometry.rda")
+  depth_5 <- raster(dname[i])
+  transects_name <- paste0("./Outputs/Cross_Sections/p", key[i], "_xs_geometry.rda")
+  # transects_name <- "./Outputs/Cross_Sections/p4_test.rda"
   riv <- readRDS(rivname[i])
   
   # Compute cross section data from raw bathymetry (transects_name is defunct)
@@ -80,7 +81,12 @@ for (i in 1:length(bname))
                                    savename = transects_name, makeplot = TRUE, riv = riv, 
                                    halfwidth = halfwidth[i])
   
-#  plot(depth_5)
-#  lines(riv)
+  xsname <- paste0("cross_sections_p", key[i], ".rds")
+  saveRDS(cross_sections, file = file.path("./Outputs/Cross_Sections", xsname))
+  
+  # plot(depth_5)
+  # lines(riv)
+  r <- 2
+  plot(cross_sections$x[[r]], cross_sections$b[[r]], type = "l", xlab="x", ylab = "b")
   
 }
