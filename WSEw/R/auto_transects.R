@@ -38,6 +38,10 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   projcrs <- crs(depth)
   crs(rivsplit) <- projcrs
   
+  # Write out the shapefile
+  # riv.df <- SpatialLinesDataFrame(riv, data = data.frame(ID = 1), match.ID = FALSE)
+  # writeOGR(riv.df, dsn = "riv", layer = "riv", driver = "ESRI Shapefile")
+  
   # Bisect line segments
   cross_section <- bisect_line_segments2(rivsplit, w = halfwidth, resolution = res(depth)[1], mid = TRUE)
   
@@ -70,6 +74,12 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   }
   nseg <- length(main_channel)
   
+  if(any(is.na(wbf)))
+  {
+    wbf.na.ind <- which(is.na(wbf))
+    wbf <- wbf[-wbf.na.ind]
+  }
+
   # ------------------------------------------------------------------------------
   # Extract x-y information for plotting transects
   

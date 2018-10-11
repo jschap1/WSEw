@@ -63,8 +63,14 @@ rivname[9] <- file.path(riv.dir, "centerline26.rds")
 refWSE <- c(667, 660, 638.5, 631, 620, 611, 583, 470, 418.5)
 halfwidth <- rep(1000, length(bname))
 halfwidth[1] <- 3000
+halfwidth[5] <- 2000
 halfwidth[6] <- 2000
-halfwidth[7] <- 2000
+halfwidth[7] <- 2500
+halfwidth[9] <- 2000
+
+# select a value of smoothness so there aren't any non-perpendicular cross sections
+sm <- rep(3, length(bname))
+# sm[8] <- 1
 
 dname <- vector(length = 9) # names of depth rasters (actually is is bed elevation, but whatever)
 for (i in 1:9)
@@ -80,8 +86,8 @@ for (i in 1:length(bname)) # inspect each pool as you go
   riv <- readRDS(rivname[i])
   
   # Smooth the river centerline
-  riv.smooth.ksmooth <- smooth(riv, method = "ksmooth", smoothness = 1)
-  
+  riv.smooth.ksmooth <- smooth(riv, method = "ksmooth", smoothness = sm[i]) 
+
   plot(depth_5)
   lines(riv)
   lines(riv.smooth.ksmooth, col = "blue")
@@ -89,18 +95,18 @@ for (i in 1:length(bname)) # inspect each pool as you go
   # Compute cross section data from raw bathymetry (transects_name is defunct)
   
   print(paste("Processing Pool", bname[i]))
-  cross_sections <- auto_transects(section_length = 1e3, depth = depth_5, refWSE = refWSE[i],
+  cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE[i],
                                    savename = transects_name, makeplot = TRUE, riv = riv.smooth.ksmooth, 
                                    halfwidth = halfwidth[i])
+  
+  wbf <- unlist(lapply(cross_sections$x, max))
   
   xsname <- paste0("cross_sections_p", key[i], ".rds")
   saveRDS(cross_sections, file = file.path("./Outputs/Cross_Sections", xsname))
   
-  # plot(depth_5)
-  # lines(riv)
-  r <- 20
-  plot(cross_sections$x[[r]], cross_sections$b[[r]], type = "l", xlab="x", ylab = "b")
-  plot(cross_sections$x[[r]], cross_sections$d[[r]], type = "l", xlab="x", ylab = "b")
+  # # Characterize channel
+  # xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # do some sensitivity analysis
+  # characterize_channel(cross_sections, xWSEw, savename = "p26_channel_params.rda", plotflag = TRUE)
   
 }
 
@@ -110,6 +116,14 @@ for (i in 1:length(bname)) # inspect each pool as you go
 
 # ------------------------------------------------------------------------------------------------
 # Scrap
+
+plot(depth_5)
+lines(riv)
+par(mfrow=c(2,2))
+
+r <- 2
+plot(cross_sections$x[[r]], cross_sections$b[[r]], type = "l", xlab="x", ylab = "b")
+
 
 # plot(riv.smooth.ksmooth, col = "blue")
 
