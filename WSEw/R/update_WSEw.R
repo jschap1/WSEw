@@ -7,11 +7,10 @@
 
 update_WSEw <- function()
 {
-  setwd("Codes/pkg")
-  setwd("WSEw")
+  setwd("Codes/WSEw")
   document()
   setwd("..")
   install("WSEw")
-  setwd("../..")
+  setwd("..")
 }
 

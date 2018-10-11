@@ -71,14 +71,32 @@ for (i in 1:length(bname))
   
   depth_5 <- raster(dname[i])
   transects_name <- paste0("./Outputs/Cross_Sections/p", key[i], "_xs_geometry.rda")
-  # transects_name <- "./Outputs/Cross_Sections/p4_test.rda"
+  transects_name <- "./Outputs/Cross_Sections/p21_test_smooth.rda"
   riv <- readRDS(rivname[i])
+  
+  # Smooth the river centerline
+  # riv.smooth.chaikin <- smooth(riv, method = "chaikin")
+  riv.smooth.ksmooth <- smooth(riv, method = "ksmooth", smoothness = 1)
+  # riv.smooth.ksmooth <- smooth_ksmooth(riv, smoothness = 5)
+  
+  plot(depth_5)
+  lines(riv)
+  lines(riv.smooth.ksmooth, col = "blue")
+  # plot(riv.smooth.ksmooth, col = "blue")
+  
+  # lines(riv.smooth.ksmooth, col = "red")
+  
+  # riv.smooth.spline <- smooth(riv, method = "spline")
+  # plot(riv)
+  # lines(riv.smooth.chaikin, col = "red")
+  # lines(riv.smooth.ksmooth, col = "blue")
+  # lines(riv.smooth.spline, col = "green")
   
   # Compute cross section data from raw bathymetry (transects_name is defunct)
   
   print(paste("Processing Pool", bname[i]))
-  cross_sections <- auto_transects(section_length = 10e3, depth = depth_5, refWSE = refWSE[i],
-                                   savename = transects_name, makeplot = TRUE, riv = riv, 
+  cross_sections <- auto_transects(section_length = 5e3, depth = depth_5, refWSE = refWSE[i],
+                                   savename = transects_name, makeplot = TRUE, riv = riv.smooth.ksmooth, 
                                    halfwidth = halfwidth[i])
   
   xsname <- paste0("cross_sections_p", key[i], ".rds")

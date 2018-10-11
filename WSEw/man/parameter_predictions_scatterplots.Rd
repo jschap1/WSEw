@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_plots.R
 \name{parameter_predictions_scatterplots}
 \alias{parameter_predictions_scatterplots}
-\title{Hydraulic parameter predictions boxplots}
+\title{Hydraulic parameter predictions boxplots (the current version is in a separate file)}
 \usage{
 parameter_predictions_scatterplots(z0.l, z0.sb, z0.nl, z0.nlsb)
 }

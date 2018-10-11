@@ -4,7 +4,7 @@
 \alias{observe_par}
 \title{Fit height-width data (parallel)}
 \usage{
-observe_par(r)
+observe_par(r, WSEw)
 }
 \arguments{
 \item{r}{cross section number}

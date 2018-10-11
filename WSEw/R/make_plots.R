@@ -203,7 +203,7 @@ plot_gof <- function(gof, ...)
 #' Drops the first d-w data point to perform fit and avoid an issue with log(0)
 #' @example characterize_channel(cross_sections_avg, "channel_chars.rda")
 
-characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FALSE, mode)
+characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FALSE)
 {
   
   n.xs <- length(xWSEw)

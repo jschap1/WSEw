@@ -4,7 +4,8 @@
 \alias{characterize_channel}
 \title{Characterize channel}
 \usage{
-characterize_channel(cross_sections, xWSEw, savename, plotflag = FALSE)
+characterize_channel(cross_sections, xWSEw, savename, plotflag = FALSE,
+  mode)
 }
 \arguments{
 \item{cross_sections}{cross section geometry}

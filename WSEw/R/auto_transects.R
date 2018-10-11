@@ -37,23 +37,43 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   # Draw transects and extract depths
   # depth <- raster(bathy)
   # depth[depth==9999] <- NA # 9999 is a code that means something, but remove it for our purposes
+  
+  # # Creates a single "polyline" file for input to resample_polyline
+  # x <- coordinates(riv@lines[[1]])[[1]][,1]
+  # y <- coordinates(riv@lines[[1]])[[1]][,2]
+  # polyline = data.frame(x = x, y = y)
+  
+  rivsplit <- splitLines(riv, dist = 10e3)
   projcrs <- crs(depth)
-  
-  # Creates a single "polyline" file for input to resample_polyline
-  x <- coordinates(riv@lines[[1]])[[1]][,1]
-  y <- coordinates(riv@lines[[1]])[[1]][,2]
-  polyline = data.frame(x = x, y = y)
-  
-  # Divides the polyline into equal-length segments
-  rpolyline <- resample_polyline(polyline, interval_length = section_length)
+  print(projcrs)
+  crs(rivsplit) <- projcrs
   
   # Bisect line segments
-  cross_section <- bisect_line_segments(rpolyline, projcrs, halfwidth, resolution = res(depth)[1])
+  cross_section <- bisect_line_segments2(rivsplit, w = halfwidth, resolution = res(depth)[1], mid = TRUE)
   
+  # library(sp)
+  # library(magrittr) # careful, this masks out raster::extract
+  # source("./polylineSplitter.r")
+  # 
+  # ldat <- Line(polyline) %>%
+  #   list() %>%
+  #   Lines(ID = 1) %>%
+  #   list() %>%
+  #   SpatialLines()
+  # 
+  # par(mfrow = c(1,2))
+  # plot(riv, col = rainbow(length(ldat)), main = "Original Line", lwd = 2)
+  # plot(riv.split, col = c("black","green","red","blue"), main = "Split Line", lwd = 2)
+  # 
+  # # Divides the polyline into equal-length segments
+  # rpolyline <- resample_polyline(polyline, interval_length = section_length)
+  # 
+  # # cross_section <- bisect_line_segments(rpolyline, projcrs, halfwidth, resolution = res(depth)[1])
+
   # Plot to check
   if (makeplot)
   {
-    plot(depth, main = "UMRB Bathymetry, Pool 4", xlab = "Easting", ylab = "Northing", legend = FALSE)
+    plot(depth, main = "UMRB Bathymetry, Pool 21", xlab = "Easting", ylab = "Northing", legend = FALSE)
     lines(riv)
     lines(cross_section, col = "Red") # the segments are numbered from north to south
   }

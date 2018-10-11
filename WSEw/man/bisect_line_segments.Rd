@@ -21,6 +21,7 @@ Bisects each line segment in a polyline
 }
 \details{
 Calculates the angle of the river centerline and draws a perpedicular bisector passing through it.
+bisect_line_segments2 is preferred for the latest version of auto_transects
 }
 \examples{
 bisect_line_segments(rpolyline, projcrs, w, resolution)

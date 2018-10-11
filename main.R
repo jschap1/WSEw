@@ -5,6 +5,8 @@
 # ------------------------------------------------------------------------------------------------
 # Set up environment
 
+library(magrittr) # must load this before raster to avoid masking out raster::extract
+library(smoothr)
 library(foreach)
 library(doMC)
 library(raster)
@@ -12,7 +14,9 @@ library(strucchange)
 library(minpack.lm)
 library(WSEw)
 
-setwd("/Users/jschap/Desktop/Cross_Sections")
+source("./Codes/polylineSplitter.r")
+
+setwd("/Users/jschap/Documents/Research/SWOTBATH")
 truth_dir <- "/Volumes/HD3/Cross_Sections/true_parameters"
 opar <- par()
 

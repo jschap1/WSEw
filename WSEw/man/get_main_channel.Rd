@@ -4,14 +4,27 @@
 \alias{get_main_channel}
 \title{Get Main Channel}
 \usage{
-get_main_channel(transect)
+get_main_channel(transect, return_index = FALSE)
 }
 \arguments{
 \item{transect}{depth values along a transect}
+
+\item{return_index}{use it to return the indices of transects where the main channel begins and ends}
 }
 \description{
 Uses the transect to get the main channel from a transect potentially covering multiple channels. 
 Also provides other useful info, like width to banks.
+}
+\details{
+This function is not perfect!
+Sometimes the widest channel may not be the main channel.
+Can we discriminate based on how deep the channel is?
+With the current method, there is going to be some error 
+associated with misclassification of the main channel.
+plot(transect[wide.ch.ind], main = "2", type= "l")
+plot(transect[wide.ch.ind1],  main = "1", type= "l")
+summary(transect[wide.ch.ind])
+summary(transect[wide.ch.ind1])
 }
 \examples{
 get_main_channel(transect)
