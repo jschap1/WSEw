@@ -27,8 +27,8 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
   } else # if it does not divide evenly
   {
     print("The last cross section is averaged over a smaller distance than you specified")
-    print(paste("The averaging distance for cross_section_avg", nr, "is", section_length*(n.xs %% n.xs.in.r), "m"))
     nr <- floor(n.xs/n.xs.in.r) + 1 
+    print(paste("The averaging distance for cross_section_avg", nr, "is", section_length*(n.xs %% n.xs.in.r), "m"))
     start.ind <- seq(1, n.xs.in.r*(nr-1), by = n.xs.in.r)
     end.ind <- start.ind + n.xs.in.r - 1
     start.ind[nr] <- end.ind[nr-1] + 1

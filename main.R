@@ -1,6 +1,8 @@
 # Executive file for WSEw project
 # 
 # See changelog.txt
+#
+# git commit -m "cleaned up main.R; changed z0 prediction method to avoid -Inf when s<0"
 
 # ------------------------------------------------------------------------------------------------
 # Set up environment
@@ -16,31 +18,20 @@ library(WSEw)
 source("./Codes/polylineSplitter.r")
 
 setwd("/Users/jschap/Documents/Research/SWOTBATH")
-# truth_dir <- "/Volumes/HD3/Cross_Sections/true_parameters"
-truth_dir <- "./true_parameters"
 opar <- par()
 
 library(devtools)
 library(roxygen2)
 update_WSEw()
 
-# Experiment description
-nr <- 3
-reach_avg <- "10km"
-spacing <- 5 # m
-swot_sampling <- "even"
-pool <- 21
-err_type <- "MC"
-M <- 500 # number of replicates
+# Make a directory to store results
+# exp_desc <- "garonne_10km_spacing_5m_sampling_even_err_type_MC_replicates_500"
+exp_desc <- "pool4_10km_spacing_5m_sampling_event_err_type_MC_replicates_500"
+exp_dir <- file.path("./Outputs", exp_desc) # directory for this experiment's outputs
 
+M <- 500 # number of MC replicates
 expo <- seq(0.05, 0.95, length.out = 19) # exposure levels
 n_exp_levels <- length(expo)
-nr <- length(rWSEw)
-
-# Make a directory to store results
-exp_desc <- paste0("pool_", pool, "_ra_",reach_avg,"_nr_",nr,"_spacing_",spacing,"_sampling_",swot_sampling, "_", err_type, "_replicates_", M)
-fits_dir <- "/Volumes/HD3/Cross_Sections" # directory for modeling outputs
-exp_dir <- file.path(fits_dir, exp_desc) # directory for this experiment's outputs
 
 if (!dir.exists(exp_dir))
 {
@@ -52,152 +43,55 @@ if (!dir.exists(exp_dir))
   dir.create(file.path(exp_dir, "obs"))
 }
 
+truth_dir <- "./True_Parameters/p4"
+if(!dir.exists(truth_dir))
+{
+  dir.create(truth_dir)
+}
+
 set.seed(704753262) # this doesn't really set the seed properly when using foreach. need a different method.
-
-# ------------------------------------------------------------------------------------------------
-# Load data from previous runs (optional)
-
-# Cross section and WSE-w data
-load(file.path(truth_dir, "processed_xs_data_10km.rda"))
-# loads {cross_sections, cross_sections_avg, xWSEw, rWSEw}
-
-# Fitted models
-lf <- readRDS(file.path(exp_dir, "lf.rds"))
-sb <- readRDS(file.path(exp_dir, "sb.rds")) 
-
-# True hydraulic parameters
-# w0.ra <- readRDS(file.path(truth_dir, "w0_ra.rds"))
-# WP.true.xs <- readRDS(file.path(truth_dir, "WP_true_xs.rds"))
-WP.true.ra <- readRDS(file.path(truth_dir, "WP_true_ra.rds")) 
-
-# A.true.xs <- readRDS(file.path(truth_dir, "A_true_xs.rds"))
-A.true.ra <- readRDS(file.path(truth_dir, "A_true_ra.rds"))
-A0.true.ra <- readRDS(file.path(truth_dir, "A0_true_ra.rds"))
-
-s0.true.ra <- readRDS(file.path(truth_dir, "s0_true_ra.rds"))
-# s0.true.xs <- readRDS(file.path(truth_dir, "s0_true_xs.rds"))
-z0.true.ra <- readRDS(file.path(truth_dir, "z0_true_ra.rds"))
-# z0.true.xs <- readRDS(file.path(truth_dir, "z0_true_xs.rds"))
-
-# Predicted hydraulic parameters
-load(file.path(exp_dir, "pred_lf_tmp.rda"))
-load(file.path(exp_dir, "pred_sb_tmp.rda"))
-load(file.path(exp_dir, "pred_nl_tmp.rda"))
-load(file.path(exp_dir, "pred_nlsb_tmp.rda"))
-
-load(file.path(exp_dir, "z0_pred.rda"))
-load(file.path(exp_dir, "A_pred.rda"))
-load(file.path(exp_dir, "WP_pred.rda"))
-load(file.path(exp_dir, "A0_pred.rda"))
-load(file.path(exp_dir, "s0_pred.rda"))
-
-# Prediction statistics
-# load(file.path(exp_dir, "bias.rda"))
-# load(file.path(exp_dir, "rmse.rda"))
 
 # ------------------------------------------------------------------------------------------------
 # UMESC data processing
 
-refWSE <- 667 # refWSE for pool 4 (ft)
-refWSE <- refWSE/(39.37/12) #  convert to m
+# Run batch_preprocess_bathymetry.R
+# See preprocessing workflow description Word document
 
-# Bathymetry
-if (!file.exists("Data/p21_depth.tif"))
-{
-  bathy.dir <- "/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/UMESC"
-  bathy.name <- "bath_pool_4/bath_1992_p4/w001001.adf"
-  bathyfile <- file.path(bathy.dir, bathy.name)
-  #levels(umesc)
-  umesc <- raster(bathyfile)
-  depth_5 <- as_numeric_raster(umesc, att = "DEPTH_M") # native resolution depths (5 m), takes a while (like 30 minutes or something)
-  
-  depth_5_refined <- depth_5 # there are some very large "depth" values; this gets rid of them
-  depth_5_refined[values(depth_5>100)] <- NA
-  depth_5 <- depth_5_refined
-  
-  writeRaster(depth_5, file = "Data/p4_depth.tif", overwrite = TRUE, progress = "text")
-} else 
-{
-  depth_5 <- raster("Data/p21_depth.tif")
-  # depth_50 <- aggregate(depth_5, fact = 10) # resample depth to 50 m resolution
-}
-
-# River centerline
-riv.dir <- "/Users/jschap/Desktop/Cross_Sections/Data/Centerlines"
-load(file.path(riv.dir, "centerline4.rda"))
-riv <- centerline_p4
-
-# Load USGS stream gauges in UMRB
-gauges <- read.table("/Users/jschap/Box Sync/Margulis_Research_Group/Jacob/UMBB/Data/Stage/gauges_UMB_QC.txt")
-names(gauges) <- c("id","lat","lon","V4")
-coordinates(gauges) <- ~lon + lat # make SpatialPoints object
-crs(gauges) <- "+init=epsg:4326"
-gauges.utm <- spTransform(gauges, crs(riv))
-
-# Plot the study area
-plot(depth_5, main = "UMRB Pool 4", xlab = "easting", ylab = "northing")
-lines(riv)
-points(gauges.utm, pch = 19, col = "black", cex = 0.5)
-
-# Compute cross section data from raw bathymetry (transects_name is defunct)
-cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE,
-                                 savename = transects_name, makeplot = FALSE, riv = riv)
-# (Takes about 4 hours at the highest possible resolution)
-
-# Method 1: find corresponding flow width for WSE ranging from empty to bankfull conditions
-# xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1) # number of data points depends on discretization
-
-# rWSEw <- reach_avg(xWSEw)
-# rWSEw_burr <- reach_avg(xWSEw)
-
-# save(cross_sections, xWSEw, rWSEw, file = file.path(truth_dir, "processed_xs_data_10km.rda"))
-
-# Plot the observations
-# plot(WSE~w, rWSEw[[1]], main = "WSE-w sampling, three years")
-# points(WSE~w, rWSEw_burr[[1]], col="red", pch=19)
-# legend("topleft", legend = c("Even sampling","Burr sampling"), fill = c("black", "red"))
+xsname <- "cross_sections_p4.rds"
+cross_sections <- readRDS(file.path("./Outputs/Cross_Sections", xsname))
 
 # Make reach-average effective cross sections that are 10 km long each
 reach_length <- 10e3
-cross_sections_avg <- calc_mean_cross_section(cross_sections, reach_length, section_length)
+cross_sections_avg <- calc_mean_cross_section(cross_sections, reach_length, section_length = 5)
 
 # Calculate h-w relationship for the reach-average cross sections
-
+xWSEw <- calc_WSEw(cross_sections, interval = 0.05, dx = 1)
 rWSEw <- calc_WSEw(cross_sections_avg, interval = 0.05, dx = 1)
 
-saveRDS(cross_sections, file = file.path(truth_dir, "./p26/cross_sections.rds"))
-saveRDS(cross_sections_avg, file = file.path(truth_dir, "./p26/cross_sections_avg.rds"))
-saveRDS(xWSEw, file = file.path(truth_dir, "./p26/xWSEw.rds"))
-saveRDS(rWSEw, file = file.path(truth_dir, "./p26/rWSEw.rds"))
+n.xs <- length(xWSEw)
+nr <- length(rWSEw)
 
+# Save cross section data
+saveRDS(cross_sections, file = file.path(truth_dir, "cross_sections.rds"))
+saveRDS(cross_sections_avg, file = file.path(truth_dir, "cross_sections_avg.rds"))
+saveRDS(xWSEw, file = file.path(truth_dir, "xWSEw.rds"))
+saveRDS(rWSEw, file = file.path(truth_dir, ".rWSEw.rds"))
+
+# Plot cross sections
 par(mfrow = c(4,2))
 for (r in 1:nr)
 {
   plot(WSE~w, rWSEw[[r]], xlab = "width (m)", ylab = "height (m)", 
-       main = "Height-width relationship", type = "o")
+       main = paste("Height-width relationship for r =", r), 
+       type = "o",
+       xlim = c(0,3000), ylim = c(657,667))
 }
 
-characterize_channel(cross_sections_avg, rWSEw, 
-                     savename = "p26_channel_params_ra.rda", 
-                     plotflag = TRUE, 
+# Characterize channel
+channel_params <- characterize_channel(cross_sections_avg, rWSEw, 
+                     savename = file.path(exp_dir, "p4_channel_params_ra_2.rda"), 
+                     plotflag = FALSE, 
                      section_length = 10e3)
-
-# par(mfrow = c(1,2))
-# plot(b~x, xs.avg[[1]], type = "l", 
-#      main = "Reach average cross section 1",
-#      xlim = c(0,800), ylim = c(135,144))
-# plot(WSE~w, rWSEw[[1]], xlab = "width (m)", ylab = "height (m)", 
-#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
-# plot(b~x, xs.avg[[2]], type = "l", 
-#      main = "Reach average cross section 2",
-#      xlim = c(0,650), ylim = c(135,144))
-# plot(WSE~w, rWSEw[[2]], xlab = "width (m)", ylab = "height (m)", 
-#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
-# plot(b~x, xs.avg[[3]], type = "l", 
-#      main = "Reach average cross section 3",
-#      xlim = c(0,800), ylim = c(135,144))
-# plot(WSE~w, rWSEw[[3]], xlab = "width (m)", ylab = "height (m)", 
-#      ylim = c(135, 144), main = "Height-width relationship", type = "o")
 
 # ------------------------------------------------------------------------------------------------
 # Calculate true parameters
@@ -220,21 +114,20 @@ saveRDS(s0.true.ra, file = file.path(truth_dir, "s0_true_ra.rds"))
 
 # A, WP
 # Calculate true hydraulic parameters for cross sections
-# n.xs <- length(xWSEw)
-# A.true.xs <- vector(length = n.xs)
-# WP.true.xs <- vector(length = n.xs)
-# for (k in 1:n.xs)
-# {
-#   x <- cross_sections$x[[k]]
-#   b <- cross_sections$b[[k]]
-#   WSE <- max(b) # bankfull
-#   A.true.xs[k] <- calc_A(x, b, WSE)
-#   WP.true.xs[k] <- calc_WP(x, b, WSE)
-# }
-# plot(A.true.xs, type="l")
-# plot(WP.true.xs, type="l")
-# saveRDS(A.true.xs, file = file.path(exp_dir, "A_true_xs.rds"))
-# saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds"))
+A.true.xs <- vector(length = n.xs)
+WP.true.xs <- vector(length = n.xs)
+for (k in 1:n.xs)
+{
+  x <- cross_sections$x[[k]]
+  b <- cross_sections$b[[k]]
+  WSE <- max(b) # bankfull
+  A.true.xs[k] <- calc_A(x, b, WSE)
+  WP.true.xs[k] <- calc_WP(x, b, WSE)
+}
+plot(A.true.xs, type="l", main = "Area")
+plot(WP.true.xs, type="l", main = "Wetted Perimeter")
+saveRDS(A.true.xs, file = file.path(exp_dir, "A_true_xs.rds"))
+saveRDS(WP.true.xs, file = file.path(exp_dir, "WP_true_xs.rds"))
 
 # Calculate reach-average hydraulic parameters
 A.true.ra <- vector(length = nr)
@@ -298,12 +191,11 @@ saveRDS(A0.true.ra, file = file.path(truth_dir, "A0_true_ra.rds"))
 
 # Run the parallel computations (see computation_time_calculator.xls)
 
-registerDoMC(cores = 3)
-# ncores <- detectCores()
-# registerDoMC(cores = ncores - 1)
+ncores <- detectCores()
+registerDoMC(cores = min(nr, ncores - 1))
 
 begin.time <- Sys.time()
-WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r)} # returns a dummy value; the point is to save .rds files
+WSEw_val <- foreach(r = 1:nr, .combine = c) %dopar% {observe_par(r, rWSEw)} # returns a dummy value; the point is to save .rds files
 print(Sys.time() - begin.time)
 
 begin.time <- Sys.time()
@@ -324,11 +216,6 @@ print(Sys.time() - begin.time)
 
 # ------------------------------------------------------------------------------------------------
 # Predict hydraulic parameters
-
-# Do computations in parallel
-# ncores <- detectCores()
-# registerDoMC(cores = ncores - 1)
-registerDoMC(cores = 3)
 
 begin.time <- Sys.time()
 pred_lf <- foreach(r = 1:nr) %dopar% {pred_linear_par(r)}
@@ -454,3 +341,45 @@ A0.l.error <- calc_prediction_error(A0.l, A0.true.ra, TRUE)
 A0.sb.error <- calc_prediction_error(A0.sb, A0.true.ra, TRUE)
 A0.nl.error <- calc_prediction_error(A0.nl, A0.true.ra, TRUE)
 A0.nlsb.error <- calc_prediction_error(A0.nlsb, A0.true.ra, TRUE)
+
+
+# ------------------------------------------------------------------------------------------------
+# Load data from previous runs (optional)
+
+# Cross section and WSE-w data
+load(file.path(truth_dir, "processed_xs_data_10km.rda"))
+# loads {cross_sections, cross_sections_avg, xWSEw, rWSEw}
+
+# Fitted models
+lf <- readRDS(file.path(exp_dir, "lf.rds"))
+sb <- readRDS(file.path(exp_dir, "sb.rds")) 
+
+# True hydraulic parameters
+# w0.ra <- readRDS(file.path(truth_dir, "w0_ra.rds"))
+# WP.true.xs <- readRDS(file.path(truth_dir, "WP_true_xs.rds"))
+WP.true.ra <- readRDS(file.path(truth_dir, "WP_true_ra.rds")) 
+
+# A.true.xs <- readRDS(file.path(truth_dir, "A_true_xs.rds"))
+A.true.ra <- readRDS(file.path(truth_dir, "A_true_ra.rds"))
+A0.true.ra <- readRDS(file.path(truth_dir, "A0_true_ra.rds"))
+
+s0.true.ra <- readRDS(file.path(truth_dir, "s0_true_ra.rds"))
+# s0.true.xs <- readRDS(file.path(truth_dir, "s0_true_xs.rds"))
+z0.true.ra <- readRDS(file.path(truth_dir, "z0_true_ra.rds"))
+# z0.true.xs <- readRDS(file.path(truth_dir, "z0_true_xs.rds"))
+
+# Predicted hydraulic parameters
+load(file.path(exp_dir, "pred_lf_tmp.rda"))
+load(file.path(exp_dir, "pred_sb_tmp.rda"))
+load(file.path(exp_dir, "pred_nl_tmp.rda"))
+load(file.path(exp_dir, "pred_nlsb_tmp.rda"))
+
+load(file.path(exp_dir, "z0_pred.rda"))
+load(file.path(exp_dir, "A_pred.rda"))
+load(file.path(exp_dir, "WP_pred.rda"))
+load(file.path(exp_dir, "A0_pred.rda"))
+load(file.path(exp_dir, "s0_pred.rda"))
+
+# Prediction statistics
+# load(file.path(exp_dir, "bias.rda"))
+# load(file.path(exp_dir, "rmse.rda"))

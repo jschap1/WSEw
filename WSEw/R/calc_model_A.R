@@ -30,7 +30,8 @@ calc_model_A <- function(model, type, WSEw = NULL)
     wbf <- max(m2$model$`I(w - wb)`) + wsb # accounting for the offset
     WSEsb <- max(fitted(m1))
     WSEbf <- max(fitted(m2))
-    z0 <- predict(m1, newdata = data.frame(w=0))
+    # z0 <- predict(m1, newdata = data.frame(w=0))
+    z0 <- as.numeric(coef(m1)[1])
     A <- sb_area(wsb, WSEsb, z0, WSEbf, wbf)   
     
   }else if (type == "sbm")
@@ -48,7 +49,8 @@ calc_model_A <- function(model, type, WSEw = NULL)
     w <- c(w.brk, wbf)
     WSE <- c(WSE.brk, WSEbf)
     # z0 <- min(model$model$WSE)
-    z0 <- predict(model, newdata = data.frame(w = 0))
+    # z0 <- predict(model, newdata = data.frame(w = 0))
+    z0 <- as.numeric(coef(model)[1])
     
     A <- sbm_area(w, WSE, z0) 
     
@@ -57,7 +59,8 @@ calc_model_A <- function(model, type, WSEw = NULL)
     
     wbf <- max(WSEw$w)
     WSEbf <- max(fitted(model))
-    z0 <- predict(model, newdata = data.frame(w=0))
+    # z0 <- predict(model, newdata = data.frame(w=0))
+    z0 <- as.numeric(coef(model)[1])
     a <- as.numeric(coef(model)[2])
     s <- as.numeric(coef(model)[3])
     A <- nl_area(wbf, WSEbf, z0, a, s)
@@ -70,7 +73,8 @@ calc_model_A <- function(model, type, WSEw = NULL)
     
     wbf <- max(WSEw$w)
     WSEbf <- max(fitted(m2))
-    z0 <- predict(m1, newdata = data.frame(w=0))
+    # z0 <- predict(m1, newdata = data.frame(w=0))
+    z0 <- as.numeric(coef(m1)[1])
     
     sb.ind <- as.numeric(attributes(model)) # index of slope break
     wsb <- WSEw$w[sb.ind] # width at slope break

@@ -49,7 +49,8 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   if (makeplot)
   {
     plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
-    lines(riv)
+    lines(riv.smooth.ksmooth)
+    # lines(riv)
     lines(cross_section, col = "Red") # the segments are numbered from north to south
   }
 

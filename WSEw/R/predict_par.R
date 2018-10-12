@@ -25,7 +25,8 @@ pred_linear_par <- function(r)
       # if statements handle cases where the model is NULL/no model was fit
       if (class(lf[[k]][[m]]) == "lm")
       {
-        z0.l[k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
+        # z0.l[k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
+        z0.l[k,m] <- as.numeric(coef(lf[[k]][[m]])[1])
         A.l[k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
         WP.l[k,m] <- calc_model_WP(lf[[k]][[m]], type = "linear")
         A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = FALSE)
@@ -51,7 +52,8 @@ pred_sb_par <- function(r)
     {
       if (class(sb[[k]][[m]][[1]]) == "lm")
       {
-        z0.sb[k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        # z0.sb[k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        z0.sb[k,m] <- as.numeric(coef(sb[[k]][[m]][[1]])[1])
         A.sb[k,m] <- calc_model_A(sb[[k]][[m]], type = "sb")
         WP.sb[k,m] <- calc_model_WP(sb[[k]][[m]], type = "sb")
         A0.sb[k,m] <- calc_model_A0(sb[[k]][[m]], type = "sb", pos.only = FALSE)
@@ -84,7 +86,8 @@ pred_sbm_par <- function(r)
     {
       if (any(class(sbm[[k]][[m]][[1]])=="lm"))
       {
-        try(z0.sbm[k,m] <- predict(sbm[[k]][[m]][[1]], newdata = data.frame(w = 0)))
+        # try(z0.sbm[k,m] <- predict(sbm[[k]][[m]][[1]], newdata = data.frame(w = 0)))
+        try(z0.sbm[k,m] <- as.numeric(coef(sbm[[k]][[m]][[1]])[1]))
         try(A.sbm[k,m] <- calc_model_A(sbm[[k]][[m]], type = "sbm"))
         try(WP.sbm[k,m] <- calc_model_WP(sbm[[k]][[m]], type = "sbm"))
         try(A0.sbm[k,m] <- calc_model_A0(sbm[[k]][[m]], type = "sbm", pos.only = TRUE))
@@ -118,7 +121,8 @@ pred_nl_par <- function(r, WSEw, w1, h1)
     {
       if (class(nl[[k]][[m]]) == "nls")
       {
-        z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0))
+        # z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0)) # this is problematic when s<0
+        z0.nl[k,m] <- as.numeric(coef(nl[[k]][[m]])[1]) # this is better, will need to change it throughout
         A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
         WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
         A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
@@ -127,6 +131,9 @@ pred_nl_par <- function(r, WSEw, w1, h1)
   }
   return(list(z0 = z0.nl, A = A.nl, WP = WP.nl, A0 = A0.nl))
 }
+
+ww <- 0
+6.664e+02 - 5.122e-04*ww^(-1.502e-01)
 
 #' @export
 #' @param w1 minimum observed width, nr by n_exp_level by M array
@@ -152,7 +159,8 @@ pred_nlsb_par <- function(r, WSEw, w1, h1)
     {
       if (class(nlsb[[k]][[m]][[1]]) == "nls")
       {
-        z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        # z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
+        z0.nlsb[k,m] <- as.numeric(coef(nlsb[[k]][[m]][[1]])[1])
         A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
         WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = WSEw[[r]]$w)
         A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)

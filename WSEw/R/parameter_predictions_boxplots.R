@@ -25,6 +25,10 @@
 #' z.nl[,12,]
 #' z.nlsb[,12,]
 #' 
+#' 5 per minute, 13000 total
+#' 0.2*13000 minutes
+#' 0.2*13000/60 hours
+#' 
 #' bplab <- c("1","1","1","1","2","2","2","2","3","3","3","3")
 #' lumpedlab <- c("L","SB","NL","NLSB")
 #' par(mfrow = c(2,2))

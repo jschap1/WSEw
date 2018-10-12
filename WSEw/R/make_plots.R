@@ -278,6 +278,11 @@ characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FAL
   
   print(paste("Saved cross section parameters as", savename))
   
+  result <- list(A = A, s = s, wbf = wbf, dbf = dbf, dbf.max = dbf.max, 
+                 dist_downstream = dist_downstream, b.min = b.min, 
+                 xdw = xdw, power_model = power_model)
+  return(result)
+  
 }
 
 # ------------------------------------------------------------------------------

@@ -97,7 +97,7 @@ for (i in 1:length(bname)) # inspect each pool as you go
   print(paste("Processing Pool", bname[i]))
   cross_sections <- auto_transects(section_length = 5, depth = depth_5, refWSE = refWSE[i],
                                    savename = transects_name, makeplot = TRUE, riv = riv.smooth.ksmooth, 
-                                   halfwidth = halfwidth[i])
+                                   halfwidth = halfwidth[i]) # took 11.5 hours for pool 4 at 5 m section length (about 3.044s/xs)
   
   wbf <- unlist(lapply(cross_sections$x, max))
   
