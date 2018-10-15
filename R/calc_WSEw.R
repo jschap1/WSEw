@@ -32,7 +32,7 @@ calc_WSEw <- function(cross_sections, interval = 0.05, dx = 1)
   {
 
     # Make a vector of WSE(t) values to enter in with
-    if (dbf[seg] < 0){next} # error check
+    if (dbf[seg] <= 0){next} # error check
     WSE <- seq(b.min[seg], b.min[seg] + dbf[seg], by = interval*dbf[seg])
     
     # Estimate the flow width for each WSE value
@@ -44,12 +44,30 @@ calc_WSEw <- function(cross_sections, interval = 0.05, dx = 1)
     xWSEw[[seg]] <- WSEw
   }
   
-  # Remove null cross sections, those with no measurements (optional)
+  return(xWSEw)
+}
+
+#' Remove null cross sections
+#' 
+#' Removes null cross sections, those with no measurements (optional)
+#' @export
+#' @param return_ind boolean telling the function whether or not to return rm.ind
+rm_null_xs <- function(xWSEw, return_ind = FALSE)
+{
   rm.ind <- which(unlist(lapply(xWSEw, is.null)))
   if (any(rm.ind))
   {
-    xWSEw <- xWSEw[-rm.ind] # this doesn't always seem to work...
+    xWSEw <- xWSEw[-rm.ind]
   }
   
-  return(xWSEw)
+  if (return_ind)
+  {
+    result <- list(WSEw = xWSEw, rm.ind = rm.ind)
+    return(result)
+  } else 
+  {
+    return(xWSEw)
+  }
 }
+
+

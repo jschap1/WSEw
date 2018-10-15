@@ -217,29 +217,41 @@ characterize_channel <- function(cross_sections, xWSEw, savename, plotflag = FAL
   # shape parameter (using linearized fitting method to avoid sensitivity to initial guesses)
   xdw <- vector(length = n.xs, "list")
   A <- vector(length = n.xs)
+  power_model <- vector(length = n.xs, "list")
+  s <- vector(length = n.xs)
+  
   for (r in 1:n.xs)
   {
+    
+    if (dbf.max[r] == 0) # there is a division error when dbf.max is zero
+    {
+      next
+    }
+    
     width <- xWSEw[[r]]$w
     depth <- xWSEw[[r]]$WSE - b.min[r]
     A[r] <- calc_A_from_WSEw(xWSEw[[r]]) # bankfull flow area
-    xdw[[r]] <- data.frame(w = width/wbf[r], d = depth/dbf.max[r]) # width-depth data
-  }
-  
-  # perform fits
-  power_model <- vector(length = n.xs, "list")
-  s <- vector(length = n.xs)
-  for (r in 1:n.xs)
-  {
-    dw <- xdw[[r]][-1,] # drop the first entry to account for zero values
+    xdw[[r]] <- data.frame(w = width/wbf[r], d = depth/dbf.max[r]) # width-depth data; 
+    
+    # perform fits
+    z.ind <- which(xdw[[r]]$w == 0)
+    dw <- xdw[[r]][-z.ind,] # drop the first entry to account for zero values
     power_model[[r]] <- lm(log(d) ~ log(w) + 0, data = dw)
     s[r] <- as.numeric(coef(power_model[[r]]))
+    
   }
+  
+  
+
+  
+  # dw <- xdw[[r]][-1,] # drop the first entry to account for zero values
+  # if (r==176){dw <- dw[[r]][-1,]} # sometimes, there is a cross section with two zeros
   
   if (plotflag == TRUE)
   {
     
     png("bankfull_parameters.png")
-    par(mfrow = c(5,1))
+    par(mfrow = c(2,3))
     plot(dist_downstream/1000, dbf, type = "l", 
          main = "maximum bankfull depth (m)", xlab = "distance downstream (km)",
          ylab = "dbf_max")

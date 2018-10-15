@@ -51,13 +51,14 @@ auto_transects <- function(section_length, riv, depth, refWSE,
     plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
     lines(riv.smooth.ksmooth)
     # lines(riv)
+    lines(cross_section[40:50], col = "Red")
     lines(cross_section, col = "Red") # the segments are numbered from north to south
   }
 
   print("Extracting values along transects.")
   print("This can take a LONG time.")
   print("It takes about 12 seconds per cross section per processor")
-  res <- extract_xs_wbf(cross_section, depth, hpc = TRUE)
+  res <- extract_xs_wbf(cross_section[40:50], depth, hpc = FALSE)
   wbf <- res$wbf
   main_channel <- res$main_channel
   

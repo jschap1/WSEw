@@ -32,7 +32,7 @@ as_numeric_raster <- function(r, att)
   {
     # currently only set up for "DEPTH_M" attribute
     numeric.vals[k] <- as.numeric.factor(lutable$DEPTH_M[match(factor.vals[k],lutable$ID)])
-    # Problem: factor.vals is not necessarily in lutable$ID
+    # Problem: factor.vals is occasionally not in lutable$ID, but sometimes running manually fixes it...
     if (k%%50000 == 0)
     { 
       print(paste0("progress: ", round(100*k/N, 2), "%")) # display progress
