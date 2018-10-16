@@ -25,6 +25,15 @@ pred_linear_par <- function(r)
       # if statements handle cases where the model is NULL/no model was fit
       if (class(lf[[k]][[m]]) == "lm")
       {
+        
+        # Check that physical-realism constraints are satisfied
+        # Must have non-negative slope
+        a <- coef(lf[[k]][[m]])[2] # slope coefficient
+        if (a < 0)
+        {
+          next
+        }
+        
         # z0.l[k,m] <- predict(lf[[k]][[m]], newdata = data.frame(w = 0))
         z0.l[k,m] <- as.numeric(coef(lf[[k]][[m]])[1])
         A.l[k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
@@ -52,6 +61,15 @@ pred_sb_par <- function(r)
     {
       if (class(sb[[k]][[m]][[1]]) == "lm")
       {
+        
+        # Check that physical-realism constraints are satisfied
+        # Must have non-negative slope
+        a1 <- coef(sb[[k]][[m]][[1]])[2] # slope coefficient
+        if (a1 < 0)
+        {
+          next
+        }
+        
         # z0.sb[k,m] <- predict(sb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         z0.sb[k,m] <- as.numeric(coef(sb[[k]][[m]][[1]])[1])
         A.sb[k,m] <- calc_model_A(sb[[k]][[m]], type = "sb")
@@ -121,6 +139,18 @@ pred_nl_par <- function(r, WSEw, w1, h1)
     {
       if (class(nl[[k]][[m]]) == "nls")
       {
+        
+        # Check that physical-realism constraints are satisfied
+        # Must have non-negative slope and cannot be concave down
+        a <- as.numeric(coef(nl[[k]][[m]])[2]) # slope coefficient
+        s <- as.numeric(coef(nl[[k]][[m]])[3]) # shape parameter
+        cond1 <- (a>=0 & s>=1)
+        cond2 <- (a<=0 & s<=1 & s>=0)
+        if (!(cond1 | cond2))
+        {
+          next
+        }
+        
         # z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0)) # this is problematic when s<0
         z0.nl[k,m] <- as.numeric(coef(nl[[k]][[m]])[1]) # this is better, will need to change it throughout
         A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
@@ -159,6 +189,18 @@ pred_nlsb_par <- function(r, WSEw, w1, h1)
     {
       if (class(nlsb[[k]][[m]][[1]]) == "nls")
       {
+        
+        # Check that physical-realism constraints are satisfied
+        # Must have non-negative slope and cannot be concave down
+        a1 <- as.numeric(coef(nlsb[[k]][[m]][[1]])[2]) # slope coefficient
+        s1 <- as.numeric(coef(nlsb[[k]][[m]][[1]])[3]) # shape parameter
+        cond1 <- (a1>=0 & s1>=1)
+        cond2 <- (a1<=0 & s1<=1 & s1>=0)
+        if (!(cond1 | cond2))
+        {
+          next
+        }
+        
         # z0.nlsb[k,m] <- predict(nlsb[[k]][[m]][[1]], newdata = data.frame(w = 0))
         z0.nlsb[k,m] <- as.numeric(coef(nlsb[[k]][[m]][[1]])[1])
         A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
