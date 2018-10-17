@@ -45,20 +45,32 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   # Bisect line segments
   cross_section <- bisect_line_segments2(rivsplit, w = halfwidth, resolution = res(depth)[1], mid = TRUE)
   
+  # Save cross sections
+  # saveRDS(cross_section, file = "./Outputs/Cross_Sections/cross_section_polyline_p9_sl5.rds")
+  
   # Plot to check
   if (makeplot)
   {
     plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
-    lines(riv.smooth.ksmooth)
+    lines(riv, col = "blue")
     # lines(riv)
-    lines(cross_section[40:50], col = "Red")
-    lines(cross_section, col = "Red") # the segments are numbered from north to south
+    # lines(cross_section[40:50], col = "Red")
+    # lines(cross_section, col = "Red") # the segments are numbered from north to south
+    
+    # Get indices of the cross sections that begin and end the reaches
+    n.xs <- length(cross_section)
+    ind <- get_start_end_ind(n.xs, reach_length = 10e3, section_length)
+    start.ind <- ind$start.ind
+    end.ind <- ind$end.ind
+    # Make polyline containing only the ending transects
+    xs.end <- cross_section[end.ind]
+    lines(xs.end, col = "black", lwd = 2)
   }
 
   print("Extracting values along transects.")
   print("This can take a LONG time.")
   print("It takes about 12 seconds per cross section per processor")
-  res <- extract_xs_wbf(cross_section[40:50], depth, hpc = FALSE)
+  res <- extract_xs_wbf(cross_section, depth, hpc = FALSE)
   wbf <- res$wbf
   main_channel <- res$main_channel
   

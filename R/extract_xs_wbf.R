@@ -84,7 +84,17 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
     
     for (x in 1:n.xs)
     {
+      
+      # Output a transect as a KML file
+      # xs.sldf <- SpatialLinesDataFrame(cross_section[x], data = data.frame(ID = 1), match.ID = FALSE)
+      # xs.sldf.wgs <- spTransform(xs.sldf, crs("+init=epsg:4326"))
+      # writeOGR(xs.sldf.wgs, "./Outputs/Cross_Sections/xs_test.kml", layer="reach", driver="KML", overwrite= TRUE)
+      
       transects[[x]] <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE)
+      
+      # Plot a transect
+      # dd <- refWSE[i]*0.3048 - transects[[x]][[1]][,2]
+      # plot(dd, type = "l", main = "bed vs x (m)")
       
       if (is.null(transects[[x]][[1]])) # skip empty transects
       {

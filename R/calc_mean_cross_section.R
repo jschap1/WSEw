@@ -15,25 +15,11 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
   
   n.xs <- length(cross_sections$x)
   
-  # number of full reaches, plus potentially a partial reach that is not the full reach_length long
-  n.xs.in.r <- reach_length/section_length # number of cross sections in a reach
-  
-  if (n.xs %% n.xs.in.r == 0) # if it divides evenly
-  {
-    print("There are the perfect number of cross sections for division! Lucky you.")
-    nr <- n.xs/n.xs.in.r
-    start.ind <- seq(1, nr*n.xs.in.r, by = n.xs.in.r)
-    end.ind <- start.ind + n.xs.in.r - 1
-  } else # if it does not divide evenly
-  {
-    print("The last cross section is averaged over a smaller distance than you specified")
-    nr <- floor(n.xs/n.xs.in.r) + 1 
-    print(paste("The averaging distance for cross_section_avg", nr, "is", section_length*(n.xs %% n.xs.in.r), "m"))
-    start.ind <- seq(1, n.xs.in.r*(nr-1), by = n.xs.in.r)
-    end.ind <- start.ind + n.xs.in.r - 1
-    start.ind[nr] <- end.ind[nr-1] + 1
-    end.ind[nr] <- n.xs
-  }
+  # Get beginning and ending indices of each reach
+  ind <- get_start_end_ind(n.xs, reach_length, section_length)
+  start.ind <- ind$start.ind
+  end.ind <- ind$end.ind
+  nr <- ind$nr
   
   xs.avg <- vector(length = nr, "list")
   for (r in 1:nr)
@@ -111,9 +97,39 @@ resample_xs <- function(cross_sections, n)
   
 }
 
+# ------------------------------------------------------------------------------------------------
+#' Get start and end indices of reaches
+#' 
+#' @param n.xs output from auto_transects
+#' @param reach_length desired length of reach (m)
+#' @param section_length distance between cross sections (m)
+#' @export
+#' @example get_start_end_ind(n.xs = 24729, 10e3, 5)
 
-
-
-
-
-
+get_start_end_ind <- function(n.xs, reach_length, section_length)
+{
+  
+  # number of full reaches, plus potentially a partial reach that is not the full reach_length long
+  n.xs.in.r <- reach_length/section_length # number of cross sections in a reach
+  
+  if (n.xs %% n.xs.in.r == 0) # if it divides evenly
+  {
+    print("There are the perfect number of cross sections for division! Lucky you.")
+    nr <- n.xs/n.xs.in.r
+    start.ind <- seq(1, nr*n.xs.in.r, by = n.xs.in.r)
+    end.ind <- start.ind + n.xs.in.r - 1
+  } else # if it does not divide evenly
+  {
+    print("The last cross section is averaged over a smaller distance than you specified")
+    nr <- floor(n.xs/n.xs.in.r) + 1 
+    print(paste("The averaging distance for cross_section_avg", nr, "is", section_length*(n.xs %% n.xs.in.r), "m"))
+    start.ind <- seq(1, n.xs.in.r*(nr-1), by = n.xs.in.r)
+    end.ind <- start.ind + n.xs.in.r - 1
+    start.ind[nr] <- end.ind[nr-1] + 1
+    end.ind[nr] <- n.xs
+  }
+  
+  inds <- list(start.ind = start.ind, end.ind = end.ind, nr = nr)
+  return(inds)
+  
+}
