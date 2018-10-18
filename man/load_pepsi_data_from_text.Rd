@@ -4,12 +4,12 @@
 \alias{load_pepsi_data_from_text}
 \title{Load Pepsi data from text file}
 \usage{
-load_pepsi_data_from_text(data.dir, save.dir, sortWSEw)
-}
-\arguments{
-\item{sortWSE}{boolean, whether or not to sort WSEw from low to high width, 
-or leave in the original order from day 1 to nt of the simulation}
+load_pepsi_data_from_text(data.dir, save.dir)
 }
 \description{
 Load Pepsi data from text file
+}
+\details{
+Saves two versions of the h-w data: one is sorted from low to high width, 
+and the other is left in the original simulated order of day 1 to nt.
 }

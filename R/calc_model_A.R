@@ -5,7 +5,6 @@
 #' @param model fitted model to the WSE-w data
 #' @param type type of model. Default is linear. Options are linear, sb, sbm, nl, and nlsb
 #' @param WSEw WSE-w data for the fit. Only required if fit is nonlinear
-#' @details 
 #' @return A cross-sectional area of flow
 #' @examples 
 #' A.l <- calc_modelA(lf[[1]], type = "linear")

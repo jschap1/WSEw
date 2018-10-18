@@ -3,10 +3,8 @@
 #' @details Saves two versions of the h-w data: one is sorted from low to high width, 
 #' and the other is left in the original simulated order of day 1 to nt.
 #' @export
-#' @importFrom tools file_path_sans_ext
 #' Loads width, height, and flow area data from Pepsi Challenge outputs into R
 #' Data should be saved as text file, e.g. generated using preprocess_pepsi_data.m
-
 load_pepsi_data_from_text <- function(data.dir, save.dir)
 {
   WSEnames <- list.files(data.dir, glob2rx("*_WSE.txt"))
@@ -23,16 +21,16 @@ load_pepsi_data_from_text <- function(data.dir, save.dir)
     nr <- dim(h)[1] # number of reaches
     
     # Reformat into rWSEw form
-    rWSEw <- vector(length = nr, "list")
+    rWSEw.unsorted <- vector(length = nr, "list")
     for (r in 1:nr)
     {
       wr <- w[r,] # Sort them from low to high WSE
       hr <- h[r,]
       rWSEw.unsorted[[r]] <- data.frame(WSE = hr, w = wr)
-      rWSEw.sorted <- sortWSEw(rWSEw.unsorted)
     }
+    rWSEw.sorted <- sortWSEw(rWSEw.unsorted)
     
-    nametmp <- file_path_sans_ext(WSEnames[i]) # get river name
+    nametmp <- tools::file_path_sans_ext(WSEnames[i]) # get river name
     rivname <- strsplit(nametmp, split = '_WSE')[[1]]
     saveRDS(rWSEw.sorted, file = file.path(save.dir, paste0(rivname, '_rWSEw_sorted.rds')))
     saveRDS(rWSEw.unsorted, file = file.path(save.dir, paste0(rivname, '_rWSEw_unsorted.rds')))

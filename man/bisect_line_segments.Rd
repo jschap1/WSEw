@@ -9,6 +9,8 @@ bisect_line_segments(rpolyline, projcrs, w, resolution)
 \arguments{
 \item{rpolyline}{depth values along a transect}
 
+\item{projcrs}{coordinate system}
+
 \item{w}{width (m)}
 
 \item{resolution}{resolution of bathymetry data (m)}

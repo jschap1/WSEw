@@ -134,7 +134,7 @@ fit_nlsb_par <- function(r)
         nlsb[[k]][[m]] <- model1
       } else
       {
-        print("hi")
+        print("there was an error with the NLSB fit")
         nlsb[[k]][[m]] <- NA
       }
     }

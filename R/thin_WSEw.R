@@ -4,6 +4,7 @@
 #' @param WSEw WSEw
 #' @param n number of data points in each of the new WSEw[[r]] data frames
 #' @example tWSEw <- thinWSEw(WSEw, n)
+#' @export
 thinWSEw <- function(WSEw, n)
 {
   nr <- length(WSEw)
@@ -24,6 +25,7 @@ thinWSEw <- function(WSEw, n)
 #' @param n number of time steps between successive observations
 #' @param first_overpass time step of first overpass
 #' @example tWSEw <- sampleWSEw(WSEw, n)
+#' @export
 sampleWSEw <- function(WSEw, n, first_overpass = 1)
 {
   nr <- length(WSEw)

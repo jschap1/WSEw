@@ -3,7 +3,7 @@
 #' Bisects each line segment in a polyline
 #' @export
 #' @param rpolyline depth values along a transect
-#' @param projcrs
+#' @param projcrs coordinate system
 #' @param w width (m)
 #' @param resolution resolution of bathymetry data (m)
 #' @details Calculates the angle of the river centerline and draws a perpedicular bisector passing through it.

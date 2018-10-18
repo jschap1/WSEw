@@ -82,10 +82,10 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
 #' 
 #' Tests whether there is an "optimal location" for the slope break method, as described by Mersel et al. (2013)
 #'
-#' @param WSE
-#' @param w
+#' @param WSE water surface elevation
+#' @param w flow width
 #' @param thres threshold for maxdiff in slope for the WSE-w relationship to be considered linear
-#' @param window
+#' @param window averaging window, see Mersel et al. (2013)
 #' @param m flag for multiple slope breaks
 #' @return If it is an optimal location, returns the slope break location. Otherwise returns NULL.
 #' @export

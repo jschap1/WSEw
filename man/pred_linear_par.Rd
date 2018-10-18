@@ -19,6 +19,6 @@ Parallelized functions for main_d6 hydraulic parameter predictions in parallel w
 for WSE-w fits.
 }
 \details{
-Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break) 
+Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 and uses it to predict hydraulic parameters
 }

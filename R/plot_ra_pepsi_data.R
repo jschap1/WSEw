@@ -17,7 +17,7 @@ plot_ra_pepsi_data <- function(WSEw.unsorted, A, reach_length = 10e3)
   plot(t, A[1,], main = "Flow area",
        xlab = "time step (days)",
        ylab = "Flow area (sq. m)",
-       ylim = c(0, 1200),
+       ylim = c(0, max(A)),
        "n")
   cols <- rainbow(nr)
   for (r in 1:nr)
@@ -32,7 +32,7 @@ plot_ra_pepsi_data <- function(WSEw.unsorted, A, reach_length = 10e3)
   plot(t, WSEw.unsorted[[1]]$WSE, main = "Water surface elevation",
        xlab = "time step (days)",
        ylab = "h (m)",
-       ylim = c(0, 25),
+       ylim = c(0, 20),
        "n")
   cols <- rainbow(nr)
   for (r in 1:nr)
@@ -47,7 +47,7 @@ plot_ra_pepsi_data <- function(WSEw.unsorted, A, reach_length = 10e3)
   plot(t, WSEw.unsorted[[1]]$w, main = "Flow width",
        xlab = "time step (days)",
        ylab = "Flow width (m)",
-       ylim = c(0, 300),
+       ylim = c(0, 1000),
        "n")
   cols <- rainbow(nr)
   for (r in 1:nr)

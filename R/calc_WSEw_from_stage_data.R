@@ -7,7 +7,6 @@
 #' @param t vector of times corresponding to gauged water surface elevations
 #' @param tobs vector of times at which to make an observation 
 #' @param r cross section number
-#' @examples 
 #' @export
 #' @details Similar to calc_WSEw, but selects WSE values to enter in with based on a time series of gauge measurements.
 #' Also incorporates some of the functionality from observe().

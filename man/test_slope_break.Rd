@@ -7,7 +7,13 @@
 test_slope_break(WSE, w, thres = 0.015, window = 4, m = FALSE)
 }
 \arguments{
+\item{WSE}{water surface elevation}
+
+\item{w}{flow width}
+
 \item{thres}{threshold for maxdiff in slope for the WSE-w relationship to be considered linear}
+
+\item{window}{averaging window, see Mersel et al. (2013)}
 
 \item{m}{flag for multiple slope breaks}
 }

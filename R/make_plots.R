@@ -522,19 +522,19 @@ plot_histograms_of_param_error <- function(z.l, z.sb, z.nl, z.nlsb, r, k, ...)
 # ------------------------------------------------------------------------------
 # Figure 9
 
-# Histograms of fitted parameters
+#' Histograms of fitted parameters
 
-# Load predictions without removing the negative A0s (though they are quite similar either way)
-# thedir <- "/Volumes/HD3/Cross_Sections/pool_21_ra_10km_nr_3_spacing_5_sampling_even_MC_replicates_500/without_removing_negative_areas"
-# load(file.path(thedir, "A0_pred_newa0.rda"))
-# load(file.path(thedir, "z0_pred.rda"))
 #' @export
 #' @details 
 #' Requires predicted parameter values and true values for comparison
+#' Load predictions without removing the negative A0s (though they are quite similar either way)
 #' @examples 
 #' r <- 1
 #' k <- 12 # 60% exposure
 #' plot_histograms_of_fitted_params(3, 16)
+#' thedir <- "/Volumes/HD3/Cross_Sections/pool_21_ra_10km_nr_3_spacing_5_sampling_even_MC_replicates_500/without_removing_negative_areas"
+#' load(file.path(thedir, "A0_pred_newa0.rda"))
+#' load(file.path(thedir, "z0_pred.rda"))
 
 plot_histograms_of_fitted_params <- function(r, k)
 {

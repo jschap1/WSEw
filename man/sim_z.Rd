@@ -8,6 +8,12 @@ sim_z(scale = 0.3187264, shape1 = 0.3211963, shape2 = 25.1872518,
   zmin = 0.9375944, zmax = 1, n)
 }
 \arguments{
+\item{scale}{Burr distribution parameter}
+
+\item{shape1}{Burr distribution parameter}
+
+\item{shape2}{Burr distribution parameter}
+
 \item{n}{number of replicates}
 
 \item{m}{linear model used to detrend the data}

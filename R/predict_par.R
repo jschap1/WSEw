@@ -49,8 +49,11 @@ pred_linear_par <- function(r, exclude = FALSE)
   return(list(z0 = z0.l, A = A.l, WP = WP.l, A0 = A0.l))
 }
 
+
+#' Slope break
+#' 
+#' Applies fit_slopebreak in parallel across multiple processors on one machine
 #' @export
-# Slope break
 pred_sb_par <- function(r, exclude = FALSE)
 {
   sb_name <- paste0("sb/sb_", "r_", r, ".rds")
@@ -89,7 +92,9 @@ pred_sb_par <- function(r, exclude = FALSE)
 }
 
 #' @export
-# SBM
+#' Slope break (multiple)
+#' 
+#' Applies fit_slopebreak in parallel across multiple processors on one machine
 pred_sbm_par <- function(r)
 {
   sbm_name <- paste0("sbm/sbm_", "r_", r, ".rds")
@@ -122,10 +127,14 @@ pred_sbm_par <- function(r)
   return(list(z0 = z0.sbm, A = A.sbm, WP = WP.sbm, A0 = A0.sbm))
 }
 
+
+#' Nonlinear
+#' 
+#' Applies fit_nonlinear in parallel across multiple processors on one machine
 #' @export
 #' @param w1 minimum observed width, nr by n_exp_level by M array
 #' @param h1 minimum observed height, nr by n_exp_level by M array
-# Nonlinear
+
 pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
 {
   nl_name <- paste0("nl/nl_", "r_", r, ".rds")
@@ -175,10 +184,13 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
 ww <- 0
 6.664e+02 - 5.122e-04*ww^(-1.502e-01)
 
+
+#' Nonlinear slope break
+#' 
+#' Applies fit_nlsb in parallel across multiple processors on one machine
 #' @export
 #' @param w1 minimum observed width, nr by n_exp_level by M array
 #' @param h1 minimum observed height, nr by n_exp_level by M array
-# NLSB
 pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
 {
   nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
@@ -225,11 +237,13 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   return(list(z0 = z0.nlsb, A = A.nlsb, WP = WP.nlsb, A0 = A0.nlsb))
 }
 
+
+#' Clean by z0
+#'
+#' This removes the predictions with z0<h1
 #' @export
-#' @details
 #' @param pred list of predicted values
 #' @param h1 array of minimum observed heights
-#' This removes the predictions with z0<h1
 clean_by_z0 <- function(pred, h1)
 {
   for (r in 1:nr)
@@ -244,9 +258,11 @@ clean_by_z0 <- function(pred, h1)
   return(pred)
 }
 
+#' Clean by A0
+#' 
+#' This removes the predictions with A0<0
 #' @export
 #' @details
-#' This removes the predictions with A0<0
 clean_by_A0 <- function(pred, h1)
 {
   for (r in 1:nr)

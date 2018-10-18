@@ -92,13 +92,13 @@ calc_WSEw3 <- function(cross_sections, dist = "exponential", pars = c(0.9428, 74
 #'
 #' Simulate z values for SWOT sampling using a fitted Burr distribution
 #' @export
-#' @param scale
-#' @param shape1
-#' @param shape2
+#' @param scale Burr distribution parameter
+#' @param shape1 Burr distribution parameter
+#' @param shape2 Burr distribution parameter
 #' @param m linear model used to detrend the data
 #' @param n number of replicates
 #' @example z.sim <- sim_z(scale, shape1, shape2, m1, min(z), max(z), n=100)
-#' @imports actuar
+#' @import actuar
 
 sim_z <- function(scale = 0.3187264, shape1 = 0.3211963, shape2 = 25.1872518, 
                   zmin = 0.9375944, zmax = 1,  n)
