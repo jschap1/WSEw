@@ -1,7 +1,7 @@
 #' Load Pepsi data from text file
 #' 
 #' @details Saves two versions of the h-w data: one is sorted from low to high width, 
-#' and the other is left in the original simulated order of day 1 to nt
+#' and the other is left in the original simulated order of day 1 to nt.
 #' @export
 #' @importFrom tools file_path_sans_ext
 #' Loads width, height, and flow area data from Pepsi Challenge outputs into R
@@ -28,9 +28,8 @@ load_pepsi_data_from_text <- function(data.dir, save.dir)
     {
       wr <- w[r,] # Sort them from low to high WSE
       hr <- h[r,]
-      df <- data.frame(WSE = hr[order(hr)], w = wr[order(hr)])
-      rWSEw.sorted[[r]] <- df
       rWSEw.unsorted[[r]] <- data.frame(WSE = hr, w = wr)
+      rWSEw.sorted <- sortWSEw(rWSEw.unsorted)
     }
     
     nametmp <- file_path_sans_ext(WSEnames[i]) # get river name
@@ -41,4 +40,27 @@ load_pepsi_data_from_text <- function(data.dir, save.dir)
     print(paste("Saved files to", save.dir))
     
   }
+}
+
+# ------------------------------------------------------------------------------------------------
+#' Sort WSEw
+#' 
+#' Sorts the WSEw data in increasing order of flow width
+#' @export
+#' @example WSEw.sorted <- sortWSEw(WSEw.unsorted)
+sortWSEw <- function(WSEw)
+{
+  
+  nr <- length(WSEw)
+  rWSEw <- vector(length = nr, "list") 
+  for (r in 1:nr)
+  {
+    hr <- WSEw[[r]]$WSE
+    wr <- WSEw[[r]]$w
+    df <- data.frame(WSE = hr[order(wr)], w = wr[order(wr)])
+    rWSEw[[r]] <- df
+  }
+  
+  return(rWSEw)
+  
 }

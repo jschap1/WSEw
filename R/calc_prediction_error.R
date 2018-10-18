@@ -71,10 +71,10 @@ calc_A0_prediction_error <- function(pred, truth, A = NULL, type)
     for (k in 1:n_exp_levels)
     {
       pred.error[,k,] <- pred[,k,] - rep(truth[,k], M)
-      for (r in 1:nr)
-      {
-        pred.error[r,k,] <- pred.error[r,k,]/truth[r,k]
-      }
+      # for (r in 1:nr)
+      # {
+      #   pred.error[r,k,] <- pred.error[r,k,]/truth[r,k]
+      # }
     }
     
   } else if (type == "relative")
