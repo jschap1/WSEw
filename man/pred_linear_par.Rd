@@ -4,10 +4,12 @@
 \alias{pred_linear_par}
 \title{Predict parameters (parallel)}
 \usage{
-pred_linear_par(r)
+pred_linear_par(r, exclude = FALSE)
 }
 \arguments{
 \item{r}{cross section number}
+
+\item{exclude}{boolean that determines whether or not to exclude predictions from physically unrealistic model fits}
 }
 \value{
 list of z0, A, W0, and A0 predictions
