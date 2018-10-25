@@ -3,7 +3,7 @@
 #' Uses the transect to get the main channel from a transect potentially covering multiple channels. 
 #' Also provides other useful info, like width to banks.
 #' @param transect depth values along a transect
-#' @param return_index use it to return the indices of transects where the main channel begins and ends
+#' @param return_all use it to return the indices of transects where the main channel begins and ends
 #' @keywords transects, hydraulics, cross sections
 #' @export
 #' @examples 
@@ -18,7 +18,7 @@
 #' summary(transect[wide.ch.ind])
 #' summary(transect[wide.ch.ind1])
 
-get_main_channel <- function(transect, return_index = FALSE)
+get_main_channel <- function(transect, return_all = FALSE)
 {
 
  # Assign a value to each river channel intersected by the transect
@@ -67,11 +67,12 @@ get_main_channel <- function(transect, return_index = FALSE)
   
   main_channel <- transect[wide.ch.ind]
   
-  if (return_index)
+  if (return_all)
   {
     main_channel <- list(main_channel = main_channel, 
                          first_ind = wide.ch.ind[1], 
-                         last_ind = wide.ch.ind[length(wide.ch.ind)])
+                         last_ind = wide.ch.ind[length(wide.ch.ind)], 
+                         pixel_widths = summary_table)
   }
   
   return(main_channel)

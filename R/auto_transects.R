@@ -29,6 +29,13 @@
 #' @import sp
 #' @importFrom raster extract
 
+# section_length <- 1e3
+# riv <- riv.smooth.ksmooth
+# depth <- depth_5
+# refWSE <- refWSE[i]
+# halfwidth <- halfwidth[i]
+
+
 auto_transects <- function(section_length, riv, depth, refWSE, 
                            savename, halfwidth = 1000, k = 5, 
                            makeplot = FALSE)
@@ -70,30 +77,30 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   print("Extracting values along transects.")
   print("This can take a LONG time.")
   print("It takes about 12 seconds per cross section per processor")
-  res <- extract_xs_wbf(cross_section, depth, hpc = FALSE)
+  res <- extract_xs_wbf(cross_section, depth, hpc = TRUE, h = 20)
   wbf <- res$wbf
   main_channel <- res$main_channel
+  xs_locs <- res$xs_locs # make it a single SpatialLines object with IDs corresponding to XS number
+  pixel_widths <- res$pixel_widths
   
-  # Remove null (empty) transects
-  null.ind <- unlist(lapply(main_channel, is.null))
-  na.ind <- lapply(main_channel, is.na)
-  na.ind <- unlist(lapply(na.ind, all))
-  if (sum(null.ind)>0)
-  {
-    main_channel <- main_channel[-which(null.ind)]
-  }
-  if (sum(na.ind)>0)
-  {
-    main_channel <- main_channel[-which(na.ind)]
-  }
-  nseg <- length(main_channel)
+  # all.pixel.widths <- unlist(lapply(pixel_widths, as.vector)) # get all widths of channels and subchannels
+  # hist(all.pixel.widths, col = "blue", breaks = 20)
+  # summary(all.pixel.widths)
   
-  if(any(is.na(wbf)))
+  # Remove locations with no data
+  rm.ind <- which(wbf == 0 | is.na(wbf))
+  if (any(rm.ind))
   {
-    wbf.na.ind <- which(is.na(wbf))
-    wbf <- wbf[-wbf.na.ind]
+    wbf <- wbf[-rm.ind]
+    xs_locs <- xs_locs[-rm.ind] # Slot ID keeps track of the cross section
+    main_channel <- main_channel[-rm.ind] 
   }
 
+  # combine the SpatialLines objects together
+  xs_locs_combined <- do.call(rbind, xs_locs) 
+  
+  # lines(xs_locs_combined, lwd = 2, col = "red")
+  
   # ------------------------------------------------------------------------------
   # Extract x-y information for plotting transects
   
@@ -107,7 +114,7 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   # d <- lapply(main_channel, get_depth_from_lutable, depth)
   d <- main_channel # depths
   
-  # Assume the first and last point are zero depth (banks)
+    # Assume the first and last point are zero depth (banks)
   for (seg in 1:nseg)
   {
     d[[seg]][1] <- 0
@@ -161,3 +168,32 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   return(cross.sections)
   
 }
+
+
+# ----------------------------------------------------------------------------------------------------
+# Scrap
+
+# 
+# # Remove null (empty) transects
+# null.ind <- unlist(lapply(main_channel, is.null))
+# na.ind <- lapply(main_channel, is.na)
+# na.ind <- unlist(lapply(na.ind, all))
+# if (sum(null.ind)>0)
+# {
+#   main_channel <- main_channel[-which(null.ind)]
+#   xs_locs <- xs_locs[-which(null.ind)]
+# }
+# if (sum(na.ind)>0)
+# {
+#   main_channel <- main_channel[-which(na.ind)]
+# }
+# nseg <- length(main_channel)
+# 
+# if(any(is.na(wbf)))
+# {
+#   wbf.na.ind <- which(is.na(wbf))
+#   wbf <- wbf[-wbf.na.ind]
+# }
+
+# plot(main_channel[[1]], type = "l")
+# I suspect the scaling factor is 1000, but double check.

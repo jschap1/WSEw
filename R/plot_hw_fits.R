@@ -43,6 +43,7 @@ plot_hw_fits <- function(WSEw, exposure, sd_wse = 0, sd_w = 0, ...)
   lines(w.vals, predict(nl, newdata = data.frame(w=w.vals)), 
         col = "green", lty = 2)
   
+  # plot nlsb
   nlsb.ind <- attributes(nlsb)$sb.ind
   lines(WSEw_obs$w[1:nlsb.ind], predict(nlsb[[1]]), col = "blue")
   lines(WSEw_obs$w[(nlsb.ind):nn], predict(nlsb[[2]]), col = "blue")

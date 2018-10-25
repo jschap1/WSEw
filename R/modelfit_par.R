@@ -72,7 +72,7 @@ fit_sb_par <- function(r)
     sb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(sb[[k]][[m]] <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = FALSE, continuity = TRUE, minlen = 3))
+      try(sb[[k]][[m]] <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = FALSE, continuity = TRUE, minlen = 5))
     }
   }
   sb_name <- paste0("sb/sb_", "r_", r, ".rds")

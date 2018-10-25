@@ -4,6 +4,7 @@
 #' @param cross_section output from bisect_line_segments()
 #' @param depth bathymetry raster
 #' @param hpc flag for "high performance computing"
+#' @param h minimum width (in pixels) to count a channel
 #' @examples wbfs_and_mc <- extract_xs_wbf(cross_section, depth, hpc = TRUE)
 #' wbfs_and_mc <- extract_xs_wbf(cross_section[1:10], depth, hpc = TRUE)
 #' @export
@@ -12,10 +13,11 @@
 #' Extracts data underlying the lines in cross_section.
 #' Uses first and last overlapped pixels to estimate bankfull width from 
 #' perpendicular bisectors to the river centerline.
+#' For Pool 5, I got an error about raster I/O. I think this is due to a corrupt raster file.
 #' @importFrom foreach foreach
 #' @importFrom doMC registerDoMC
 
-extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
+extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
 {
   
   begin.time <- Sys.time()
@@ -30,18 +32,28 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
     if (is.null(transects[[1]])) # skip empty transects
     {
       print(paste("skipping NULL", x))
-      wbf_and_mc <- list(NA, NA)
+      wbf_and_mc <- list(NA, NA, NA, NA, NA)
       return(wbf_and_mc)
     }
     
     if (all(is.na(transects[[1]][,2])))
     {
       print(paste("skipping NA", x))
-      wbf_and_mc <- list(NA, NA)
+      wbf_and_mc <- list(NA, NA, NA, NA, NA)
       return(wbf_and_mc)
     }
     
-    mc <- get_main_channel(transects[[1]][,2], return_index = TRUE)
+    res1 <- get_main_channel(transects[[1]][,2], return_all = TRUE)
+    pixel_widths <- res1$pixel_widths
+    
+    n.channels <- count_separate_channels_2(transects[[1]][,2], min_width = h)
+    if (n.channels > 1)
+    {
+      wbf_and_mc <- list(NA, NA, NA, n.channels, pixel_widths)
+      return(wbf_and_mc)
+    }
+    
+    mc <- get_main_channel(transects[[1]][,2], return_all = TRUE)
     main_channel <- mc$main_channel
     
     first_cell <- transects[[1]][mc$first_ind,1]
@@ -52,7 +64,11 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
     
     wbf <- dist(rbind(p1,p2)) 
     
-    wbf_and_mc <- list(wbf, main_channel)
+    xy <- rbind(p1,p2)
+    xy.sp <- SpatialPoints(xy)
+    xs_locations <- SpatialLines(list(Lines(Line(xy.sp), ID = x)))
+    
+    wbf_and_mc <- list(wbf, main_channel, xs_locations, n.channels, pixel_widths)
     print(paste("Extracted data and estimated wbf for cross section", x, "of", n.xs))
     return(wbf_and_mc)
   }
@@ -67,20 +83,33 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
     
     # post-process/reformat
     wbf <- vector(length = n.xs) 
+    num.channels <- vector(length = n.xs) 
     main_channel <- vector(length = n.xs, "list")
+    xs_locations <- vector(length = n.xs, "list")
+    pixel_widths <- vector(length = n.xs, "list")
     for (x in 1:n.xs)
     {
       wbf[x] <- wbfs_and_mc[[x]][[1]]
       main_channel[[x]] <- wbfs_and_mc[[x]][[2]]
+      xs_locations[[x]] <- wbfs_and_mc[[x]][[3]]
+      num.channels[x] <- wbfs_and_mc[[x]][[4]]
+      pixel_widths[[x]] <- wbfs_and_mc[[x]][[5]]
     }
-    wbfs_and_mc <- list(wbf = wbf, main_channel = main_channel)
+    wbfs_and_mc <- list(wbf = wbf, 
+                        main_channel = main_channel, 
+                        xs_locs = xs_locations, 
+                        n.channels = num.channels, 
+                        pixel_widths = pixel_widths)
     
-  } else
+  } else # if not hpc
   {
     
     wbf <- vector(length = n.xs)
+    n.channels <- vector(length = n.xs)
     transects <- vector(length = n.xs, "list")
     main_channel <- vector(length = n.xs, "list")
+    xs_locations <- vector(length = n.xs, "list")
+    pixel_widths <- vector(length = n.xs, "list")
     
     for (x in 1:n.xs)
     {
@@ -108,7 +137,19 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
         next
       }
       
-      mc <- get_main_channel(transects[[x]][[1]][,2], return_index = TRUE)
+      res1 <- get_main_channel(transects[[x]][[1]][,2], return_all = TRUE)
+      pixel_widths[[x]] <- res1$pixel_widths
+      
+      n.channels[x] <- count_separate_channels_2(transects[[x]][[1]][,2], min_width = h)
+      if (n.channels > 1)
+      {
+        wbf[x] <- NA
+        main_channel[[x]] <- NA
+        xs_locations[[x]] <- NA
+        next
+      }
+      
+      mc <- get_main_channel(transects[[x]][[1]][,2], return_all = TRUE)
       main_channel[[x]] <- mc$main_channel
       
       first_cell <- transects[[x]][[1]][mc$first_ind,1]
@@ -117,14 +158,23 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
       p1 <- xyFromCell(depth, first_cell)
       p2 <- xyFromCell(depth, last_cell)
       
+      xy <- rbind(p1,p2)
+      xy.sp <- SpatialPoints(xy)
+      xs_locations[[x]] <- SpatialLines(list(Lines(Line(xy.sp), ID = x)))
+      
       wbf[x] <- dist(rbind(p1,p2)) 
+      # wbf[x] <- LineLength(spl@lines[[1]]@Lines[[1]]) # alternative, gives same result
       # estimate of bankfull width, ought to be subject to at most two 
       # pixels worth of error (though it can actually have more error than that)
       
       print(paste("Extracted data and estimated wbf for cross section", x, "of", n.xs))
     }
     
-    wbfs_and_mc <- list(wbf = wbf, main_channel = main_channel)
+    wbfs_and_mc <- list(wbf = wbf, 
+                        main_channel = main_channel, 
+                        xs_locs = xs_locations, 
+                        n.channels = n.channels, 
+                        pixel_widths = pixel_widths)
     
   }
   
@@ -132,4 +182,19 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE)
   print(Sys.time() - begin.time)
   return(wbfs_and_mc)
 }
+
+# # Find out what are typical widths of side channels
+# pixel_widths <- vector(length = n.xs, "list")
+# for (x in 1:n.xs)
+# {
+#   transects[[x]] <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE, progress = "text")
+#   if (is.null(transects[[x]][[1]][,2]))
+#   {
+#     next    
+#   }
+#   res1 <- get_main_channel(transects[[x]][[1]][,2], return_all = TRUE)
+#   pixel_widths[[x]] <- res1$pixel_widths
+# }
+
+
 
