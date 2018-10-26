@@ -4,12 +4,12 @@
 \alias{get_main_channel}
 \title{Get Main Channel}
 \usage{
-get_main_channel(transect, return_index = FALSE)
+get_main_channel(transect, return_all = FALSE)
 }
 \arguments{
 \item{transect}{depth values along a transect}
 
-\item{return_index}{use it to return the indices of transects where the main channel begins and ends}
+\item{return_all}{use it to return the indices of transects where the main channel begins and ends}
 }
 \description{
 Uses the transect to get the main channel from a transect potentially covering multiple channels. 

@@ -4,7 +4,7 @@
 \alias{extract_xs_wbf}
 \title{Extract cross sections and bankfull width (parallel)}
 \usage{
-extract_xs_wbf(cross_section, depth, hpc = TRUE)
+extract_xs_wbf(cross_section, depth, hpc = TRUE, h = 20)
 }
 \arguments{
 \item{cross_section}{output from bisect_line_segments()}
@@ -12,6 +12,8 @@ extract_xs_wbf(cross_section, depth, hpc = TRUE)
 \item{depth}{bathymetry raster}
 
 \item{hpc}{flag for "high performance computing"}
+
+\item{h}{minimum width (in pixels) to count a channel}
 }
 \description{
 Extracts cross sections and bankfull width in parallel
@@ -22,6 +24,7 @@ and has some error catches.
 Extracts data underlying the lines in cross_section.
 Uses first and last overlapped pixels to estimate bankfull width from 
 perpendicular bisectors to the river centerline.
+For Pool 5, I got an error about raster I/O. I think this is due to a corrupt raster file.
 }
 \examples{
 wbfs_and_mc <- extract_xs_wbf(cross_section, depth, hpc = TRUE)

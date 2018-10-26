@@ -1,78 +1,30 @@
 #' Auto Transects
 #' 
-#' Builds cross sections from bathymetry data
+#' Draws transects, finds main channel, and gets depth values
 #' @export
-#' @param section_length spatial discretization for dividing the river into cross sections (m)
-#' @param riv polyline file for the main river channel
-#' @param depth raster of depth values (m)
-#' @param refWSE Reference WSE for the measured bathymetry data (m)
-#' @param savename where to save the outputs
-#' @param halfwidth guess for how wide the channel is. Default is 1000 m.
-#' @param k smoothing width
-#' @param makeplot whether or not to make a plot. Default is FALSE.
-#' @details It is a pretty long function. Here is a synopsis:
-#' 1. Breaks up a polyline of the river centerline into roughly evenly-spaced segments of a specified length
-#' 2. Draws a perpendicular bisector to each segment. Choose a good value of halfwidth to ensure the bisector completely crosses the river.
-#' 3. Optionally plots the river centerline, gridded bathymetry data, and the bisectors (henceforth called "cross-sections")
-#' 4. Extracts depth values along the cross-sections using extract(). This is the most time-consuming step.
-#' 5. Removes empty cross-sections, those for which there are no available bathymetry data
-#' 6. Gets the main river channel in the case when there are multiple channels by selecting the widest channel
-#' 7. Estimates bankfull widths at each cross section. The estimates may be inaccurate for narrow river segments.
-#' 8. Uses reference WSE to calculate bed elevation along each cross section.
-#' 9. Smooths bed elevations and depths using a k-point moving average, with k=5.
-#' 10. Saves cross-section information as savename.
-#' 11. Puts x, b, d (distance from horizontal datum, bed elevation, depth) in a list called cross_sections
-#' @return cross_sections geometry data for cross sections along the river
-#' @examples 
-#' cross_sections <- auto_transects(section_length = 5, depth = depth, refWSE = refWSE, savename = transects_name, makeplot = FALSE, riv = riv)
-#' @keywords transects, hydraulics, cross sections
-#' @import sp
-#' @importFrom raster extract
 
-# section_length <- 1e3
-# riv <- riv.smooth.ksmooth
-# depth <- depth_5
-# refWSE <- refWSE[i]
-# halfwidth <- halfwidth[i]
-
-
-auto_transects <- function(section_length, riv, depth, refWSE, 
-                           savename, halfwidth = 1000, k = 5, 
-                           makeplot = FALSE)
+auto_transects <- function(section_length, riv, depth, halfwidth, saveflag = FALSE, output_all = FALSE, savedir = NULL)
 {
-  
+
   rivsplit <- splitLines(riv, dist = section_length)
   projcrs <- crs(depth)
   crs(rivsplit) <- projcrs
-  
-  # Write out the shapefile
-  # riv.df <- SpatialLinesDataFrame(riv, data = data.frame(ID = 1), match.ID = FALSE)
-  # writeOGR(riv.df, dsn = "riv", layer = "riv", driver = "ESRI Shapefile")
-  
+
   # Bisect line segments
   cross_section <- bisect_line_segments2(rivsplit, w = halfwidth, resolution = res(depth)[1], mid = TRUE)
-  
-  # Save cross sections
-  # saveRDS(cross_section, file = "./Outputs/Cross_Sections/cross_section_polyline_p9_sl5.rds")
-  
-  # Plot to check
-  if (makeplot)
-  {
-    plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
-    lines(riv, col = "blue")
-    # lines(riv)
-    # lines(cross_section[40:50], col = "Red")
-    # lines(cross_section, col = "Red") # the segments are numbered from north to south
-    
-    # Get indices of the cross sections that begin and end the reaches
-    n.xs <- length(cross_section)
-    ind <- get_start_end_ind(n.xs, reach_length = 10e3, section_length)
-    start.ind <- ind$start.ind
-    end.ind <- ind$end.ind
-    # Make polyline containing only the ending transects
-    xs.end <- cross_section[end.ind]
-    lines(xs.end, col = "black", lwd = 2)
-  }
+
+  # Make polyline containing only the ending transects
+  n.xs <- length(cross_section)
+  ind <- get_start_end_ind(n.xs, reach_length = 10e3, section_length)
+  start.ind <- ind$start.ind
+  end.ind <- ind$end.ind
+  xs.end <- cross_section[end.ind]
+
+  # Plot study area map
+  plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
+  lines(riv, col = "blue")
+  lines(cross_section, col = "Red", lwd = 0.5) # the segments are numbered from north to south
+  lines(xs.end, col = "black", lwd = 2)
 
   print("Extracting values along transects.")
   print("This can take a LONG time.")
@@ -80,120 +32,38 @@ auto_transects <- function(section_length, riv, depth, refWSE,
   res <- extract_xs_wbf(cross_section, depth, hpc = TRUE, h = 20)
   wbf <- res$wbf
   main_channel <- res$main_channel
-  xs_locs <- res$xs_locs # make it a single SpatialLines object with IDs corresponding to XS number
+  xs_locs <- res$xs_locs # a single SpatialLines object with IDs corresponding to XS number
   pixel_widths <- res$pixel_widths
-  
-  # all.pixel.widths <- unlist(lapply(pixel_widths, as.vector)) # get all widths of channels and subchannels
-  # hist(all.pixel.widths, col = "blue", breaks = 20)
-  # summary(all.pixel.widths)
-  
-  # Remove locations with no data
+  n.channels <- res$n_channels
+
+  # Combine the SpatialLines objects together
+  # Need to remove NA objects prior to combining
   rm.ind <- which(wbf == 0 | is.na(wbf))
   if (any(rm.ind))
   {
-    wbf <- wbf[-rm.ind]
     xs_locs <- xs_locs[-rm.ind] # Slot ID keeps track of the cross section
-    main_channel <- main_channel[-rm.ind] 
+  }
+  xs_locs_combined <- do.call(rbind, xs_locs)
+
+  if (saveflag)
+  {
+    saveRDS(cross_section, file = file.path(savedir, "cross_sections_polyline.rds"))
+    saveRDS(xs.end, file = file.path(savedir, "reach_ends.rds"))
+    saveRDS(wbf, file = file.path(savedir, "wbf.rds")) # bankfull width
+    saveRDS(main_channel, file = file.path(savedir, "main_channel.rds")) # depth of main channel
+    saveRDS(xs_locs_combined, file = file.path(savedir, "xs_locations.rds")) # cross section locations
+    saveRDS(pixel_widths, file = file.path(savedir, "pixel_widths.rds")) # width of cross sections, in pixels
+    saveRDS(n.channels, file = file.path(savedir, "n_channels.rds")) # number of channels crossed by each transect
   }
 
-  # combine the SpatialLines objects together
-  xs_locs_combined <- do.call(rbind, xs_locs) 
-  
-  # lines(xs_locs_combined, lwd = 2, col = "red")
-  
-  # ------------------------------------------------------------------------------
-  # Extract x-y information for plotting transects
-  
-  # Get distance of each transect
-  # main_channel <- lapply(transects, get_main_channel)
-  
-  # Zero length channels cause problems
-  channel.pix <- unlist(lapply(main_channel, length)) # number of values in each transects list value
-  # not the same as channel width because of the angle
-  
-  # d <- lapply(main_channel, get_depth_from_lutable, depth)
-  d <- main_channel # depths
-  
-    # Assume the first and last point are zero depth (banks)
-  for (seg in 1:nseg)
+  if (output_all)
   {
-    d[[seg]][1] <- 0
-    d[[seg]][channel.pix[seg]] <- 0
-  }
-  
-  x <- vector("list", length = nseg) # x coordinate, using river banks as beginning and end
-  for (seg in 1:nseg)
+    result <- list(d = main_channel, wbf = wbf)
+    return(result)
+  } else
   {
-    x[[seg]] <- seq(0, wbf[seg], length.out = length(d[[seg]]))
+    d <- main_channel
+    return(d)
   }
-  
-  b <- lapply(d, function(x, refWSE) {refWSE-x}, refWSE)
-  
-  # Smooth using a k-point moving average
-  k <- 5
-  b.smooth <- vector("list", length = nseg)
-  d.smooth <- vector("list", length = nseg)
-  for (seg in 1:nseg)
-  {
-    if (channel.pix[seg] <= k)
-    { # error handling for zero-width channels
-      next
-    }
-    b.smooth[[seg]] <- filter(b[[seg]], sides = 2, filter = rep(1/k,k))
-    d.smooth[[seg]] <- filter(d[[seg]], sides = 2, filter = rep(1/k,k))
-  }
-  
-  # Remove (nearly) empty channels
-  if (any(channel.pix<=10))
-  {
-    rm.ind <- which(channel.pix<=10)
-    d <- d[-rm.ind]
-    b <- b[-rm.ind]
-    x <- x[-rm.ind]
-  }
-  
-  # Save extracted transect information
-  save(x, b, b.smooth, d, d.smooth, channel.pix, file = savename)
-  print(paste("Saved transect data to", savename))
-  
-  cross.sections <- list(x = x, b = b, d = d) # old format
-  
-  # this may be a more useful format
-  #cross.sections <- vector(length = nseg, "list")
-  #for (seg in 1:nseg)
-  #{
-  #  cross.sections[[seg]] <- data.frame(x = x[[seg]], b = b[[seg]], d = d[[seg]])
-  #}
-  
-  return(cross.sections)
-  
+
 }
-
-
-# ----------------------------------------------------------------------------------------------------
-# Scrap
-
-# 
-# # Remove null (empty) transects
-# null.ind <- unlist(lapply(main_channel, is.null))
-# na.ind <- lapply(main_channel, is.na)
-# na.ind <- unlist(lapply(na.ind, all))
-# if (sum(null.ind)>0)
-# {
-#   main_channel <- main_channel[-which(null.ind)]
-#   xs_locs <- xs_locs[-which(null.ind)]
-# }
-# if (sum(na.ind)>0)
-# {
-#   main_channel <- main_channel[-which(na.ind)]
-# }
-# nseg <- length(main_channel)
-# 
-# if(any(is.na(wbf)))
-# {
-#   wbf.na.ind <- which(is.na(wbf))
-#   wbf <- wbf[-wbf.na.ind]
-# }
-
-# plot(main_channel[[1]], type = "l")
-# I suspect the scaling factor is 1000, but double check.

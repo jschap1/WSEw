@@ -22,9 +22,13 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
   nr <- ind$nr
   
   xs.avg <- vector(length = nr, "list")
+  fract <- vector(length = nr)
   for (r in 1:nr)
   {
     xs.avg[[r]] <- calc_mean_cross_section_sub(xs.res[start.ind[r]:end.ind[r],,])
+    missing.xs <- sum(na.ind[start.ind[r]:end.ind[r]])
+    total.xs <- end.ind[r] - start.ind[r] + 1
+    fract[r] <- (total.xs - missing.xs)/total.xs
   }
   
   x <- vector("list", length = nr)
@@ -37,7 +41,7 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
     d[[r]] <- xs.avg[[r]]$d
   }
 
-  cross_sections_avg <- list(x = x, b = b, d = d)
+  cross_sections_avg <- list(x = x, b = b, d = d, fract = fract)
   return(cross_sections_avg)
   
 }
@@ -45,19 +49,16 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
 # ------------------------------------------------------------------------------------------------
 #' Calculate Mean Cross Section (subroutine)
 #' 
-#' Uses linear interpolation to calculate the average cross section from 
-#' among individual cross sections with different lengths
+#' A subroutine of calc_mean_cross_section
 #' @param xs.res cross section geometry that you wish to average, 
 #' resampled to the same length 
 #' @export
-#' @examples xs.avg <- calc_mean_cross_section(xs.res, n = 100)
-#' calc_mean_cross_section(xs.res[1:100,,])
 
 calc_mean_cross_section_sub <- function(xs.res)
 {
-  mean.x <- apply(xs.res[,,1], 2, mean)
-  mean.b <- apply(xs.res[,,2], 2, mean)
-  mean.d <- apply(xs.res[,,3], 2, mean)
+  mean.x <- apply(xs.res[,,1], 2, mean, na.rm = TRUE)
+  mean.b <- apply(xs.res[,,2], 2, mean, na.rm = TRUE)
+  mean.d <- apply(xs.res[,,3], 2, mean, na.rm = TRUE)
   xs.avg <- data.frame(x = mean.x, b = mean.b, d = mean.d)
   return(xs.avg)
 }
@@ -79,6 +80,9 @@ calc_mean_cross_section_sub <- function(xs.res)
 
 resample_xs <- function(cross_sections, n)
 {
+  
+  na.ind <- get_na_ind(cross_sections)
+  
   n.xs <- length(cross_sections$x)
   
   # new data structure where all cross sections have the same number of points
@@ -87,11 +91,25 @@ resample_xs <- function(cross_sections, n)
   
   for(x in 1:n.xs) # for each cross section
   {
-    xs <- data.frame(x = cross_sections$x[[x]], b = cross_sections$b[[x]]) # get coordinates of cross section
-    d.coord <- cross_sections$d[[x]]
-    xs.res[x,,] <- cbind(x = approx(xs, n = n)$x,  # linearly interpolate to the new length n
-                         b = approx(xs, n = n)$y, 
-                         d = approx(d.coord, n = n)$y)
+    
+    if ((na.ind[x]) | cross_sections$channel.pix[[x]] <= 30) # really, should restrict in terms of wbf, but this is approximate 
+    {
+      
+      xs.res[x,,] <- cbind(x = rep(NA, n),  
+                           b = rep(NA, n), 
+                           d = rep(NA, n))
+      
+    } else
+    {
+      
+      xs <- data.frame(x = cross_sections$x[[x]], b = cross_sections$b[[x]]) # get coordinates of cross section
+      d.coord <- cross_sections$d[[x]]
+      xs.res[x,,] <- cbind(x = approx(xs, n = n)$x,  # linearly interpolate to the new length n
+                           b = approx(xs, n = n)$y, 
+                           d = approx(d.coord, n = n)$y)
+      
+    }
+
   }
   return(xs.res)
   

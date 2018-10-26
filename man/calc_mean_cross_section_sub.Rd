@@ -11,10 +11,5 @@ calc_mean_cross_section_sub(xs.res)
 resampled to the same length}
 }
 \description{
-Uses linear interpolation to calculate the average cross section from 
-among individual cross sections with different lengths
-}
-\examples{
-xs.avg <- calc_mean_cross_section(xs.res, n = 100)
-calc_mean_cross_section(xs.res[1:100,,])
+A subroutine of calc_mean_cross_section
 }
