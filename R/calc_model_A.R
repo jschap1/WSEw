@@ -95,6 +95,7 @@ calc_model_A <- function(model, type, WSEw = NULL)
 # --------------------------------------------------------------------------------------------------
 
 #' Calculates area of a slope break cross section
+#' @export
  
 sb_area <- function(wsb, WSEsb, z0, WSEbf, wbf)   
 {
@@ -107,6 +108,7 @@ sb_area <- function(wsb, WSEsb, z0, WSEbf, wbf)
 #' Calculates area of a multi-slope break cross section
 #' @param w width
 #' @param WSE water surface elevation. The lowest value is z0 and the highest is bankfull WSE.
+#' @export
 
 sbm_area <- function(w, WSE, z0)
 {
@@ -125,6 +127,7 @@ sbm_area <- function(w, WSE, z0)
 #' Calculate area of a nonlinear cross section
 #' @param s shape parameter for nonlinear fit (the exponent)
 #' @param a multiplicative parameter for the nonlinear fit
+#' @export
 
 nl_area <- function(wbf, WSEbf, z0, a, s)
 {
@@ -137,6 +140,7 @@ nl_area <- function(wbf, WSEbf, z0, a, s)
 #' Calculate area of a nonlinear slope break cross section
 #' @param s shape parameters for nonlinear fits (the exponents)
 #' @param a multiplicative parameters for the nonlinear fits
+#' @export
 
 # nlsb_area <- function(wbf, WSEbf, z0, a, s, wsb)
 # {

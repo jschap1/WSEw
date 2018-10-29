@@ -22,9 +22,6 @@ auto_transects <- function(section_length, riv, depth, halfwidth, saveflag = FAL
 
   # Plot study area map
   plot(depth, main = "Bathymetry", xlab = "Easting", ylab = "Northing", legend = FALSE)
-  lines(riv, col = "blue")
-  lines(cross_section, col = "Red", lwd = 0.5) # the segments are numbered from north to south
-  lines(xs.end, col = "black", lwd = 2)
 
   print("Extracting values along transects.")
   print("This can take a LONG time.")
@@ -44,6 +41,11 @@ auto_transects <- function(section_length, riv, depth, halfwidth, saveflag = FAL
     xs_locs <- xs_locs[-rm.ind] # Slot ID keeps track of the cross section
   }
   xs_locs_combined <- do.call(rbind, xs_locs)
+  
+  # plot(depth, main = "Pool 5", xlab = "Easting", ylab = "Northing", legend = FALSE)
+  lines(riv, col = "blue")
+  lines(xs.end, col = "red", lwd = 2)
+  lines(xs_locs_combined)
 
   if (saveflag)
   {

@@ -27,7 +27,14 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
 
   extract_xs_wbf_par <- function(x) # function for evaluating in parallel.
   {
-    transects <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE)
+    
+    
+    try(transects <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE))
+    
+    if (!exists("transects")) # in case the cross section is outside the extent of depth (quick fix)
+    {
+      transects <- NULL
+    }
     
     if (is.null(transects[[1]])) # skip empty transects
     {
@@ -119,7 +126,8 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
       # xs.sldf.wgs <- spTransform(xs.sldf, crs("+init=epsg:4326"))
       # writeOGR(xs.sldf.wgs, "./Outputs/Cross_Sections/xs_test.kml", layer="reach", driver="KML", overwrite= TRUE)
       
-      transects[[x]] <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE)
+      # try bc extract will fail if  cross_section does not overlap with the extent of depth
+      try(transects[[x]] <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE))
       
       # Plot a transect
       # dd <- refWSE[i]*0.3048 - transects[[x]][[1]][,2]

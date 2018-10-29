@@ -80,6 +80,7 @@ calc_model_WP <- function(model, type, w = NULL)
 
 # ---------------------------------------------------------------------------
 
+#' @export
 calc_WP_linear <- function(wbf, WSEbf, z0)
 {
   WP <- (wbf^2 + 4*(WSEbf - z0)^2)^0.5
@@ -88,6 +89,7 @@ calc_WP_linear <- function(wbf, WSEbf, z0)
 
 # ---------------------------------------------------------------------------
 
+#' @export
 calc_WP_sb <- function(wbf, WSEbf, z0, wsb, WSEsb)
 {
   WP <- (wsb^2 + 4*(WSEsb - z0)^2)^0.5 + ((wbf-wsb)^2 + 4*(WSEbf - WSEsb)^2)^0.5

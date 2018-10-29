@@ -4,7 +4,12 @@
 \alias{build_cross_sections}
 \title{Build cross sections}
 \usage{
-build_cross_sections(d, refWSE, wbf)
+build_cross_sections(d, refWSE, wbf, option = "none")
+}
+\arguments{
+\item{option}{Use "zero" to make the left and right banks have depths zero
+Use "extend" to extend the shorter bank height to match the taller bank height
+Use "truncate" to truncate the taller bank height to match the shorter bank height.}
 }
 \description{
 Stores cross section data (bed elevation, depth, and x coordinate) in a convenient format
