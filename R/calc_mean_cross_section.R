@@ -21,6 +21,8 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
   end.ind <- ind$end.ind
   nr <- ind$nr
   
+  na.ind <- get_na_ind(cross_sections)
+  
   xs.avg <- vector(length = nr, "list")
   fract <- vector(length = nr)
   for (r in 1:nr)
