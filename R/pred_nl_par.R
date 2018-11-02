@@ -9,6 +9,7 @@
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
 #' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity
+#' There is a problem when s is negative because the predictions at w = 0 are -Inf
 #' @return list of z0, A, W0, and A0 predictions
 
 pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
