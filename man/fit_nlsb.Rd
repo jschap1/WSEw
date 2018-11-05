@@ -4,7 +4,7 @@
 \alias{fit_nlsb}
 \title{Nonlinear Slope Break Fit}
 \usage{
-fit_nlsb(WSEw, h = 10)
+fit_nlsb(WSEw, h = 10, maxiter = 100)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}

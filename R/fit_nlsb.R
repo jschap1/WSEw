@@ -13,7 +13,7 @@
 #' that fit.b was not found. There should be a set of initial guesses that allow the solution to be found. 
 #' The fix should just prevent fit.b from being called when it is not defined.
 
-fit_nlsb <- function(WSEw, h = 10)
+fit_nlsb <- function(WSEw, h = 10, maxiter = 100)
 {
   
   if (length(WSEw$WSE)<h) 
@@ -30,45 +30,70 @@ fit_nlsb <- function(WSEw, h = 10)
   {
     # for each possible breakpoint, find the LSE of the best fit
     
-    # fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
-    #                data = WSEw[1:i,])
+    init.guess <- make_init_guess(WSEw[1:i,])
+    fits <- vector(length = dim(init.guess)[1], "list")
+    SSE <- rep(NA, length = length(fits))
     
-    tryCatch(
-      {
-        fit.a <- nlsLM(WSE ~ a0 + a1*w^a2, 
-                       start = c(a0 = min(WSEw$WSE), a1 = 1e-4, a2 = 2), 
-                       data = WSEw[1:i,])
-      }, 
-      error = function(e) 
-      {
-        #print("error: nonlinear fit did not converge")
-        fits <- NULL
-        return(fits)
-      }
-    )
+    # try performing each fit with the different sets of initial guesses
+    for (i in 1:length(fits))
+    {
+      tryCatch({
+        fits[[i]] <- nlsLM(WSE ~ a0 + a1*w^a2, 
+                           start = list(a0 = init.guess$z0[i], a1 = init.guess$a[i], a2 = init.guess$s[i]), 
+                           data=WSEw[1:i,],
+                           control = nls.lm.control(maxiter = maxiter)) 
+        SSE[i] <- sum(residuals(fits[[i]])^2)
+        },
+        error = function(e) 
+        {
+          print("error: nonlinear fit did not converge")
+        }
+      )
+    }
+    
+    if (all(is.na(SSE)))
+    {
+      fit.a <- NULL
+    } else
+    {
+      fit.a <- fits[[which.min(SSE)]] # choose the best fit
+    }
     
     a0 <- coef(fit.a)[1]
     a1 <- coef(fit.a)[2]
     a2 <- coef(fit.a)[3]
     xb <- WSEw$w[i]
     
-    tryCatch(
-      {
-        fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
-                     start = c(b1 = 1e-4, b2 = 2), 
-                     data = WSEw[(i):n,])
-      }, 
+    # ------------------------------------------------------------------------------------------------
+    
+    init.guess <- make_init_guess(WSEw[(i):n,])
+    fits <- vector(length = dim(init.guess)[1], "list")
+    SSE <- rep(NA, length = length(fits))
+    
+    # try performing each fit with the different sets of initial guesses
+    for (i in 1:length(fits))
+    {
+      tryCatch({
+        fits[[i]] <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
+                           start = list(b1 = init.guess$a[i], b2 = init.guess$s[i]), 
+                           data=WSEw[(i):n,],
+                           control = nls.lm.control(maxiter = maxiter)) 
+        SSE[i] <- sum(residuals(fits[[i]])^2)
+      },
       error = function(e) 
       {
-        #print("error: nonlinear fit did not converge")
-        fits <- NULL
-        return(fits)
+        print("error: nonlinear fit did not converge")
       }
-    )
+      )
+    }
     
-    # fit.b <- nlsLM(WSE ~ a0+a1*xb^a2 - b1*xb^b2 + b1*w^b2, 
-    #                start = c(b1 = 1e-4, b2 = 2), 
-    #                data = WSEw[(i):n,])
+    if (all(is.na(SSE)))
+    {
+      fit.b <- NULL
+    } else
+    {
+      fit.b <- fits[[which.min(SSE)]] # choose the best fit
+    }
     
     LSE <- sum(resid(fit.a)^2) + sum(resid(fit.b)^2)
     

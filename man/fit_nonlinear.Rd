@@ -4,7 +4,7 @@
 \alias{fit_nonlinear}
 \title{Nonlinear Fit for WSE-w Relationship}
 \usage{
-fit_nonlinear(WSEw, h = 5)
+fit_nonlinear(WSEw, h = 5, maxiter = 100)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
@@ -13,4 +13,7 @@ fit_nonlinear(WSEw, h = 5)
 }
 \description{
 Nonlinear Fit for WSE-w Relationship
+}
+\details{
+Returns the best fit, out of several fits performed with different starting guesses
 }

@@ -4,10 +4,12 @@
 \alias{make_init_guess}
 \title{Finds initial guesses for the nonlinear model}
 \usage{
-make_init_guess(WSEw_obs)
+make_init_guess(WSEw_obs, extrapolate = FALSE)
 }
 \arguments{
 \item{WSEw_obs}{data frame containing observations}
+
+\item{extrapolate}{boolean, if FALSE, uses min observated WSE as initial guess for z0}
 }
 \description{
 Finds initial guesses for the nonlinear model

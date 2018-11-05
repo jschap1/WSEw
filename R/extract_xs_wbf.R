@@ -82,10 +82,11 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
   
   if (hpc)
   {
-    ncores <- detectCores()
-    registerDoMC(cores = ncores - 1)
-    # registerDoMC(cores = 6)
-    print("Set up for parallel processing")
+    # ncores <- detectCores()
+    # registerDoMC(cores = ncores - 1)
+    ncores <- 6
+    registerDoMC(cores = ncores)
+    print(paste("Set up for parallel processing with", ncores, "cores"))
     
     wbfs_and_mc <- foreach(x = 1:n.xs) %dopar% {extract_xs_wbf_par(x)}
     
