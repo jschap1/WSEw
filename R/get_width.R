@@ -27,10 +27,12 @@ get_width <- function(WSE, x, b, delx = 1)
     
     # Once the WSE is higher than any other part of the bed elevation,
     # the width stops changing, as rectangular walls as assumed
+    # I don't think this does much, if anything, to the data
     if (sum(WSE[k] > max(b.est)) & n>1)
     {
       flow_width[k] <- flow_width[k-1]
     }
+    
   }
   
   return(flow_width)

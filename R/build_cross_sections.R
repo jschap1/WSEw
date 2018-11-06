@@ -12,18 +12,27 @@ build_cross_sections <- function(d, refWSE, wbf, option = "none")
   # This is done to screen out transects that are unrealistically narrow
   channel.pix <- unlist(lapply(d, length))
   nseg <- length(d)
-
-  if (option == "extend")
+  dbf <- unlist(lapply(d, max))
+  delb <- vector(length = nseg) # initialize, only used if option = zero, though
+  
+  if (option == "zero")
   {
-    d <- extend_shorter_bank(d)
-  } else if (option == "truncate")
-  {
-    d <- truncate_taller_bank(d)
-  } else if (option == "zero")
-  {
+    
+    # save the original depths
+    dl <- vector(length = nseg)
+    dr <- vector(length = nseg)
+    for (seg in 1:nseg)
+    {
+      dl[seg] <- d[[seg]][1]
+      dr[seg] <- d[[seg]][length(d[[seg]])]
+      
+      # how large the adjustment to 0 is, as a function of bankfull depth
+      delb[seg] <- max(dl[seg], dr[seg])/dbf[seg] 
+    }
+    
     d <- make_zero_bank(d)
   }
-  
+
   x <- vector("list", length = nseg)
   for (seg in 1:nseg)
   {
@@ -35,6 +44,26 @@ build_cross_sections <- function(d, refWSE, wbf, option = "none")
   }
 
   b <- lapply(d, function(x, refWSE) {refWSE-x}, refWSE)
-  cross.sections <- list(x = x, b = b, d = d, channel.pix = channel.pix)
+  
+  if (option == "truncate")
+  {
+    
+    for (seg in 1:nseg)
+    {
+      if (channel.pix[seg] <= 1)
+      {
+        next
+      }
+      bf <- find_bankfull_height(x[[seg]],b[[seg]])
+      l.ind <- which.min(abs(x[[seg]]-bf$xl))
+      r.ind <- which.min(abs(x[[seg]]-bf$xr))
+      b[[seg]] <- b[[seg]][l.ind:r.ind]
+      x[[seg]] <- seq(0, x[[seg]][r.ind] - x[[seg]][l.ind], length.out = length(b[[seg]]))
+      d[[seg]] <- refWSE - b[[seg]]
+    }
+
+  }
+
+  cross.sections <- list(x = x, b = b, d = d, channel.pix = channel.pix, delb = delb)
   return(cross.sections)
 }
