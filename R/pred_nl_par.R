@@ -10,6 +10,7 @@
 #' and uses it to predict hydraulic parameters
 #' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity
 #' There is a problem when s is negative because the predictions at w = 0 are -Inf
+#' When there is negative concavity, the linear model is used to make predictions, instead of the nonlinear model
 #' @return list of z0, A, W0, and A0 predictions
 
 pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
@@ -35,20 +36,19 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   {
     for (m in 1:M)
     {
-      if (class(nl[[k]][[m]]) == "nls")
+      if (all(!is.na(nl[[k]][[m]]))) # if an NL model has been fit
       {
         
         # Check that physical-realism constraints are satisfied
         # Must have non-negative slope and cannot be concave down
         # There are four possible cases
         
-        a <- as.numeric(coef(nl[[k]][[m]])[2]) # slope coefficient
-        s <- as.numeric(coef(nl[[k]][[m]])[3]) # shape parameter
+        a <- nl[[k]][[m]]$a # slope coefficient
+        s <- nl[[k]][[m]]$s # shape parameter
         if (a>=0 & s>=1)
         {
           # positive slope, concave up
-          # z0.nl[k,m] <- predict(nl[[k]][[m]], newdata = data.frame(w = 0)) # this is problematic when s<0
-          z0.nl[k,m] <- as.numeric(coef(nl[[k]][[m]])[1]) # this is better, will need to change it throughout
+          z0.nl[k,m] <- nl[[k]][[m]]$z0
           A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
           WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
           A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)

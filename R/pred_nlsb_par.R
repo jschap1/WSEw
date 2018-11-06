@@ -33,15 +33,15 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   {
     for (m in 1:M)
     {
-      if (class(nlsb[[k]][[m]][[1]]) == "nls")
+      if (all(!is.na(nlsb[[k]][[m]])))
       {
         
-        a1 <- as.numeric(coef(nlsb[[k]][[m]][[1]])[2]) # slope coefficient
-        s1 <- as.numeric(coef(nlsb[[k]][[m]][[1]])[3]) # shape parameter
+        a1 <- nlsb[[k]][[m]]$a1 # slope coefficient
+        s1 <- nlsb[[k]][[m]]$s1 # shape parameter
         if (a1>=0 & s1>=1)
         {
           # positive slope, concave up
-          z0.nlsb[k,m] <- as.numeric(coef(nlsb[[k]][[m]][[1]])[1])
+          z0.nlsb[k,m] <- nlsb[[k]][[m]]$z0
           A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
           WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = WSEw[[r]]$w)
           A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)

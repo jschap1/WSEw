@@ -95,7 +95,10 @@ fit_nl_par <- function(r)
       try(model1 <- fit_nonlinear(WSEw_obs[[k]][[m]], h=10))
       if (!is.null(model1)) # this does not take up much time, so no need to remove it
       {
-        nl[[k]][[m]] <- model1
+        nl[[k]][[m]] <- list(z0 = as.numeric(coef(model1))[1],
+             a = as.numeric(coef(model1))[2],
+             s = as.numeric(coef(model1))[3],
+             WSEbf = max(fitted(model1)))
       } else
       {
         nl[[k]][[m]] <- NA
@@ -135,6 +138,14 @@ fit_nlsb_par <- function(r)
       if (!is.null(model1))
       {
         nlsb[[k]][[m]] <- model1
+        
+        nlsb[[k]][[m]] <- list(z0 = as.numeric(coef(model1[[1]]))[1],
+                             a1 = as.numeric(coef(model1[[1]]))[2],
+                             s1 = as.numeric(coef(model1[[1]]))[3],
+                             a2 = as.numeric(coef(model1[[2]]))[1],
+                             s2 = as.numeric(coef(model1[[2]]))[2],
+                             WSEbf = max(fitted(model1[[2]])),
+                             sb.ind = attributes(model1)$sb.ind)
       } else
       {
         # print("there was an error with the NLSB fit")

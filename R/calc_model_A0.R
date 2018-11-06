@@ -41,18 +41,17 @@ calc_model_A0 <- function(model, type, w1 = NULL, h1 = NULL, pos.only = FALSE)
   }else if (type == "nl")
   {
     
-    z0 <- as.numeric(coef(model)[1])
-    a <- as.numeric(coef(model)[2])
-    s <- as.numeric(coef(model)[3])
+    z0 <- model$z0
+    a <- model$a
+    s <- model$s
     A <- nl_area(w1, h1, z0, a, s)
     
   }else if (type == "nlsb")
   {
     
-    m1 <- model[[1]] # lower model
-    z0 <- as.numeric(coef(m1)[1])
-    a1 <- as.numeric(coef(m1)[2])
-    s1 <- as.numeric(coef(m1)[3])
+    z0 <- model$z0
+    a1 <- model$a1
+    s1 <- model$s1
     A <- nl_area(w1, h1, z0, a1, s1)
 
   }

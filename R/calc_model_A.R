@@ -57,31 +57,26 @@ calc_model_A <- function(model, type, WSEw = NULL)
   {
     
     wbf <- max(WSEw$w)
-    WSEbf <- max(fitted(model))
-    # z0 <- predict(model, newdata = data.frame(w=0))
-    z0 <- as.numeric(coef(model)[1])
-    a <- as.numeric(coef(model)[2])
-    s <- as.numeric(coef(model)[3])
+    WSEbf <- model$WSEbf
+    z0 <- model$z0
+    a <- model$a
+    s <- model$s
     A <- nl_area(wbf, WSEbf, z0, a, s)
     
   }else if (type == "nlsb")
   {
-    
-    m1 <- model[[1]] # lower model
-    m2 <- model[[2]] # upper model 
-    
+
     wbf <- max(WSEw$w)
-    WSEbf <- max(fitted(m2))
-    # z0 <- predict(m1, newdata = data.frame(w=0))
-    z0 <- as.numeric(coef(m1)[1])
+    WSEbf <- model$WSEbf
+    z0 <- model$z0
     
-    sb.ind <- as.numeric(attributes(model)) # index of slope break
+    sb.ind <- model$sb.ind # index of slope break
     wsb <- WSEw$w[sb.ind] # width at slope break
 
-    a1 <- as.numeric(coef(m1)[2])
-    a2 <- as.numeric(coef(m2)[1])
-    s1 <- as.numeric(coef(m1)[3])
-    s2 <- as.numeric(coef(m2)[2])
+    a1 <- model$a1
+    a2 <- model$a2
+    s1 <- model$s1
+    s2 <- model$s2
     a <- c(a1,a2)
     s <- c(s1,s2)
 

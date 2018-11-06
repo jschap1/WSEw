@@ -53,27 +53,24 @@ calc_model_WP <- function(model, type, w = NULL)
    {
      
      wbf <- max(w)
-     a <- as.numeric(coef(model)[2])
-     s <- as.numeric(coef(model)[3])
+     a <- model$a
+     s <- model$s
      WP <- calc_WP_nl(wbf, a, s)
    
    } else if (type == "nlsb")
    {
    
-     m1 <- model[[1]] # lower model
-     m2 <- model[[2]] # upper model 
-     
      wbf <- max(w)
-     sb.ind <- as.numeric(attributes(model)) # index of slope break
+     sb.ind <- model$sb.ind # index of slope break
      wsb <- w[sb.ind] # width at slope break
      
-     a1 <- as.numeric(coef(m1)[2])
-     a2 <- as.numeric(coef(m2)[1])
-     s1 <- as.numeric(coef(m1)[3])
-     s2 <- as.numeric(coef(m2)[2])
+     a1 <- model$a1
+     a2 <- model$a2
+     s1 <- model$s1
+     s2 <- model$s2
 
      WP <- calc_WP_nlsb(wbf, wsb, a1, a2, s1, s2)
-   
+     
    }
   return(WP)
 }
