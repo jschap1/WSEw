@@ -100,8 +100,11 @@ fit_nl_par <- function(r)
       {
         nl[[k]][[m]] <- NA
       }
+      # print(paste("finished processing for replicate", m, "of 500"))
     }
+    print(paste("finished processing for exposure level", k, "of 19"))
   }
+  
   nl_name <- paste0("nl/nl_", "r_", r, ".rds")
   saveRDS(nl, file = file.path(exp_dir, nl_name))
   return(0)
@@ -134,10 +137,11 @@ fit_nlsb_par <- function(r)
         nlsb[[k]][[m]] <- model1
       } else
       {
-        print("there was an error with the NLSB fit")
+        # print("there was an error with the NLSB fit")
         nlsb[[k]][[m]] <- NA
       }
     }
+    print(paste("finished processing for exposure level", k, "of 19"))
   }
   nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
   saveRDS(nlsb, file = file.path(exp_dir, nlsb_name))

@@ -4,7 +4,7 @@
 \alias{fit_nlsb}
 \title{Nonlinear Slope Break Fit}
 \usage{
-fit_nlsb(WSEw, h = 10, maxiter = 100)
+fit_nlsb(WSEw, h = 10)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
@@ -16,8 +16,6 @@ Fits a piecewise nonlinear curve with one breakpoint
 There is one breakpoint, it is estimated using strucchange::breakpoints
 }
 \details{
-Eventually, it would be good to improve the initial guesses for the parameters, say, using linearization as described here:
-https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
 Can be buggy. In particular, if the algorithm is unable to estimate model parameters, there can be an error where it says
 that fit.b was not found. There should be a set of initial guesses that allow the solution to be found. 
 The fix should just prevent fit.b from being called when it is not defined.

@@ -2,12 +2,18 @@
 #' 
 #' @param WSEw WSEw data (at a given level of exposure)
 #' @param h minimum amount of data to perform fit
+#' @param maxiter maximum number of iterations for the parameter estimation algorithm
 #' @importFrom minpack.lm nlsLM
 #' @export
-#' @details Returns the best fit, out of several fits performed with different starting guesses
+#' @details 
+#' Uses a default initial guess, but if the fit is very bad, 
+#' attempts several fits performed with different starting guesses 
+#' and returns the best fit.
 
 fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
 {
+  
+  try_multi <- FALSE # flag for using the multiple initial guess method
   
   if (length(WSEw$WSE)<h) 
   {
@@ -15,39 +21,69 @@ fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
     return(NULL)
   }
 
-  init.guess <- make_init_guess(WSEw)
-  fits <- vector(length = dim(init.guess)[1], "list")
-  SSE <- rep(NA, length = length(fits))
-  
-  # try performing each fit with the different sets of initial guesses
-  for (i in 1:length(fits))
-  {
-    # if the algorithm fails to estimate parameters, return a warning message
-    
-    tryCatch({
-    
-    fits[[i]] <- nlsLM(WSE ~ b0 + b1*w^b2, 
-                     start = list(b0 = init.guess$z0[i], b1 = init.guess$a[i], b2 = init.guess$s[i]), 
-                     data=WSEw, 
-                     control = nls.lm.control(maxiter = maxiter)) 
-    SSE[i] <- sum(residuals(fits[[i]])^2)
-    
-    },
-    
+  # General initial guess assuming s = 2
+  # Try this method. If it fails, switch to the multiple initial guess method.
+  lf <- lm(WSE ~ I(w^2), data = WSEw)
+  a.init <- as.numeric(coef(lf)[2])
+  init.guess <- list(z0 = min(WSEw$WSE), 
+                     a = a.init, 
+                     s = 2)
+  tryCatch(
+    {
+      fit <- nlsLM(WSE ~ b0 + b1*w^b2, 
+                   start = list(b0 = init.guess$z0, b1 = init.guess$a, b2 = init.guess$s), 
+                   data=WSEw, 
+                   control = nls.lm.control(maxiter = maxiter))
+    }, 
     error = function(e) 
     {
       print("error: nonlinear fit did not converge")
     }
-    )
-    
+  )
+  
+  if (!exists("fit"))
+  {
+    try_multi <- TRUE
   }
   
-  if (all(is.na(SSE)))
+  if (try_multi)
   {
-    fit <- NULL
-  } else
-  {
-    fit <- fits[[which.min(SSE)]] # choose the best fit
+    
+    init.guess <- make_init_guess(WSEw)
+    fits <- vector(length = dim(init.guess)[1], "list")
+    SSE <- rep(NA, length = length(fits))
+    
+    # try performing each fit with the different sets of initial guesses
+    for (i in 1:length(fits))
+    {
+      # if the algorithm fails to estimate parameters, return a warning message
+      
+      tryCatch({
+        
+        fits[[i]] <- nlsLM(WSE ~ b0 + b1*w^b2, 
+                           start = list(b0 = init.guess$z0[i], b1 = init.guess$a[i], b2 = init.guess$s[i]), 
+                           data=WSEw, 
+                           control = nls.lm.control(maxiter = maxiter)) 
+        SSE[i] <- sum(residuals(fits[[i]])^2)
+        
+      },
+      
+      error = function(e) 
+      {
+        print("error: nonlinear fit (multi) did not converge")
+      }
+      )
+      
+    }
+    
+    if (all(is.na(SSE)))
+    {
+      fit <- NULL
+    } else
+    {
+      fit <- fits[[which.min(SSE)]] # choose the best fit
+    }
+
   }
   
   return(fit)

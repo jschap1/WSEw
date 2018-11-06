@@ -10,10 +10,14 @@ fit_nonlinear(WSEw, h = 5, maxiter = 100)
 \item{WSEw}{WSEw data (at a given level of exposure)}
 
 \item{h}{minimum amount of data to perform fit}
+
+\item{maxiter}{maximum number of iterations for the parameter estimation algorithm}
 }
 \description{
 Nonlinear Fit for WSE-w Relationship
 }
 \details{
-Returns the best fit, out of several fits performed with different starting guesses
+Uses a default initial guess, but if the fit is very bad, 
+attempts several fits performed with different starting guesses 
+and returns the best fit.
 }
