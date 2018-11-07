@@ -15,6 +15,7 @@
 
 pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
 {
+  # Load fitted NL model
   nl_name <- paste0("nl/nl_", "r_", r, ".rds")
   if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
   {
@@ -24,14 +25,20 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
     return(list(z0 = NA, A = NA, WP = NA, A0 = NA))
   }
   
-  lf_name <- paste0("lf/lf_", "r_", r, ".rds") # load fitted linear model, too
+  # Load fitted L model
+  lf_name <- paste0("lf/lf_", "r_", r, ".rds")
   lf <- readRDS(file.path(exp_dir, lf_name))
   
+  # ----------------------------------------------------------------------------------------------------
+  
+  # Initialize
   z0.nl <- array(dim = c(n_exp_levels, M))
   A.nl <- array(dim = c(n_exp_levels, M))
   WP.nl <- array(dim = c(n_exp_levels, M))
   A0.nl <- array(dim = c(n_exp_levels, M))
   error.flag <- array(dim = c(n_exp_levels, M), data = 0)
+  
+  # Loop over exposure levels and Monte Carlo replicates
   for (k in 1:n_exp_levels)
   {
     for (m in 1:M)
@@ -41,18 +48,20 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
         
         # Check that physical-realism constraints are satisfied
         # Must have non-negative slope and cannot be concave down
-        # There are four possible cases
-        
+
         a <- nl[[k]][[m]]$a # slope coefficient
         s <- nl[[k]][[m]]$s # shape parameter
-        if (a>=0 & s>=1)
+        
+        if (a>=0 & s>=1) # physically realistic case
         {
           # positive slope, concave up
           z0.nl[k,m] <- nl[[k]][[m]]$z0
           A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
           WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
           A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
-        } else if ((a<=0 & s>=1) | (a<=0 & s<=1))
+        } 
+        
+        else if ((a<=0 & s>=1) | (a<=0 & s<=1)) # negative slope case
         {
           error.flag[k,m] <- 1
           if (exclude) # skip bc everything is noise
@@ -61,26 +70,27 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
           } else # try to estimate parameters anyway
           {
             # negative slope, assume z0 = min(h_obs), linear h-w relationship
-            warning("exclude == TRUE functionality has not been added yet for nonlinear models")
-            z0.nl[k,m] <- h1[r,k,m]
-            A.nl[k,m] <- 0 
-            WP.nl[k,m] <- 0
-            A0.nl[k,m] <- 0 
+            warning("exclude == FALSE functionality has not been added yet for nonlinear models")
+            z0.nl[k,m] <- NA
+            A.nl[k,m] <- NA
+            WP.nl[k,m] <- NA
+            A0.nl[k,m] <- NA
           }
-        } else if (a>=0 & s<=1)
+        } 
+        
+        else if (a>=0 & s<=1) # positive slope, but negative concavity case
         {
-          # positive slope, concave down, use linear fit
           error.flag[k,m] <- 2
           warning("Nonlinear fit is concave down, switching to linear fit")
           if (class(lf[[k]][[m]]) == "lm")
           {
             a <- coef(lf[[k]][[m]])[2]
-            if (a < 0)
+            if (a < 0) # if linear model has negative slope
             {
-              if (exclude)
+              if (exclude) # if excluding nonrealistic cases, returns NA
               {
                 next
-              } else
+              } else # otherwise, predicts parameters as best it can (not really justified, don't do it)
               {
                 wbf <- max(lf[[k]][[m]]$model$w)
                 WSEbf <- max(lf[[k]][[m]]$model$WSE) # choose max observed WSE
@@ -89,7 +99,8 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
                 WP.nl[k,m] <- calc_WP_linear(wbf, WSEbf, z0.l[k,m])
                 A0.nl[k,m] <- 0 # since we've assumed z0 = min(h_obs)
               }
-            } else
+            } 
+            else # if linear model has positive slope
             {
               z0.nl[k,m] <- as.numeric(coef(lf[[k]][[m]])[1])
               A.nl[k,m] <- calc_model_A(lf[[k]][[m]], type = "linear")
@@ -97,7 +108,9 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
               A0.nl[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = FALSE)
             }
           }
-        } 
+        }
+        
+        
       }
     }
   }
