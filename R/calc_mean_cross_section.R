@@ -25,12 +25,14 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
   
   xs.avg <- vector(length = nr, "list")
   fract <- vector(length = nr)
+  delb <- vector(length = nr)
   for (r in 1:nr)
   {
     xs.avg[[r]] <- calc_mean_cross_section_sub(xs.res[start.ind[r]:end.ind[r],,])
     missing.xs <- sum(na.ind[start.ind[r]:end.ind[r]])
     total.xs <- end.ind[r] - start.ind[r] + 1
     fract[r] <- (total.xs - missing.xs)/total.xs
+    delb[r] <- mean(cross_sections$delb[!na.ind[start.ind[r]:end.ind[r]]], na.rm = TRUE)
   }
   
   x <- vector("list", length = nr)
@@ -43,7 +45,7 @@ calc_mean_cross_section <- function(cross_sections, reach_length, section_length
     d[[r]] <- xs.avg[[r]]$d
   }
 
-  cross_sections_avg <- list(x = x, b = b, d = d, fract = fract)
+  cross_sections_avg <- list(x = x, b = b, d = d, fract = fract, delb = delb)
   return(cross_sections_avg)
   
 }

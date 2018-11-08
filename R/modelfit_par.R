@@ -34,7 +34,6 @@ fit_linear_par <- function(r)
 {
   obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
   WSEw_obs <- readRDS(file.path(exp_dir, obsname))
-  # Only run the code when there are at least 2 observations
   nn <- array(dim = c(n_exp_levels, M))
   for (k in 1:n_exp_levels)
   {
@@ -49,7 +48,7 @@ fit_linear_par <- function(r)
     lf[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      if (nn[k,m]>2)
+      if (nn[k,m]>5) # require a minimum of 5 observations
       {
         lf[[k]][[m]] <- fit_linear(WSEw_obs[[k]][[m]])
       }
@@ -72,7 +71,10 @@ fit_sb_par <- function(r)
     sb[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(sb[[k]][[m]] <- fit_slopebreak(WSEw_obs[[k]][[m]], multiple_breaks = FALSE, continuity = TRUE, minlen = 5))
+        sb[[k]][[m]] <- fit_slopebreak(WSEw_obs[[k]][[m]], 
+                                       multiple_breaks = FALSE, 
+                                       continuity = TRUE, 
+                                       minlen = 5)
     }
   }
   sb_name <- paste0("sb/sb_", "r_", r, ".rds")
@@ -92,16 +94,21 @@ fit_nl_par <- function(r)
     nl[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_nonlinear(WSEw_obs[[k]][[m]], h=10))
-      if (!is.null(model1)) # this does not take up much time, so no need to remove it
+      try(model1 <- fit_nonlinear(WSEw_obs[[k]][[m]], h=5))
+      if (attributes(model1)$ef==0)
       {
         nl[[k]][[m]] <- list(z0 = as.numeric(coef(model1))[1],
              a = as.numeric(coef(model1))[2],
              s = as.numeric(coef(model1))[3],
-             WSEbf = max(fitted(model1)))
+             WSEbf = max(fitted(model1)),
+             ef = attributes(model1)$ef)
       } else
       {
-        nl[[k]][[m]] <- NA
+        nl[[k]][[m]] <- list(z0 = NA,
+                             a = NA,
+                             s = NA,
+                             WSEbf = NA,
+                             ef = attributes(model1)$ef)
       }
       # print(paste("finished processing for replicate", m, "of 500"))
     }
@@ -135,21 +142,26 @@ fit_nlsb_par <- function(r)
           model1 <- NULL
         }
       )
-      if (!is.null(model1))
+      if (attributes(model1)$ef==0)
       {
-        nlsb[[k]][[m]] <- model1
-        
         nlsb[[k]][[m]] <- list(z0 = as.numeric(coef(model1[[1]]))[1],
                              a1 = as.numeric(coef(model1[[1]]))[2],
                              s1 = as.numeric(coef(model1[[1]]))[3],
                              a2 = as.numeric(coef(model1[[2]]))[1],
                              s2 = as.numeric(coef(model1[[2]]))[2],
                              WSEbf = max(fitted(model1[[2]])),
-                             sb.ind = attributes(model1)$sb.ind)
+                             sb.ind = attributes(model1)$sb.ind,
+                             ef = attributes(model1)$ef)
       } else
       {
-        # print("there was an error with the NLSB fit")
-        nlsb[[k]][[m]] <- NA
+        nlsb[[k]][[m]] <- list(z0 = NA,
+                               a1 = NA,
+                               s1 = NA,
+                               a2 = NA,
+                               s2 = NA,
+                               WSEbf = NA,
+                               sb.ind = NA,
+                               ef = attributes(model1)$ef)
       }
     }
     print(paste("finished processing for exposure level", k, "of 19"))

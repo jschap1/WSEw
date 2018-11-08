@@ -8,6 +8,7 @@
 #' @param h1 minimum observed height, nr by n_exp_level by M array
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
+#' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
 #' @return list of z0, A, W0, and A0 predictions
 
 pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
@@ -20,7 +21,7 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
     nlsb <- readRDS(file.path(exp_dir, nlsb_name))
   } else
   {
-    return(list(z0 = NA, A = NA, WP = NA, A0 = NA))
+    return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
   }
   
   # Load fitted SB model

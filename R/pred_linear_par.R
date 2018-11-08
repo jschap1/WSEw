@@ -7,7 +7,7 @@
 #' @param exclude boolean that determines whether or not to exclude predictions from physically unrealistic model fits
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
-#' error.flag values: 0 = no error, 1 = negative slope
+#' error.flag values: 0 = no error, 1 = negative slope, 3 = no model was fit
 #' @return list of z0, A, W0, and A0 predictions
 #' @example pred_vals <- pred_linear_par(r = 1)
 
@@ -38,7 +38,7 @@ pred_linear_par <- function(r, exclude = FALSE)
           if (exclude) # skip bc everything is noise
           {
             next
-          } else # attempt to estimate parameters anyway
+          } else # attempt to estimate parameters anyway (not justified, do not do this)
           {
             wbf <- max(lf[[k]][[m]]$model$w)
             WSEbf <- max(lf[[k]][[m]]$model$WSE) # choose max observed WSE
@@ -55,6 +55,10 @@ pred_linear_par <- function(r, exclude = FALSE)
           A0.l[k,m] <- calc_model_A0(lf[[k]][[m]], type = "linear", pos.only = FALSE)
         }
         
+      }
+      else # no model was fit
+      {
+        return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
       }
     }
   }

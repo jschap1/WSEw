@@ -24,4 +24,5 @@ Applies fit_nlsb in parallel across multiple processors on one machine
 \details{
 Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 and uses it to predict hydraulic parameters
+error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
 }

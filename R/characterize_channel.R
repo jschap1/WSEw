@@ -9,6 +9,16 @@
 #' Reports the same metrics as Grimaldi et al. (2018)
 #' Drops the first d-w data point to perform fit and avoid an issue with log(0)
 #' @example characterize_channel(cross_sections_avg, "channel_chars.rda")
+#' @return list with the following components:
+#' A, cross sectional area
+#' s, shape parameter
+#' wbf, bankfull width
+#' dbf, mean bankfull depth
+#' dbf.max, maximum bankfull depth
+#' dist_downstream, distance downstream
+#' b.min, minimum bed elevation
+#' xdw, data frame containing width-depth data
+#' power model, models fit to linearized cross section model d = aw^s
 
 characterize_channel <- function(cross_sections, xWSEw, savename = NULL, plotflag = FALSE, section_length = 5, na.rm = FALSE)
 {

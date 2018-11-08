@@ -4,7 +4,7 @@
 \alias{fit_nlsb}
 \title{Nonlinear Slope Break Fit}
 \usage{
-fit_nlsb(WSEw, h = 10)
+fit_nlsb(WSEw, h = 10, maxiter = 100)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
@@ -16,7 +16,28 @@ Fits a piecewise nonlinear curve with one breakpoint
 There is one breakpoint, it is estimated using strucchange::breakpoints
 }
 \details{
-Can be buggy. In particular, if the algorithm is unable to estimate model parameters, there can be an error where it says
-that fit.b was not found. There should be a set of initial guesses that allow the solution to be found. 
-The fix should just prevent fit.b from being called when it is not defined.
+See attributes(fit)$ef for error flags. 
+Value 0 means no error, 
+1 means not enough data points, 
+2 means singular gradient at initial guess for nlsLM
+}
+\examples{
+rWSEw <- readRDS("./Outputs/p4_newfits/rWSEw.rds")
+r <- 5
+WSEw <- observe(rWSEw[[r]], exposure = 0.4)
+plot(WSE~w, WSEw)
+nn <- length(WSEw$w)
+fits <- fit_nlsb(WSEw)
+sb.ind <- attributes(fits)$sb.ind
+lines(WSEw$w[1:sb.ind], predict(fits[[1]]))
+lines(WSEw$w[sb.ind:nn], predict(fits[[2]]))
+Find an error case and see if it is handled better now
+Did not manage to actually find such an error case
+z0.error <- readRDS("./Outputs/p4_newfits/z0_error.rds")
+z0.error.nlsb <- z0.error$nlsb
+r <- 4
+k <- 9
+z0.error.nlsb[r,k,]
+m <- 12
+fit1 <- fit_nlsb(WSEw_obs[[k]][[m]])
 }

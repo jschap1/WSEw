@@ -9,6 +9,10 @@
 #' Uses a default initial guess, but if the fit is very bad, 
 #' attempts several fits performed with different starting guesses 
 #' and returns the best fit.
+#' See attributes(fit)$ef for error flags. 
+#' Value 0 means no error, 
+#' 1 means not enough data points, 
+#' 2 means singular gradient at initial guess for nlsLM
 
 fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
 {
@@ -18,7 +22,9 @@ fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
   if (length(WSEw$WSE)<h) 
   {
     print("Not enough data points")
-    return(NULL)
+    fit <- NULL
+    attributes(fit)$ef <- 1
+    return(fit)
   }
 
   # General initial guess assuming s = 2
@@ -44,6 +50,9 @@ fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
   if (!exists("fit"))
   {
     try_multi <- TRUE
+  } else
+  {
+    attributes(fit)$ef <- 0
   }
   
   if (try_multi)
@@ -79,9 +88,11 @@ fit_nonlinear <- function(WSEw, h = 5, maxiter = 100)
     if (all(is.na(SSE)))
     {
       fit <- NULL
+      attributes(fit)$ef <- 2
     } else
     {
       fit <- fits[[which.min(SSE)]] # choose the best fit
+      attributes(fit)$ef <- 0
     }
 
   }

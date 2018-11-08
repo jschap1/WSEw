@@ -8,7 +8,7 @@
 #' @param h1 minimum observed height, nr by n_exp_level by M array
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
-#' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity
+#' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
 #' There is a problem when s is negative because the predictions at w = 0 are -Inf
 #' When there is negative concavity, the linear model is used to make predictions, instead of the nonlinear model
 #' @return list of z0, A, W0, and A0 predictions
@@ -22,7 +22,7 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
     nl <- readRDS(file.path(exp_dir, nl_name))
   } else
   {
-    return(list(z0 = NA, A = NA, WP = NA, A0 = NA))
+    return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
   }
   
   # Load fitted L model
@@ -90,7 +90,7 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
               if (exclude) # if excluding nonrealistic cases, returns NA
               {
                 next
-              } else # otherwise, predicts parameters as best it can (not really justified, don't do it)
+              } else # otherwise, predicts parameters as best it can (not justified, don't do it)
               {
                 wbf <- max(lf[[k]][[m]]$model$w)
                 WSEbf <- max(lf[[k]][[m]]$model$WSE) # choose max observed WSE

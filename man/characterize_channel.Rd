@@ -14,6 +14,18 @@ characterize_channel(cross_sections, xWSEw, savename = NULL,
 
 \item{savename}{filename to save the fitted models, goodness of fit metrics, and shape parameters}
 }
+\value{
+list with the following components:
+A, cross sectional area
+s, shape parameter
+wbf, bankfull width
+dbf, mean bankfull depth
+dbf.max, maximum bankfull depth
+dist_downstream, distance downstream
+b.min, minimum bed elevation
+xdw, data frame containing width-depth data
+power model, models fit to linearized cross section model d = aw^s
+}
 \description{
 Characterizes channel geometry with shape parameter and bankfull parameters
 }

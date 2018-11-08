@@ -18,6 +18,9 @@
 #' 3. Linear with several breakpoints, continous 
 #' 4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
 #' 5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections (returns just the lowest fit)
+#' See attributes(fit)$ef for error flags. 
+#' Value 0 means no error, 
+#' 1 means not enough data points
 
 fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015, 
                            window = 4, multiple_breaks = FALSE, continuity = TRUE, minlen = 5)
@@ -44,16 +47,25 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
       print("SBM is not enabled in this version of the code")
     } else
     {
-      # Use one slope break
-      b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints
+      
+      # Use one slope break (for the paper)------------------------------------------
+      try(b <- breakpoints(WSE~w, data = WSEw, breaks = 1, h=minlen)$breakpoints)
+      if (!exists("b"))
+      {
+        fits <- NULL
+        attributes(fits)$ef <- 1
+        return(fits)
+      }
+
       sb.ind <- b[1]
       if (is.na(sb.ind)) 
       {
-        sb.ind<-nn
+        sb.ind <- nn
       }
       
       WSEw1 <- WSEw[1:sb.ind,]
       WSEw2 <- WSEw[sb.ind:nn,]
+      # -----------------------------------------------------------------------------
       
       if (!continuity)
       {
@@ -61,18 +73,23 @@ fit_slopebreak <- function(WSEw,  mersel = FALSE, thres = 0.015,
         lf2 <- lm(WSE~w, data = WSEw2) # above slope break
       } else if (continuity)
       {
+        
+        # for the paper --------------------------------------------------------------
         lf1 <- lm(WSE~w, data = WSEw1) 
         a0 <- as.numeric(coef(lf1)[1])
         a1 <- as.numeric(coef(lf1)[2])
         wb <- WSEw$w[sb.ind]
         intercept <- a0+a1*wb
         lf2 <- lm(WSE ~ -1 + I(w-wb), data = WSEw2, offset = rep(intercept,dim(WSEw2)[1]))
+        # ----------------------------------------------------------------------------
+        
       }
       fits <- list(lf1, lf2)
+      attributes(fits)$ef <- 0
     }
   }
   
-  attributes(fits) <- list(sb.ind = sb.ind) # adding the sb.ind as an output
+  attributes(fits)$sb.ind <- sb.ind # adding the sb.ind as an output
   return(fits)
 }
 

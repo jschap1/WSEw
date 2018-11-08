@@ -33,4 +33,7 @@ Can do the following types of fits
 3. Linear with several breakpoints, continous 
 4. Linear with several breakpoints, noncontinuous (returns just the lowest fit)
 5. Mersel method: linear with one breakpoint, noncontinous,  screens out "non-optimal" cross sections (returns just the lowest fit)
+See attributes(fit)$ef for error flags. 
+Value 0 means no error, 
+1 means not enough data points
 }

@@ -24,7 +24,7 @@ Applies fit_nonlinear in parallel across multiple processors on one machine
 \details{
 Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 and uses it to predict hydraulic parameters
-error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity
+error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
 There is a problem when s is negative because the predictions at w = 0 are -Inf
 When there is negative concavity, the linear model is used to make predictions, instead of the nonlinear model
 }
