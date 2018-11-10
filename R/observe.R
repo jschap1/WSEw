@@ -25,12 +25,12 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   WSEw_corr$w <- WSEw_obs$w + e_w
   
   # Constrain observations to be positive:
-  neg.ind <- which(WSEw_corr<0, arr.ind = TRUE) 
+  neg.ind <- which(WSEw_corr<0, arr.ind = TRUE)
   WSEw_corr[neg.ind] <- 0
 
   # Remove observations where width is less than 100 m
-  narrow.ind <- which(WSEw_corr<=100, arr.ind = TRUE)[1]
-  if (!is.na(narrow.ind))
+  narrow.ind <- which(WSEw_corr$w<=100, arr.ind = TRUE)
+  if (!all(is.na(narrow.ind)))
   {
     WSEw_corr <- WSEw_corr[-narrow.ind,]
   }
