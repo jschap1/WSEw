@@ -26,4 +26,43 @@ x <- cross_sections$x[[k]]
 b <- cross_sections$b[[k]]
 d <- cross_sections$d[[k]]
 plot(x,b,type="l")
+
+Here is some code I've been playing with:
+pool <- 21
+i <- 8
+d <- readRDS(paste0("./Outputs/p", pool, "/main_channel.rds"))
+wbf <- readRDS(paste0("./Outputs/p", pool, "/wbf.rds"))
+cross_sections <- build_cross_sections(d, refWSE[i], wbf, option = "zero")
+head(which(cross_sections$channel.pix>100))
+na.ind <- get_na_ind(cross_sections)
+head(which(!na.ind), 100)
+x <- 4041
+plot(cross_sections$x[[x]], cross_sections$b[[x]], type = "l")
+count_channels(cross_sections$x[[x]], cross_sections$d[[x]])
+
+w1 <- round(0.2*length(cross_sections$x[[x]])) #' one idea for the w parameter's value
+100/wbf[x]
+
+#' Make an animation of how the river channel changes from upstream to downstream
+na.ind <- get_na_ind(cross_sections)
+for (x in which(!na.ind))
+{
+  num <- sprintf("\%05d", x) #' ensuring the same number of digits so they files can be sorted in the proper order
+  png(paste0("pool21_xs_", num, ".png"))
+  plot(cross_sections$x[[x]], 
+       cross_sections$b[[x]], 
+       type = "l", 
+       main = paste("xs", x, "wbf = ", round(wbf[x]))
+  )
+  dev.off()
+  #' readline(prompt="Press [enter] to continue")
+}
+
+nc <- vector(length = length(which(!na.ind)))
+for (x in which(!na.ind))
+{
+  nc[x] <- count_channels(cross_sections$x[[x]], cross_sections$d[[x]])
+  if (x>2000){break}
+}
+
 }

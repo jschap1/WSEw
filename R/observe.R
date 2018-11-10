@@ -34,7 +34,31 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   {
     WSEw_corr <- WSEw_corr[-narrow.ind,]
   }
+  
+  ##########
+  # calculate the observed exposure level and compare it to the input exposure level
+  actual_exposure <- 1 - (1/wbf)*(min(WSEw_corr$w)-15) # adding 15 m to be 99% certain that min(w)<100m
+  if (actual_exposure <= exposure)
+  {
+    print(paste0("River is too narrow to be observed beyond ", 100*round(actual_exposure, 2), "% width exposure"))
+    return(data.frame(WSE = NA, w = NA))
+  }
+  ##########
+  
   return(WSEw_corr)
 }
 
+# ----------------------------------------------------------------------------------------------------
 
+#' Observe 2
+#' 
+#' Same as observe(), but just performs cutting based on the exposure level. 
+#' @details It does not add error nor censor width measurements under 100 m
+
+observe2 <- function(WSEw, exposure)
+{
+  wbf <- max(WSEw$w) # bankfull width
+  observed.ind <- which(WSEw$w/wbf > (1-exposure))
+  WSEw_obs <- WSEw[observed.ind,]
+  return(WSEw_obs)
+}
