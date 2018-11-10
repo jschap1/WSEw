@@ -34,30 +34,24 @@ fit_linear_par <- function(r)
 {
   obsname <- paste0("obs/WSEw_obs_r_", r, ".rds") # load observations for this reach
   WSEw_obs <- readRDS(file.path(exp_dir, obsname))
-  nn <- array(dim = c(n_exp_levels, M))
-  for (k in 1:n_exp_levels)
-  {
-    for (m in 1:M)
-    {
-      nn[k,m] <- dim(WSEw_obs[[k]][[m]])[1]
-    }
-  }
   lf <- vector(length = n_exp_levels, "list")
   for (k in 1:n_exp_levels)
   {
     lf[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      if (nn[k,m]>5) # require a minimum of 5 observations
-      {
-        lf[[k]][[m]] <- fit_linear(WSEw_obs[[k]][[m]])
-      }
+        lf[[k]][[m]] <- fit_linear(WSEw_obs[[k]][[m]], h = 5)
     }
   }
   lf_name <- paste0("lf/lf_", "r_", r, ".rds")
   saveRDS(lf, file = file.path(exp_dir, lf_name))
   return(0)
 }
+
+# r <- 7
+# lf_name <- paste0("lf/lf_", "r_", r, ".rds")
+# lf <- readRDS(file.path(exp_dir, lf_name))
+# lf[[1]][[10]]
 
 #' @export
 # Fit SB model

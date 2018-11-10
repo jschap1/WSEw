@@ -91,3 +91,46 @@ calc_A0_prediction_error <- function(pred, truth, A = NULL, type)
   
   return(pred.error)
 }
+
+# --------------------------------------------------------------------------------------------------------------------
+#' Calculate slope prediction error
+#' 
+#' Calculates slope prediction error, either absolute or _____
+#' @param pred minimum bed elevation z0 predictions
+#' @param truth true minimum bed elevation
+#' @param type can be "absolute" or "relative"
+#' @export
+#' @examples s0.l.error.abs <- calc_A0_prediction_error(s0.l, s0.true.ra, type = "absolute")
+
+calc_s0_prediction_error <- function(pred, truth, type)
+{
+  
+  nr <- dim(pred)[1]
+  n_exp_levels <- dim(pred)[2]
+  M <- dim(pred)[3]
+  
+  pred.error <- array(dim = dim(pred))
+  
+  if (type == "absolute")
+  {
+    
+    for (k in 1:n_exp_levels) 
+    {
+      pred.error[,k,] <- pred[,k,] - rep(truth, M)
+    }
+    
+  } else if (type == "relative")
+  {
+    
+    for (k in 1:n_exp_levels) 
+    {
+      pred.error[,k,] <- pred[,k,] - rep(truth, M)
+      for (r in 1:nr)
+      {
+        pred.error[r,k,] <- pred.error[r,k,]/(truth[r])
+      }
+    }
+    
+  }
+  return(pred.error)
+}

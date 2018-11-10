@@ -9,7 +9,7 @@
 #' and uses it to predict hydraulic parameters
 #' error.flag values: 0 = no error, 1 = negative slope, 3 = no model was fit
 #' @return list of z0, A, W0, and A0 predictions
-#' @example pred_vals <- pred_linear_par(r = 1)
+#' @example pred_vals <- pred_linear_par(r = 1, exclude = T)
 
 # Linear
 pred_linear_par <- function(r, exclude = FALSE)
@@ -26,7 +26,7 @@ pred_linear_par <- function(r, exclude = FALSE)
     for (m in 1:M)
     {
       # if statements handle cases where the model is NULL/no model was fit
-      if (class(lf[[k]][[m]]) == "lm")
+      if (attributes(lf[[k]][[m]])$ef==0)
       {
         
         # Check that physical-realism constraints are satisfied
@@ -58,7 +58,11 @@ pred_linear_par <- function(r, exclude = FALSE)
       }
       else # no model was fit
       {
-        return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
+        z0.l[k,m] <- NA
+        A.l[k,m] <- NA
+        WP.l[k,m] <- NA
+        A0.l[k,m] <- NA
+        error.flag[k,m] <- 3
       }
     }
   }

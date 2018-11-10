@@ -4,14 +4,28 @@
 #' @param WSEw WSEw data (at a given level of exposure)
 #' @param mersel flag for Mersel method
 #' @param thres threshold for Mersel method
+#' h minimum number of observations for a fit
 #' @export
+#' @details See attributes(fit)$ef for error flags. 
+#' Value 0 means no error, 
+#' 1 means not enough data points 
 
-fit_linear <- function(WSEw,  mersel = FALSE, thres = NULL)
+fit_linear <- function(WSEw,  mersel = FALSE, thres = NULL, h)
 {
+  
+  if (length(WSEw$WSE)<h) 
+  {
+    print("Not enough data points")
+    fit <- NULL
+    attributes(fit)$ef <- 1
+    return(fit)
+  }
 
   if (!mersel)
   {
+    # print("not mersel")
     lf <- lm(WSE~w, data = WSEw)
+    attributes(lf)$ef <- 0
     return(lf)
     
   } else

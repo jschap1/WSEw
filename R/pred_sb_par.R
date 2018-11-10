@@ -57,7 +57,11 @@ pred_sb_par <- function(r, exclude = FALSE)
       }
       else # no model was fit
       {
-        return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
+        z0.sb[k,m] <- NA
+        A.sb[k,m] <- NA
+        WP.sb[k,m] <- NA
+        A0.sb[k,m] <- NA
+        error.flag[k,m] <- 3
       }
     }
   }

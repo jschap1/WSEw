@@ -17,12 +17,38 @@
 
 count_channels <- function(x, d)
 {
-  
-  # skip empty cross sections
-  peaks <- test(x = x, y = d, w = 5, span = 0.55, plotflag = FALSE)
+  wbf <- max(x)
+  swot.res <- 100
+  w1 <- round(0.1*length(x))
+  peaks <- test(x = x, y = d, w = w1, span = swot.res/wbf, plotflag = TRUE)
   nchannels <- length(peaks$x)
   return(nchannels)
-  
+}
+
+head(which(cross_sections$channel.pix>100))
+# na.ind <- get_na_ind(cross_sections)
+# head(which(!na.ind), 100)
+x <- 864 # 47, 864, 97, 1015
+plot(cross_sections$x[[x]], cross_sections$b[[x]], type = "l")
+
+count_channels(cross_sections$x[[x]], cross_sections$d[[x]])
+
+w1 <- round(0.2*length(cross_sections$x[[x]])) # one idea for the w parameter's value
+100/wbf[x]
+
+# Make an animation of how the river channel changes from upstream to downstream
+na.ind <- get_na_ind(cross_sections)
+for (x in which(!na.ind))
+{
+  num <- sprintf("%05d", x) # ensuring the same number of digits so they files can be sorted in the proper order
+  png(paste0("pool9_xs_", num, ".png"))
+  plot(cross_sections$x[[x]], 
+       cross_sections$b[[x]], 
+       type = "l", 
+       main = paste("xs", x, "wbf = ", round(wbf[x]))
+       )
+  dev.off()
+  # readline(prompt="Press [enter] to continue")
 }
 
 # ----------------------------------------------------------------------------------------------------

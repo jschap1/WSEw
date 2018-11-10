@@ -4,15 +4,21 @@
 \alias{fit_linear}
 \title{Linear Fit for WSE-w Relationship}
 \usage{
-fit_linear(WSEw, mersel = FALSE, thres = NULL)
+fit_linear(WSEw, mersel = FALSE, thres = NULL, h)
 }
 \arguments{
 \item{WSEw}{WSEw data (at a given level of exposure)}
 
 \item{mersel}{flag for Mersel method}
 
-\item{thres}{threshold for Mersel method}
+\item{thres}{threshold for Mersel method
+h minimum number of observations for a fit}
 }
 \description{
 Optionally uses Mersel's original method, which screens out "non-optimal" cross sections
+}
+\details{
+See attributes(fit)$ef for error flags. 
+Value 0 means no error, 
+1 means not enough data points
 }

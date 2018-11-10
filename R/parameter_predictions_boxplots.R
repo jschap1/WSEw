@@ -79,12 +79,12 @@ parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, k,
   
   if (lumped)
   {
-    boxplot(z ~ type, df, col = cols, ...)
+    b <- boxplot(z ~ type, df, col = cols, ...)
     abline(0,0, lty = 2, lwd = 1.5)
     
   } else
   {
-    boxplot(z ~ type + xs, df, col = cols, ...)
+    b <- boxplot(z ~ type + xs, df, col = cols, ...)
     abline(0,0, lty = 2, lwd = 1.5)
     if (legend)
     {
@@ -92,5 +92,5 @@ parameter_predictions_boxplots <- function(z.l, z.sb, z.nl, z.nlsb, k,
     }
   }
   
-  return(0)
+  return(b)
 }
