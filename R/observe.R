@@ -15,6 +15,12 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   observed.ind <- which(WSEw$w/wbf > (1-exposure))
   WSEw_obs <- WSEw[observed.ind,]
   
+  if (wbf*(1-exposure) < 100)
+  {
+    print(paste0("River is too narrow to be observed beyond ", 100*round(1-100/wbf, 2), "% width exposure"))
+    return(data.frame(WSE = NA, w = NA))
+  }
+  
   # corrupt observations
   nn <- dim(WSEw_obs)[1] # number of observations
   e_WSE <- rnorm(nn, mean = 0, sd = sd_wse)
@@ -34,16 +40,6 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   {
     WSEw_corr <- WSEw_corr[-narrow.ind,]
   }
-  
-  ##########
-  # calculate the observed exposure level and compare it to the input exposure level
-  actual_exposure <- 1 - (1/wbf)*(min(WSEw_corr$w)-15) # adding 15 m to be 99% certain that min(w)<100m
-  if (actual_exposure <= exposure)
-  {
-    print(paste0("River is too narrow to be observed beyond ", 100*round(actual_exposure, 2), "% width exposure"))
-    return(data.frame(WSE = NA, w = NA))
-  }
-  ##########
   
   return(WSEw_corr)
 }
