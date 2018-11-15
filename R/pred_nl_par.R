@@ -17,13 +17,15 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
 {
   # Load fitted NL model
   nl_name <- paste0("nl/nl_", "r_", r, ".rds")
-  if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
-  {
-    nl <- readRDS(file.path(exp_dir, nl_name))
-  } else
-  {
-    return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
-  }
+  nl <- readRDS(file.path(exp_dir, nl_name))
+  
+  # if (file.exists(file.path(exp_dir, nl_name))) # error check in case no model was fit for this cross section
+  # {
+  #   nl <- readRDS(file.path(exp_dir, nl_name))
+  # } else
+  # {
+  #   return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
+  # }
   
   # Load fitted L model
   lf_name <- paste0("lf/lf_", "r_", r, ".rds")
@@ -43,7 +45,7 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   {
     for (m in 1:M)
     {
-      if (all(!is.na(nl[[k]][[m]]))) # if an NL model has been fit
+      if (nl[[k]][[m]]$ef == 0) # if an NL model has been fit
       {
         
         # Check that physical-realism constraints are satisfied
@@ -111,6 +113,14 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
         }
         
         
+      }
+      else 
+      {
+        z0.nl[k,m] <- NA
+        A.nl[k,m] <- NA
+        WP.nl[k,m] <- NA
+        A0.nl[k,m] <- NA
+        error.flag[k,m] <- 3 # no model was fit
       }
     }
   }

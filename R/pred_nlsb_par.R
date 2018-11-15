@@ -16,13 +16,15 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   
   # Load fitted NLSB model
   nlsb_name <- paste0("nlsb/nlsb_", "r_", r, ".rds")
-  if (file.exists(file.path(exp_dir, nlsb_name))) # error check in case no model was fit for this cross section
-  {
-    nlsb <- readRDS(file.path(exp_dir, nlsb_name))
-  } else
-  {
-    return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
-  }
+  nlsb <- readRDS(file.path(exp_dir, nlsb_name))
+  
+  # if (file.exists(file.path(exp_dir, nlsb_name))) # error check in case no model was fit for this cross section
+  # {
+  #   nlsb <- readRDS(file.path(exp_dir, nlsb_name))
+  # } else
+  # {
+  #   return(list(z0 = NA, A = NA, WP = NA, A0 = NA, ef = 3))
+  # }
   
   # Load fitted SB model
   sb_name <- paste0("sb/sb_", "r_", r, ".rds")
@@ -40,7 +42,7 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   {
     for (m in 1:M)
     {
-      if (all(!is.na(nlsb[[k]][[m]])))
+      if (nlsb[[k]][[m]]$ef == 0)
       {
         
         # Check for physically realistic fits
@@ -105,6 +107,14 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
           }
         }
         
+      }
+      else
+      {
+        z0.nlsb[k,m] <- NA
+        A.nlsb[k,m] <- NA
+        WP.nlsb[k,m] <- NA
+        A0.nlsb[k,m] <- NA
+        error.flag[k,m] <- 3 # no model was fit
       }
     }
   }

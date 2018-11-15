@@ -50,6 +50,7 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
 #' 
 #' Same as observe(), but just performs cutting based on the exposure level. 
 #' @details It does not add error nor censor width measurements under 100 m
+#' @export
 
 observe2 <- function(WSEw, exposure)
 {

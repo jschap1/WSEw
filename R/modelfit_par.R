@@ -88,7 +88,7 @@ fit_nl_par <- function(r)
     nl[[k]] <- vector(length = M, "list")
     for (m in 1:M)
     {
-      try(model1 <- fit_nonlinear(WSEw_obs[[k]][[m]], h=5))
+      model1 <- fit_nonlinear(WSEw_obs[[k]][[m]], h=5) # used to be in try() but i don't think it's nec anymore
       if (attributes(model1)$ef==0)
       {
         nl[[k]][[m]] <- list(z0 = as.numeric(coef(model1))[1],
