@@ -59,20 +59,36 @@ get_main_channel <- function(transect, return_all = FALSE)
   }
   
   summary_table <- table(channel) # summarizes the entries in channel
-  width <- max(summary_table) # width of the main channel
+  width <- max(summary_table) # width of the main channel (pixels)
   
   widest.ch <- as.numeric(which.max(summary_table)) # channel number that is the widest
-  
   wide.ch.ind <- which(channel == widest.ch) # indices of the widest channel
+  
+  # Get start and end indices of all channels
+  n.channels <- length(summary_table)
+  start_ind <- vector(length = n.channels)
+  end_ind <- vector(length = n.channels)
+  for (k in 1:n.channels)
+  {
+    ch_ind <- which(channel == k)
+    start_ind[k] <- ch_ind[1]
+    end_ind[k] <- ch_ind[length(ch_ind)]
+  }
   
   main_channel <- transect[wide.ch.ind]
   
   if (return_all)
   {
+    # added in start_ind and end_ind later (11/19/2018)
+    # they indicate the beginnings and ends of each channel, not just the widest one, 
+    # which is what first_ind and last_ind do.
     main_channel <- list(main_channel = main_channel, 
                          first_ind = wide.ch.ind[1], 
                          last_ind = wide.ch.ind[length(wide.ch.ind)], 
-                         pixel_widths = summary_table)
+                         pixel_widths = summary_table, 
+                         ind1 = start_ind, 
+                         ind2 = end_ind, 
+                         all_channels = transect)
   }
   
   return(main_channel)

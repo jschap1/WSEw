@@ -28,7 +28,6 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
   extract_xs_wbf_par <- function(x) # function for evaluating in parallel.
   {
     
-    
     try(transects <- extract(depth, cross_section[x], along = TRUE, cellnumbers = TRUE))
     
     if (!exists("transects")) # in case the cross section is outside the extent of depth (quick fix)
@@ -50,8 +49,8 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
       return(wbf_and_mc)
     }
     
-    res1 <- get_main_channel(transects[[1]][,2], return_all = TRUE)
-    pixel_widths <- res1$pixel_widths
+    mc <- get_main_channel(transects[[1]][,2], return_all = TRUE)
+    pixel_widths <- mc$pixel_widths
     
     n.channels <- count_separate_channels_2(transects[[1]][,2], min_width = h)
     if (n.channels > 1)
@@ -60,7 +59,6 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
       return(wbf_and_mc)
     }
     
-    mc <- get_main_channel(transects[[1]][,2], return_all = TRUE)
     main_channel <- mc$main_channel
     
     first_cell <- transects[[1]][mc$first_ind,1]
@@ -82,9 +80,9 @@ extract_xs_wbf <- function(cross_section, depth, hpc = TRUE, h = 20)
   
   if (hpc)
   {
-    # ncores <- detectCores()
-    # registerDoMC(cores = ncores - 1)
-    ncores <- 6
+    ncores <- detectCores()
+    registerDoMC(cores = ncores - 1)
+    # ncores <- 6
     registerDoMC(cores = ncores)
     print(paste("Set up for parallel processing with", ncores, "cores"))
     

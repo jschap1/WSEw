@@ -13,12 +13,15 @@ calc_A0_prediction_error(pred, truth, A = NULL, type)
 
 \item{A}{bankfull flow area}
 
-\item{type}{can be "absolute" or "relative"}
+\item{type}{can be "absolute" or "relative1" or "relative2"}
 }
 \description{
 Calculates submerged area prediction error, either absolute or as a fraction of bankfull flow area
 }
+\details{
+relative1 uses A for the denominator, but relative2 uses A0 for the denominator
+}
 \examples{
 A0.l.error.abs <- calc_A0_prediction_error(A0.l, A0.true.ra, type = "absolute")
-A0.l.error.rel <- calc_A0_prediction_error(pred = A0.l, truth = A0.true.ra, A = A.true.ra, type = "relative")
+A0.l.error.rel <- calc_A0_prediction_error(pred = A0.l, truth = A0.true.ra, A = A.true.ra, type = "relative1")
 }

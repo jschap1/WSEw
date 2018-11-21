@@ -3,7 +3,19 @@
 #' Draws transects, finds main channel, and gets depth values
 #' @export
 
-auto_transects <- function(section_length, riv, depth, halfwidth, saveflag = FALSE, output_all = FALSE, savedir = NULL)
+# section_length=5
+# riv=riv.smooth.ksmooth
+# depth=depth_5
+# halfwidth <- halfwidth[i]
+
+auto_transects <- function(section_length, 
+                           riv, 
+                           depth, 
+                           halfwidth, 
+                           saveflag = FALSE, 
+                           output_all = FALSE, 
+                           savedir = NULL, 
+                           main_only = TRUE)
 {
 
   rivsplit <- splitLines(riv, dist = section_length)
@@ -26,9 +38,20 @@ auto_transects <- function(section_length, riv, depth, halfwidth, saveflag = FAL
   print("Extracting values along transects.")
   print("This can take a LONG time.")
   print("It takes about 12 seconds per cross section per processor")
-  res <- extract_xs_wbf(cross_section, depth, hpc = TRUE, h = 20)
+  
+  if (main_only)
+  {
+    # if using just the main channel
+    res <- extract_xs_wbf(cross_section, depth, hpc = TRUE, h = 20) 
+    main_channel <- res$main_channel
+  } else
+  {
+    # if accounting for all channels (just for a representativeness test)  
+    res <- extract_xs_wbf_multi(cross_section, depth, hpc = TRUE, h = 20) 
+    main_channel <- res$all_channels
+  }
+
   wbf <- res$wbf
-  main_channel <- res$main_channel
   xs_locs <- res$xs_locs # a single SpatialLines object with IDs corresponding to XS number
   pixel_widths <- res$pixel_widths
   n.channels <- res$n_channels

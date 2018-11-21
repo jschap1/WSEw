@@ -52,10 +52,11 @@ calc_depth_prediction_error <- function(pred, truth, h = NULL, type)
 #' @param pred minimum bed elevation z0 predictions
 #' @param truth true minimum bed elevation
 #' @param A bankfull flow area
-#' @param type can be "absolute" or "relative"
+#' @param type can be "absolute" or "relative1" or "relative2"
 #' @export
 #' @examples A0.l.error.abs <- calc_A0_prediction_error(A0.l, A0.true.ra, type = "absolute")
-#' A0.l.error.rel <- calc_A0_prediction_error(pred = A0.l, truth = A0.true.ra, A = A.true.ra, type = "relative")
+#' A0.l.error.rel <- calc_A0_prediction_error(pred = A0.l, truth = A0.true.ra, A = A.true.ra, type = "relative1")
+#' @details relative1 uses A for the denominator, but relative2 uses A0 for the denominator
 
 calc_A0_prediction_error <- function(pred, truth, A = NULL, type)
 {
@@ -71,13 +72,9 @@ calc_A0_prediction_error <- function(pred, truth, A = NULL, type)
     for (k in 1:n_exp_levels)
     {
       pred.error[,k,] <- pred[,k,] - rep(truth[,k], M)
-      # for (r in 1:nr)
-      # {
-      #   pred.error[r,k,] <- pred.error[r,k,]/truth[r,k]
-      # }
     }
     
-  } else if (type == "relative")
+  } else if (type == "relative1")
   {
     for (k in 1:n_exp_levels)
     {
@@ -85,6 +82,16 @@ calc_A0_prediction_error <- function(pred, truth, A = NULL, type)
       for (r in 1:nr)
       {
         pred.error[r,k,] <- pred.error[r,k,]/(A[r])
+      }
+    }
+  } else if (type == "relative2")
+  {
+    for (k in 1:n_exp_levels)
+    {
+      pred.error[,k,] <- pred[,k,] - rep(truth[,k], M)
+      for (r in 1:nr)
+      {
+        pred.error[r,k,] <- pred.error[r,k,]/truth[r,k]
       }
     }
   }
