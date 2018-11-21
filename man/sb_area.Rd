@@ -4,7 +4,7 @@
 \alias{sb_area}
 \title{Calculates area of a slope break cross section}
 \usage{
-sb_area(wsb, WSEsb, z0, WSEbf, wbf)
+sb_area(wsb, WSEsb, z0, hbf, wbf)
 }
 \description{
 Calculates area of a slope break cross section

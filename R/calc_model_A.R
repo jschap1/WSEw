@@ -30,9 +30,9 @@ calc_model_A <- function(model, type, WSEw = NULL)
     wsb <- max(m1$model$w)
     wbf <- max(m2$model$`I(w - wb)`) + wsb # accounting for the offset
     WSEsb <- max(fitted(m1))
-    WSEbf <- max(fitted(m2))
+    hbf <- max(fitted(m2))
     z0 <- as.numeric(coef(m1)[1])
-    A <- sb_area(wsb, WSEsb, z0, WSEbf, wbf)   
+    A <- sb_area(wsb, WSEsb, z0, hbf, wbf)   
     
   }else if (type == "sbm")
   {
@@ -40,14 +40,14 @@ calc_model_A <- function(model, type, WSEw = NULL)
     model <- model[[1]]
     
     wbf <- max(model$model$w)
-    # WSEbf <- max(model$model$WSE)
-    WSEbf <- max(fitted(model))
+    # hbf <- max(model$model$WSE)
+    hbf <- max(fitted(model))
     
     w.brk <- as.numeric(summary(model)$psi[,2]) # width breakpoints, in increasing order
     WSE.brk <- predict(model, newdata = data.frame(w = w.brk))
     
     w <- c(w.brk, wbf)
-    WSE <- c(WSE.brk, WSEbf)
+    WSE <- c(WSE.brk, hbf)
     # z0 <- min(model$model$WSE)
     # z0 <- predict(model, newdata = data.frame(w = 0))
     z0 <- as.numeric(coef(model)[1])
@@ -83,22 +83,23 @@ calc_model_A <- function(model, type, WSEw = NULL)
 
     a <- c(a1,a2)
     s <- c(s1,s2)
-
-    A <- nlsb_area3(wbf, WSEbf, z0, a, s, wsb)
+    A <- nlsb_area4(wbf, hbf, z0, a, s, wsb)
   }
   
   return(A)
 }
 
+# r=7, k=5, m = 1
+# A.nlsb[7,5,1]
 
 # --------------------------------------------------------------------------------------------------
 
 #' Calculates area of a slope break cross section
 #' @export
  
-sb_area <- function(wsb, WSEsb, z0, WSEbf, wbf)   
+sb_area <- function(wsb, WSEsb, z0, hbf, wbf)   
 {
-  A <- 0.5*(WSEsb-z0)*wsb + 0.5*(wsb+wbf)*(WSEbf - WSEsb)
+  A <- 0.5*(WSEsb-z0)*wsb + 0.5*(wsb+wbf)*(hbf - WSEsb)
   return(A)
 }
 
@@ -128,10 +129,10 @@ sbm_area <- function(w, WSE, z0)
 #' @param a multiplicative parameter for the nonlinear fit
 #' @export
 
-nl_area <- function(wbf, WSEbf, z0, a, s)
+nl_area <- function(wbf, hbf, z0, a, s)
 {
-  A <- (WSEbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
-  # A <- (WSEbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
+  A <- (hbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
+  # A <- (hbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
   
   return(A)
 }
@@ -143,39 +144,19 @@ nl_area <- function(wbf, WSEbf, z0, a, s)
 #' @param a multiplicative parameters for the nonlinear fits
 #' @export
 
-# nlsb_area <- function(wbf, WSEbf, z0, a, s, wsb)
-# {
-#   # Separating by term to keep the code looking clean
-#   t1 <- (WSEbf - z0)*wbf # term 1
-#   t2 <- a[1]*s[1]*wsb^(s[1]+1)/(s[1]+1) # term 2
-#   t3 <- -a[1]*wbf*wsb^(s[1])
-#   t4 <- (-a[2]/(s[2]+1))*(wbf^(s[2]+1) - wsb^(s[2]+1))
-#   A <- sum(t1, t2, t3, t4)
-#   return(A)
-# }
-# 
-# nlsb_area2 <- function(wbf, WSEbf, z0, a, s, wsb)
-# {
-#   t1 <- WSEbf*wbf
-#   t2 <- z0*wsb + (a[1]/(s[1]+1))*wsb^(s[1]+1)
-#   t3 <- (z0+a[1]*wsb^s[1])*(wbf-wsb)
-#   t4 <- (a[2]/(s[2]+1))*(wbf^(s[2]+1))
-#   A <- t1 - t2 -(t3+t4)
-#   return(A)
-# }
-
-nlsb_area3 <- function(wbf, WSEbf, z0, a, s, wsb) # pretty sure this is the right formula. Should run a test case or two.
-{
-  t1 <- WSEbf*wbf
-  t2 <- z0*wsb + (a[1]/(s[1]+1))*wsb^(s[1]+1)
-  
-  t3_1 <- (z0+a[1]*wsb^s[1])*(wbf-wsb)
-  t3_2 <- (a[2]/(s[2]+1))*(s[2]*wsb^(s[2]+1) + wbf*(wbf^s[2] - (s[2]+1)*wsb^s[2]))
-  
-  A <- t1 - t2 - (t3_1 + t3_2)
-  return(A)
-}
-
 # Move toward estimating A0 in particular, since the A fluctuations are observed by SWOT.
 
+nlsb_area4 <- function(wbf, hbf, z0, a, s, wb)
+{
+  
+  t1 <- (hbf - z0)*wb
+  t2 <- (a1/(s1+1))*wb^(s1+1)
+  t3 <- (hbf - z0 - a1*wb^s1)*(wbf-wb)
+  t4 <- (a2*wb^s1)*(wbf-wb)
+  t5 <- (a2/(s2+1))*(wbf-wb)^(s2+1)
+  
+  A <- t1 - t2 + t3 + t4 - t5
+  
+  return(A)
+}
 

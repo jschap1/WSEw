@@ -55,7 +55,7 @@ pred_nlsb_par <- function(r, rWSEw, exclude = FALSE)
         if (a1>=0 & s1>=1) # physically realistic case
         {
           z0.nlsb[k,m] <- nlsb[[k]][[m]]$z0
-          A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
+          A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw_obs[[k]][[m]])
           WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
           A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", WSEw_obs = WSEw_obs[[k]][[m]], pos.only = FALSE)
         } 

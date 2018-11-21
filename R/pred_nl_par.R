@@ -61,7 +61,7 @@ pred_nl_par <- function(r, rWSEw, exclude = FALSE)
         {
           # positive slope, concave up
           z0.nl[k,m] <- nl[[k]][[m]]$z0
-          A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
+          A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw_obs[[k]][[m]])
           WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
           A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", WSEw_obs = WSEw_obs[[k]][[m]], pos.only = FALSE)
         } 
