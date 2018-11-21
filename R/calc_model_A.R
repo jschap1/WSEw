@@ -16,10 +16,12 @@ calc_model_A <- function(model, type, WSEw = NULL)
   if (type == "linear")
   {
     
-    wbf <- max(model$model$w)
-    WSEbf <- predict(model, newdata = data.frame(w=wbf))
-    z0 <- predict(model, newdata = data.frame(w=0))
-    A <- 0.5*wbf*(WSEbf - z0)
+    z0 <- coef(model)[1]
+    a <- coef(model)[2]
+    h_obs <- model$model$WSE
+    hbf <- max(h_obs)
+    wbf <- (hbf - z0)/a
+    A <- 0.5*wbf*(hbf - z0)
     
   }else if (type == "sb") # it would be more straightforward to use segmented for everything, including the single SB model
   {
@@ -29,7 +31,6 @@ calc_model_A <- function(model, type, WSEw = NULL)
     wbf <- max(m2$model$`I(w - wb)`) + wsb # accounting for the offset
     WSEsb <- max(fitted(m1))
     WSEbf <- max(fitted(m2))
-    # z0 <- predict(m1, newdata = data.frame(w=0))
     z0 <- as.numeric(coef(m1)[1])
     A <- sb_area(wsb, WSEsb, z0, WSEbf, wbf)   
     
@@ -56,27 +57,30 @@ calc_model_A <- function(model, type, WSEw = NULL)
   }else if (type == "nl")
   {
     
-    wbf <- max(WSEw$w)
-    WSEbf <- model$WSEbf
     z0 <- model$z0
     a <- model$a
     s <- model$s
-    A <- nl_area(wbf, WSEbf, z0, a, s)
+    h_obs <- WSEw$WSE
+    hbf <- max(h_obs)
+    wbf <- ((hbf - z0)/a)^(1/s)
+    A <- nl_area(wbf, hbf, z0, a, s)
     
   }else if (type == "nlsb")
   {
-
-    wbf <- max(WSEw$w)
-    WSEbf <- model$WSEbf
-    z0 <- model$z0
-    
-    sb.ind <- model$sb.ind # index of slope break
-    wsb <- WSEw$w[sb.ind] # width at slope break
 
     a1 <- model$a1
     a2 <- model$a2
     s1 <- model$s1
     s2 <- model$s2
+    z0 <- model$z0
+    
+    h_obs <- WSEw$WSE
+    hbf <- max(h_obs)
+    wbf <- ((hbf - z0)/a1)^(1/s1)
+    
+    sb.ind <- model$sb.ind # index of slope break
+    wsb <- WSEw$w[sb.ind] # width at slope break
+
     a <- c(a1,a2)
     s <- c(s1,s2)
 
@@ -127,6 +131,8 @@ sbm_area <- function(w, WSE, z0)
 nl_area <- function(wbf, WSEbf, z0, a, s)
 {
   A <- (WSEbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
+  # A <- (WSEbf - z0)*wbf - (a/(s+1))*wbf^(s+1)
+  
   return(A)
 }
 

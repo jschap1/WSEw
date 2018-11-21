@@ -4,14 +4,12 @@
 \alias{pred_nlsb_par}
 \title{Nonlinear slope break}
 \usage{
-pred_nlsb_par(r, WSEw, w1, h1, exclude = FALSE)
+pred_nlsb_par(r, rWSEw, exclude = FALSE)
 }
 \arguments{
 \item{r}{cross section number}
 
-\item{w1}{minimum observed width, nr by n_exp_level by M array}
-
-\item{h1}{minimum observed height, nr by n_exp_level by M array}
+\item{rWSEw}{height and width observations data frame}
 
 \item{exclude}{boolean that determines whether or not to exclude predictions from physically unrealistic model fits}
 }

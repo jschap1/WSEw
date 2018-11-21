@@ -4,14 +4,13 @@
 #' @export
 #' @param r cross section number
 #' @param exclude boolean that determines whether or not to exclude predictions from physically unrealistic model fits
-#' @param w1 minimum observed width, nr by n_exp_level by M array
-#' @param h1 minimum observed height, nr by n_exp_level by M array
+#' @param rWSEw height and width observations data frame
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
 #' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
 #' @return list of z0, A, W0, and A0 predictions
 
-pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
+pred_nlsb_par <- function(r, rWSEw, exclude = FALSE)
 {
   
   # Load fitted NLSB model
@@ -29,6 +28,10 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   # Load fitted SB model
   sb_name <- paste0("sb/sb_", "r_", r, ".rds")
   sb <- readRDS(file.path(exp_dir, sb_name))
+  
+  # Load observations
+  obs_name <- paste0("obs/WSEw_obs_", "r_", r, ".rds")
+  WSEw_obs <- readRDS(file.path(exp_dir, obs_name))
   
   # Initialize
   z0.nlsb <- array(dim = c(n_exp_levels, M))
@@ -52,9 +55,9 @@ pred_nlsb_par <- function(r, WSEw, w1, h1, exclude = FALSE)
         if (a1>=0 & s1>=1) # physically realistic case
         {
           z0.nlsb[k,m] <- nlsb[[k]][[m]]$z0
-          A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw[[r]]) # there may be a bug in the type = nlsb code here
-          WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = WSEw[[r]]$w)
-          A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
+          A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = rWSEw[[r]]) # there may be a bug in the type = nlsb code here
+          WP.nlsb[k,m] <- calc_model_WP(nlsb[[k]][[m]], type = "nlsb", w = rWSEw[[r]]$w)
+          A0.nlsb[k,m] <- calc_model_A0(nlsb[[k]][[m]], type = "nlsb", WSEw_obs = WSEw_obs[[k]][[m]], pos.only = FALSE)
         } 
         
         else if ((a1<=0 & s1>=1) | (a1<=0 & s1<=1)) # negative slope case

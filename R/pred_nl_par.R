@@ -4,8 +4,7 @@
 #' @export
 #' @param r cross section number
 #' @param exclude boolean that determines whether or not to exclude predictions from physically unrealistic model fits
-#' @param w1 minimum observed width, nr by n_exp_level by M array
-#' @param h1 minimum observed height, nr by n_exp_level by M array
+#' @param rWSEw true height and width observations data frame (probably can remove this somehow)
 #' @details Loads fitted model (linear, slope break, multiple slope break, nonlinear, or nonlinear slope break)
 #' and uses it to predict hydraulic parameters
 #' error.flag values: 0 = no error, 1 = negative slope, 2 = negative concavity, 3 = no model was fit
@@ -13,7 +12,7 @@
 #' When there is negative concavity, the linear model is used to make predictions, instead of the nonlinear model
 #' @return list of z0, A, W0, and A0 predictions
 
-pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
+pred_nl_par <- function(r, rWSEw, exclude = FALSE)
 {
   # Load fitted NL model
   nl_name <- paste0("nl/nl_", "r_", r, ".rds")
@@ -30,6 +29,10 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
   # Load fitted L model
   lf_name <- paste0("lf/lf_", "r_", r, ".rds")
   lf <- readRDS(file.path(exp_dir, lf_name))
+  
+  # Load observations
+  obs_name <- paste0("obs/WSEw_obs_", "r_", r, ".rds")
+  WSEw_obs <- readRDS(file.path(exp_dir, obs_name))
   
   # ----------------------------------------------------------------------------------------------------
   
@@ -58,9 +61,9 @@ pred_nl_par <- function(r, WSEw, w1, h1, exclude = FALSE)
         {
           # positive slope, concave up
           z0.nl[k,m] <- nl[[k]][[m]]$z0
-          A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = WSEw[[r]])
-          WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = WSEw[[r]]$w)
-          A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", w1 = w1[r,k,m], h1 = h1[r,k,m], pos.only = FALSE)
+          A.nl[k,m] <- calc_model_A(nl[[k]][[m]], type = "nl", WSEw = rWSEw[[r]])
+          WP.nl[k,m] <- calc_model_WP(nl[[k]][[m]], type = "nl", w = rWSEw[[r]]$w)
+          A0.nl[k,m] <- calc_model_A0(nl[[k]][[m]], type = "nl", WSEw_obs = WSEw_obs[[k]][[m]], pos.only = FALSE)
         } 
         
         else if ((a<=0 & s>=1) | (a<=0 & s<=1)) # negative slope case

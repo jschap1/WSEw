@@ -4,14 +4,12 @@
 \alias{pred_nl_par}
 \title{Nonlinear}
 \usage{
-pred_nl_par(r, WSEw, w1, h1, exclude = FALSE)
+pred_nl_par(r, rWSEw, exclude = FALSE)
 }
 \arguments{
 \item{r}{cross section number}
 
-\item{w1}{minimum observed width, nr by n_exp_level by M array}
-
-\item{h1}{minimum observed height, nr by n_exp_level by M array}
+\item{rWSEw}{true height and width observations data frame (probably can remove this somehow)}
 
 \item{exclude}{boolean that determines whether or not to exclude predictions from physically unrealistic model fits}
 }
