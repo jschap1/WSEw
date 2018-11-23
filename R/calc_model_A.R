@@ -73,17 +73,28 @@ calc_model_A <- function(model, type, WSEw = NULL)
     s1 <- model$s1
     s2 <- model$s2
     z0 <- model$z0
-    
+
     h_obs <- WSEw$WSE
     hbf <- max(h_obs)
     wbf <- ((hbf - z0)/a1)^(1/s1)
     
     sb.ind <- model$sb.ind # index of slope break
-    wsb <- WSEw$w[sb.ind] # width at slope break
+    wb <- WSEw$w[sb.ind] # width at slope break
 
-    a <- c(a1,a2)
-    s <- c(s1,s2)
-    A <- nlsb_area4(wbf, hbf, z0, a, s, wsb)
+    # if a2 is negative, ignore the cross sectional area above the slope break;
+    # it cannot be estimated well, given the measurement error
+    # if (a2 < 0) {a2 <- 0}
+    
+    A <- nlsb_area4(wbf, hbf, z0, a1, a2, s1, s2, wb)
+    
+    # numerical method (alternative, doesn't work perfectly...)
+    # w.1 <- seq(0, wb, length = 1e3) # arbitrary (but large) length
+    # w.2 <- seq(wb, wbf, length = 1e3)
+    # h.1 <- z0 + a1*w.1^s1
+    # h.2 <- z0 + a1*wb^s1 + a2*(w.2^s2 - wb^s2) 
+    # WSEw1 <- data.frame(WSE = c(h.1, h.2), w = c(w.1, w.2))
+    # A <- calc_A_from_WSEw(WSEw1)
+    
   }
   
   return(A)
@@ -146,13 +157,13 @@ nl_area <- function(wbf, hbf, z0, a, s)
 
 # Move toward estimating A0 in particular, since the A fluctuations are observed by SWOT.
 
-nlsb_area4 <- function(wbf, hbf, z0, a, s, wb)
+nlsb_area4 <- function(wbf, hbf, z0, a1, a2, s1, s2, wb)
 {
   
   t1 <- (hbf - z0)*wb
   t2 <- (a1/(s1+1))*wb^(s1+1)
   t3 <- (hbf - z0 - a1*wb^s1)*(wbf-wb)
-  t4 <- (a2*wb^s1)*(wbf-wb)
+  t4 <- (a2*wb^s2)*(wbf-wb) # this term can get very large if a2 is not small
   t5 <- (a2/(s2+1))*(wbf-wb)^(s2+1)
   
   A <- t1 - t2 + t3 + t4 - t5

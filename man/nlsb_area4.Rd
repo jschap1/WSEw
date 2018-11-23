@@ -4,12 +4,12 @@
 \alias{nlsb_area4}
 \title{Calculate area of a nonlinear slope break cross section}
 \usage{
-nlsb_area4(wbf, hbf, z0, a, s, wb)
+nlsb_area4(wbf, hbf, z0, a1, a2, s1, s2, wb)
 }
 \arguments{
-\item{a}{multiplicative parameters for the nonlinear fits}
-
 \item{s}{shape parameters for nonlinear fits (the exponents)}
+
+\item{a}{multiplicative parameters for the nonlinear fits}
 }
 \description{
 Calculate area of a nonlinear slope break cross section

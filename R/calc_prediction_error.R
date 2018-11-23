@@ -4,13 +4,19 @@
 #' Calculates depth prediction error, either absolute or as a fraction of bankfull depth
 #' @param pred minimum bed elevation z0 predictions
 #' @param truth true minimum bed elevation
-#' @param h bankfull water surface elevation. For UMESC data, it is the reference WSE. Needed for relative error only.
-#' @param type can be "absolute" or "relative"
+#' @param h bankfull water surface elevation. For UMESC data, it is the reference WSE. Not needed for absolute error.
+#' @param type can be "absolute" or "relative" or "mersel"
 #' @export
+#' @details Option "mersel" calculates standard error relative to bankfull depth, see Mersel et al. (2013)
 #' @examples
 #' refWSE <- 470*0.3048 # meters, for pool 21
 #' z0.l.error.abs <- calc_depth_prediction_error(z0.l, z0.true.ra, type = "absolute")
 #' z0.l.error.rel <- calc_depth_prediction_error(z0.l, z0.true.ra, h = refWSE, type = "relative")
+#' load("./Outputs/Final/p21/z0_pred.rda")
+#' z0.true.ra <- readRDS("./Outputs/Final/p21/z0_true_ra.rds")
+#' truth <- z0.true.ra
+#' pred <- z0.l
+#' z0.L.SE <- calc_depth_prediction_error(z0.l, z0.true.ra, h = refWSE, type = "mersel")
 
 calc_depth_prediction_error <- function(pred, truth, h = NULL, type)
 {
@@ -41,7 +47,30 @@ calc_depth_prediction_error <- function(pred, truth, h = NULL, type)
       }
     }
     
+  } else if (type == "mersel")
+  {
+    
+    for (k in 1:n_exp_levels) 
+    {
+      SE <- array(dim = c(nr, n_exp_levels))
+      for (r in 1:nr) # can vectorize for speed
+      {
+        for (k in 1:n_exp_levels)
+        {
+          e <- (truth[r] - pred[r,k,])/(h - truth[r])
+          e[is.na(e)] <- 0 # ignores NA values in the product
+          temp <- sqrt((1/M)*t(e)%*%e)
+          temp[temp==0] <- NA
+          SE[r,k] <- temp
+        }
+      }
+      return(SE)
+      
+    }
+    
   }
+  
+  
   return(pred.error)
 }
   

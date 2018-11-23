@@ -52,7 +52,7 @@ pred_nlsb_par <- function(r, rWSEw, exclude = FALSE)
         a1 <- nlsb[[k]][[m]]$a1 # slope coefficient
         s1 <- nlsb[[k]][[m]]$s1 # shape parameter
         
-        if (a1>=0 & s1>=1) # physically realistic case
+        if (a1>=0 & s1>=1) # physically realistic case (should consider other cases of a2, as well)
         {
           z0.nlsb[k,m] <- nlsb[[k]][[m]]$z0
           A.nlsb[k,m] <- calc_model_A(nlsb[[k]][[m]], type = "nlsb", WSEw = WSEw_obs[[k]][[m]])
