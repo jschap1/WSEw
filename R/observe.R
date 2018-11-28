@@ -12,10 +12,10 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
   
   # Keep observations based on the amount of exposed riverbank
   wbf <- max(WSEw$w) # bankfull width
-  observed.ind <- which(WSEw$w/wbf > (1-exposure))
+  observed.ind <- which(WSEw$w/wbf >= (1-exposure))
   WSEw_obs <- WSEw[observed.ind,]
   
-  if (wbf*(1-exposure) < 100)
+  if (wbf*(1-exposure) <= 100)
   {
     print(paste0("River is too narrow to be observed beyond ", 100*round(1-100/wbf, 2), "% width exposure"))
     return(data.frame(WSE = NA, w = NA))
@@ -55,7 +55,7 @@ observe <- function(WSEw, exposure, sd_wse = 0.1, sd_w = 10)
 observe2 <- function(WSEw, exposure)
 {
   wbf <- max(WSEw$w) # bankfull width
-  observed.ind <- which(WSEw$w/wbf > (1-exposure))
+  observed.ind <- which(WSEw$w/wbf >= (1-exposure))
   WSEw_obs <- WSEw[observed.ind,]
   return(WSEw_obs)
 }

@@ -30,6 +30,7 @@
 #' Value 0 means no error, 
 #' 1 means not enough data points, 
 #' 2 means singular gradient at initial guess for nlsLM
+#' 9999 means utter failure
 
 fit_nlsb <- function(WSEw, h = 10, maxiter = 100)
 {
@@ -201,7 +202,7 @@ fit_nlsb <- function(WSEw, h = 10, maxiter = 100)
         
       } # end if !exists(fit.b)
       
-      if (!exists("fit.b"))
+      if (!exists("fit.b")) # should just skip and continue to the next iteration of the loop, but will require an intense coding session.
       {
         fits <- NULL
         attributes(fits)$ef <- 2
@@ -227,6 +228,13 @@ fit_nlsb <- function(WSEw, h = 10, maxiter = 100)
     
   } # end for loop
 
+  if (!exists("fits"))
+  {
+    fits <- NA
+    attributes(fits)$ef <- 9999
+    return(fits)
+  }
+  
   attributes(fits)$ef <- 0
   attributes(fits)$sb.ind <- sb.ind # adding the sb.ind as an output
   return(fits)

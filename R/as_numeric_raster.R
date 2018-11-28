@@ -31,7 +31,7 @@ as_numeric_raster <- function(r, att)
   for (k in 1:N)
   {
     # currently only set up for "DEPTH_M" attribute
-    numeric.vals[k] <- as.numeric.factor(lutable$DEPTH_M[match(factor.vals[k],lutable$ID)])
+    numeric.vals[k] <- as_numeric_factor(lutable$DEPTH_M[match(factor.vals[k],lutable$ID)])
     # Problem: factor.vals is occasionally not in lutable$ID, but sometimes running manually fixes it...
     if (k%%50000 == 0)
     { 
@@ -45,10 +45,4 @@ as_numeric_raster <- function(r, att)
   plot(r2)
 
   return(r2)
-}
-
-# Helper function
-as.numeric.factor <- function(x) 
-{
-  as.numeric(levels(x))[x]
 }

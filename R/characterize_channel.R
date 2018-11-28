@@ -74,8 +74,12 @@ characterize_channel <- function(cross_sections, xWSEw, savename = NULL, plotfla
     # perform fits
     z.ind <- which(xdw[[r]]$w == 0)
     dw <- xdw[[r]][-z.ind,] # drop the first entry to account for zero values
-    power_model[[r]] <- lm(log(d) ~ log(w) + 0, data = dw)
-    s[r] <- as.numeric(coef(power_model[[r]]))
+    
+    # power_model[[r]] <- lm(log(d) ~ log(w) + 0, data = dw) # this was in error...
+    
+    power_model[[r]] <- lm(log(d) ~ log(w), data = dw)
+    
+    s[r] <- as.numeric(coef(power_model[[r]])[2])
     
   }
   
