@@ -20,6 +20,7 @@ See attributes(fit)$ef for error flags.
 Value 0 means no error, 
 1 means not enough data points, 
 2 means singular gradient at initial guess for nlsLM
+9999 means utter failure
 }
 \examples{
 rWSEw <- readRDS("./Outputs/p4_newfits/rWSEw.rds")

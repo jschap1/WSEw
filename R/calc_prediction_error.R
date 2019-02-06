@@ -57,11 +57,13 @@ calc_depth_prediction_error <- function(pred, truth, h = NULL, type)
       {
         for (k in 1:n_exp_levels)
         {
-          e <- (truth[r] - pred[r,k,])/(h - truth[r])
-          e[is.na(e)] <- 0 # ignores NA values in the product
-          temp <- sqrt((1/M)*t(e)%*%e)
-          temp[temp==0] <- NA
-          SE[r,k] <- temp
+          SE[r,k] <- (truth[r] - mean(pred[r,k,], na.rm = TRUE))/(h - truth[r]) # SE of the mean prediction
+          # SE[r,k] <- (truth[r] - median(pred[r,k,], na.rm = TRUE))/(h - truth[r]) # SE of the median prediction
+          # e <- (truth[r] - pred[r,k,])/(h - truth[r])
+          # e[is.na(e)] <- 0 # ignores NA values in the product
+          # temp <- sqrt((1/M)*t(e)%*%e)
+          # temp[temp==0] <- NA
+          # SE[r,k] <- temp # rmse of the M replicates
         }
       }
       return(SE)

@@ -4,11 +4,12 @@
 #' @export
 #' @param full_expo boolean for whether or not to exclude observations at less than 100 m width
 #' @return A0 predictions from each method
+#' @example model_one_reach(exp_dir, r = 1, expo = 1, sd_wse = 0, sd_w = 0, method = "l", full_expo = TRUE)
 
 model_one_reach <- function(exp_dir, r, expo, 
                             sd_wse, sd_w, 
                             method = "all", 
-                            full_expo = FALSE,
+                            full_expo = FALSE, linewidth = 1,
                             ...)
 {
   
@@ -23,11 +24,10 @@ model_one_reach <- function(exp_dir, r, expo,
     WSEw_obs1 <- observe(WSEw = rWSEw[[r]], exposure = expo, sd_wse = sd_wse, sd_w = sd_w)  
   }
   
-  
-  plot(WSE~w, WSEw_obs1, xlab = "w (m)", ylab = "WSE (m)", ...)
+  plot(WSE~w, WSEw_obs1, ...)
   
   # True h-w line
-  lines(WSE~w, rWSEw[[r]], col = "black", lty = 1, lwd = 0.5)
+  lines(WSE~w, rWSEw[[r]], col = "black", lty = 1, lwd = linewidth)
   
   # plot linear
   if (method == "l" | method == "all")
@@ -35,8 +35,8 @@ model_one_reach <- function(exp_dir, r, expo,
     lf1 <- fit_linear(WSEw_obs1, h = 5)
     lines(WSEw_obs1$w, predict(lf1), col = "red")
     w.new <- seq(0, min(WSEw_obs1$w), length.out = 50)
-    lines(w.new, predict(lf1, newdata = data.frame(w = w.new)), col = "red", lty = 2)
-    points(0, predict(lf1, newdata = data.frame(w=0)), col = "red", pch = 19)
+    lines(w.new, predict(lf1, newdata = data.frame(w = w.new)), col = "red", lty = 2, lwd = linewidth)
+    points(0, predict(lf1, newdata = data.frame(w=0)), col = "red", pch = 19, cex = linewidth)
     if (method == "l")
     {
       return(lf1)
@@ -49,13 +49,13 @@ model_one_reach <- function(exp_dir, r, expo,
     sb1 <- fit_slopebreak(WSEw_obs1, multiple_breaks = FALSE, continuity = TRUE)
     nn <- length(WSEw_obs1$w)
     sb1.ind <- attributes(sb1)$sb.ind
-    print(expo)
-    print(sb1.ind)
-    lines(WSEw_obs1$w[1:sb1.ind], predict(sb1[[1]]), col = "orange")
-    lines(WSEw_obs1$w[(sb1.ind):nn], predict(sb1[[2]]), col = "orange")
+    # print(expo)
+    # print(sb1.ind)
+    lines(WSEw_obs1$w[1:sb1.ind], predict(sb1[[1]]), col = "orange", lwd = linewidth)
+    lines(WSEw_obs1$w[(sb1.ind):nn], predict(sb1[[2]]), col = "orange", lwd = linewidth)
     w.new <- seq(0, min(WSEw_obs1$w[1:sb1.ind]), length.out = 50)
-    lines(w.new, predict(sb1[[1]], newdata = data.frame(w = w.new)), col = "orange", lty = 2)
-    points(0, predict(sb1[[1]], newdata = data.frame(w=0)), col = "orange", pch = 19)
+    lines(w.new, predict(sb1[[1]], newdata = data.frame(w = w.new)), col = "orange", lty = 2, lwd = linewidth)
+    points(0, predict(sb1[[1]], newdata = data.frame(w=0)), col = "orange", pch = 19, cex = linewidth)
     if (method == "sb")
     {
       return(sb1)
@@ -67,10 +67,10 @@ model_one_reach <- function(exp_dir, r, expo,
   if (method == "nl" | method == "all")
   {
     nl1 <- fit_nonlinear(WSEw_obs1)
-    lines(WSEw_obs1$w, predict(nl1), col = "green")
+    lines(WSEw_obs1$w, predict(nl1), col = "green", lwd = linewidth)
     w.new <- seq(0, min(WSEw_obs1$w), length.out = 50)
-    lines(w.new, predict(nl1, newdata = data.frame(w = w.new)), col = "green", lty = 2)
-    points(0, predict(nl1, newdata = data.frame(w=0)), col = "green", pch = 19)
+    lines(w.new, predict(nl1, newdata = data.frame(w = w.new)), col = "green", lty = 2, lwd = linewidth)
+    points(0, predict(nl1, newdata = data.frame(w=0)), col = "green", pch = 19, cex = linewidth)
     if (method == "nl")
     {
       return(nl1)
@@ -83,11 +83,11 @@ model_one_reach <- function(exp_dir, r, expo,
     nn <- length(WSEw_obs1$w)
     nlsb1 <- fit_nlsb(WSEw_obs1)
     nlsb1.ind <- attributes(nlsb1)$sb.ind
-    lines(WSEw_obs1$w[1:nlsb1.ind], predict(nlsb1[[1]]), col = "blue")
-    lines(WSEw_obs1$w[(nlsb1.ind):nn], predict(nlsb1[[2]]), col = "blue")
+    lines(WSEw_obs1$w[1:nlsb1.ind], predict(nlsb1[[1]]), col = "blue", lwd = linewidth)
+    lines(WSEw_obs1$w[(nlsb1.ind):nn], predict(nlsb1[[2]]), col = "blue", lwd = linewidth)
     w.new <- seq(0, min(WSEw_obs1$w[1:nlsb1.ind]), length.out = 50)
-    lines(w.new, predict(nlsb1[[1]], newdata = data.frame(w = w.new)), col = "blue", lty = 2)
-    points(0, predict(nlsb1[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19)
+    lines(w.new, predict(nlsb1[[1]], newdata = data.frame(w = w.new)), col = "blue", lty = 2, lwd = linewidth)
+    points(0, predict(nlsb1[[1]], newdata = data.frame(w=0)), col = "blue", pch = 19, cex = linewidth)
     if (method == "nlsb")
     {
       return(nlsb1)

@@ -19,11 +19,12 @@
 #'               cross_section = cross_section,
 #'               method = "nlsb", ylim = c(130, 145))
 #' @details The code could use a bit of tweaking, but it more or less does what it's supposed to.
+#' @export
 show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TRUE, ...)
 {
 
   plot(cross_section$x, cross_section$b, 
-       type = "l", lwd = 2,
+       type = "l",
        xlab = "x (m)",
        ylab = "bed elevation (m)",
        col = "gray",
@@ -46,16 +47,16 @@ show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TR
     b3 <- predict(lf1, newdata = data.frame(w = 2*(x3-wbf/2)))
     b4 <- predict(lf1, newdata = data.frame(w = 2*(x4-wbf/2)))
     
-    lines(x3, b3, col = "red", lty = 2)
-    lines(x4, b4, col = "red", lty = 1)
+    lines(x3, b3, col = "red", lty = 2, lwd = 3)
+    lines(x4, b4, col = "red", lty = 1, lwd = 3)
     
     b2 <- rev(b3)
     b1 <- rev(b4)
     
     x1 <- seq(0, y)
     x2 <- seq(y, wbf/2)
-    lines(x1, b1, col = "red", lty = 1)
-    lines(x2, b2, col = "red", lty = 2)
+    lines(x1, b1, col = "red", lty = 1, lwd = 3)
+    lines(x2, b2, col = "red", lty = 2, lwd = 3)
     
     if (showLegend)
     {
@@ -104,12 +105,12 @@ show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TR
     b2 <- rev(b5)
     b3 <- rev(b4)
 
-    lines(x1, b1, col = "orange", lty = 1)
-    lines(x2, b2, col = "orange", lty = 1)
-    lines(x3, b3, col = "orange", lty = 2)
-    lines(x4, b4, col = "orange", lty = 2)
-    lines(x5, b5, col = "orange", lty = 1)
-    lines(x6, b6, col = "orange", lty = 1)
+    lines(x1, b1, col = "orange", lty = 1, lwd = 3)
+    lines(x2, b2, col = "orange", lty = 1, lwd = 3)
+    lines(x3, b3, col = "orange", lty = 2, lwd = 3)
+    lines(x4, b4, col = "orange", lty = 2, lwd = 3)
+    lines(x5, b5, col = "orange", lty = 1, lwd = 3)
+    lines(x6, b6, col = "orange", lty = 1, lwd = 3)
         
     if (showLegend)
     {
@@ -137,16 +138,16 @@ show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TR
     b3 <- predict(nl1, newdata = data.frame(w = 2*(x3-wbf/2)))
     b4 <- predict(nl1, newdata = data.frame(w = 2*(x4-wbf/2)))
     
-    lines(x3, b3, col = "green", lty = 2)
-    lines(x4, b4, col = "green", lty = 1)
+    lines(x3, b3, col = "green", lty = 2, lwd = 3)
+    lines(x4, b4, col = "green", lty = 1, lwd = 3)
     
     b2 <- rev(b3)
     b1 <- rev(b4)
     
     x1 <- seq(0, y)
     x2 <- seq(y, wbf/2)
-    lines(x1, b1, col = "green", lty = 1)
-    lines(x2, b2, col = "green", lty = 2)
+    lines(x1, b1, col = "green", lty = 1, lwd = 3)
+    lines(x2, b2, col = "green", lty = 2, lwd = 3)
     
     if (showLegend)
     {
@@ -207,12 +208,12 @@ show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TR
     b2 <- rev(b5)
     b3 <- rev(b4)
     
-    lines(x1, b1, col = "blue", lty = 1)
-    lines(x2, b2, col = "blue", lty = 1)
-    lines(x3, b3, col = "blue", lty = 2)
-    lines(x4, b4, col = "blue", lty = 2)
-    lines(x5, b5, col = "blue", lty = 1)
-    lines(x6, b6, col = "blue", lty = 1)
+    lines(x1, b1, col = "blue", lty = 1, lwd = 3)
+    lines(x2, b2, col = "blue", lty = 1, lwd = 3)
+    lines(x3, b3, col = "blue", lty = 2, lwd = 3)
+    lines(x4, b4, col = "blue", lty = 2, lwd = 3)
+    lines(x5, b5, col = "blue", lty = 1, lwd = 3)
+    lines(x6, b6, col = "blue", lty = 1, lwd = 3)
     
     if (showLegend)
     {
@@ -224,6 +225,41 @@ show_geometry <- function(WSEw, WSEw_obs, cross_section, method, showLegend = TR
   }
   
 }
+
+# Make figure for poster
+# par(mfrow = c(2,2), oma = c(2,5,2,2), mar = c(4,5,4,4))
+# show_geometry(WSEw = rWSEw[[r]], 
+#               WSEw_obs = WSEw_obs1, 
+#               cross_section = cross_section,
+#               method = "l", ylim = c(134, 145), 
+#               showLegend = FALSE, lwd = 3,
+#               main = "Linear", 
+#               cex.axis = 2, cex.main = 2, cex.lab =2 )
+# legend("topleft", legend = c("True","Fitted"), 
+#        lty = c(1,1), lwd = c(3,3), 
+#        col = c("gray","red"),
+#        cex = 1.8, horiz = TRUE)
+# show_geometry(WSEw = rWSEw[[r]], 
+#               WSEw_obs = WSEw_obs1, 
+#               cross_section = cross_section,
+#               method = "sb", ylim = c(134, 145), 
+#               showLegend = FALSE, lwd = 3,
+#               main = "Slope break", 
+#               cex.axis = 2, cex.main = 2, cex.lab =2 )
+# show_geometry(WSEw = rWSEw[[r]], 
+#               WSEw_obs = WSEw_obs1, 
+#               cross_section = cross_section,
+#               method = "nl", ylim = c(134, 145), 
+#               showLegend = FALSE, lwd = 3,
+#               main = "Nonlinear", 
+#               cex.axis = 2, cex.main = 2, cex.lab =2 )
+# show_geometry(WSEw = rWSEw[[r]], 
+#               WSEw_obs = WSEw_obs1, 
+#               cross_section = cross_section,
+#               method = "nlsb", ylim = c(134, 145), 
+#               showLegend = FALSE, lwd = 3,
+#               main = "Nonlinear slope break", 
+#               cex.axis = 2, cex.main = 2, cex.lab =2)
 
 # ------------------------------------------------------------------------------------------------------------------------
 # Used a series of if statements, but could also use switch...

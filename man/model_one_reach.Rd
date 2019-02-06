@@ -5,7 +5,7 @@
 \title{Model one reach}
 \usage{
 model_one_reach(exp_dir, r, expo, sd_wse, sd_w, method = "all",
-  full_expo = FALSE, ...)
+  full_expo = FALSE, linewidth = 1, ...)
 }
 \arguments{
 \item{full_expo}{boolean for whether or not to exclude observations at less than 100 m width}
