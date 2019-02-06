@@ -9,3 +9,5 @@ Specifically, there are four height-width models implemented:
 * Piecewise nonlinear
 
 The methodology builds upon Mersel et al. (2013)'s "slope break" method presented in Water Resources Research.
+
+[![DOI](https://zenodo.org/badge/143904598.svg)](https://zenodo.org/badge/latestdoi/143904598)
